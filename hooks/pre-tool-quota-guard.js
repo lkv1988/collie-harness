@@ -1,0 +1,100 @@
+'use strict';
+
+// DO NOT retry on rate limit. SDK silent retry is what burns the quota.
+// This guard exists specifically to stop all tool calls cold when rate-limited.
+
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+
+const STATE_FILE = path.join(os.homedir(), '.kevin-proxy', 'state', 'quota.json');
+const BUDGET_FILE = path.join(os.homedir(), '.kevin-proxy', 'config', 'budget.json');
+
+function block(reason) {
+  process.stdout.write(JSON.stringify({
+    decision: 'block',
+    reason: `⚠️ [kevin-proxy] quota 护栏: ${reason}. 检查 ~/.kevin-proxy/state/quota.json 和 ~/.kevin-proxy/escalations.log`,
+  }) + '\n');
+  process.exit(0);
+}
+
+function main() {
+  // Parse stdin (payload not needed by guard — only quota.json and budget.json matter)
+  try {
+    fs.readFileSync(0, 'utf8'); // consume stdin
+  } catch (e) {
+    // stdin unavailable in some contexts; proceed with checks
+  }
+
+  // Read quota.json — if not found, no protection yet, allow
+  let quota = null;
+  try {
+    quota = JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'));
+  } catch (e) {
+    process.stderr.write('[kevin-proxy/pre-tool-quota-guard] WARNING: quota.json not found, no quota protection active\n');
+    process.exit(0);
+  }
+
+  const now = Date.now();
+
+  // Reset daily counters if daily_reset_at has passed
+  if (quota.daily_reset_at) {
+    const resetAt = new Date(quota.daily_reset_at).getTime();
+    if (now >= resetAt) {
+      quota.daily_input_tokens = 0;
+      quota.daily_output_tokens = 0;
+      quota.daily_cache_read_tokens = 0;
+      quota.exhausted = false;
+      // Next reset is tomorrow at same time
+      const nextReset = new Date(resetAt);
+      nextReset.setDate(nextReset.getDate() + 1);
+      quota.daily_reset_at = nextReset.toISOString();
+      // Write updated quota back
+      try {
+        fs.writeFileSync(STATE_FILE, JSON.stringify(quota, null, 2), 'utf8');
+      } catch (_) {
+        // best effort
+      }
+    }
+  }
+
+  // Check rate_limit_cool_until
+  if (quota.rate_limit_cool_until) {
+    const coolUntil = new Date(quota.rate_limit_cool_until).getTime();
+    if (now < coolUntil) {
+      const minutesLeft = Math.ceil((coolUntil - now) / 60000);
+      block(`rate limit 冷却中，还需等待约 ${minutesLeft} 分钟 (cool_until: ${quota.rate_limit_cool_until})`);
+    }
+  }
+
+  // Check exhausted flag
+  if (quota.exhausted === true) {
+    block('日 token 配额已耗尽 (exhausted=true)');
+  }
+
+  // Read budget.json — if not found, allow but hint
+  let budget = null;
+  try {
+    budget = JSON.parse(fs.readFileSync(BUDGET_FILE, 'utf8'));
+  } catch (e) {
+    process.stdout.write(JSON.stringify({
+      additionalContext: '[kevin-proxy] WARNING: budget.json 未找到，无法执行预算检查。请创建 ~/.kevin-proxy/config/budget.json，参考 schema: {"daily_token_cap": 1000000, "weekly_token_cap": 5000000, "confirm_before_autoloop": true}',
+    }) + '\n');
+    process.exit(0);
+  }
+
+  const dailyCap = budget.daily_token_cap;
+  if (typeof dailyCap === 'number' && dailyCap > 0) {
+    const dailyInputUsed = quota.daily_input_tokens || 0;
+    // Block at 70% to keep 30% buffer for interactive use
+    if (dailyInputUsed > dailyCap * 0.7) {
+      const pct = ((dailyInputUsed / dailyCap) * 100).toFixed(1);
+      block(`日 input token 用量已达 ${pct}% (${dailyInputUsed}/${dailyCap})，保留 30% 缓冲区供交互使用`);
+    }
+  }
+
+  // All checks passed — allow
+  process.exit(0);
+}
+
+main();

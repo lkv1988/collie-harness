@@ -1,0 +1,12 @@
+{
+  "name": "kevin-proxy",
+  "version": "0.1.0",
+  "description": "Kevin 风格自主开发 agent harness（acceptEdits + gated workflow 断链修复 + rubric reviewer + ralph/cron harness + quota guard）",
+  "author": {
+    "name": "kevin"
+  },
+  "keywords": ["workflow", "automation", "review", "guardrails"],
+  "agents": ["./agents/kevin-rubric-reviewer.md"],
+  "commands": ["./commands/"],
+  "skills": ["./skills/"]
+}

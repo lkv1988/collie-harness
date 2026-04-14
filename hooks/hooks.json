@@ -1,0 +1,55 @@
+{
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": "*",
+        "hooks": [
+          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/notification-escalate.js\"" }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/pre-tool-quota-guard.js\"" }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/post-writing-plans-reviewer.js\"" }
+        ]
+      },
+      {
+        "matcher": "Agent",
+        "hooks": [
+          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/post-approved-exitplan-hint.js\"" }
+        ]
+      },
+      {
+        "matcher": "ExitPlanMode",
+        "hooks": [
+          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/post-writing-plans-reviewer.js\"" },
+          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/post-exitplan-gated-hint.js\"" }
+        ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/post-tool-quota-tracker.js\"" }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/stop-steps-counter.js\"" }
+        ]
+      }
+    ]
+  }
+}
