@@ -47,7 +47,7 @@ hook 的 warn 不是报错，是护栏：跳过任意一步都会被拦截提示
 kevin-harness 的自动化流程（brainstorming、writing-plans、gated-workflow 等）完全依赖 superpowers plugin。**必须先装好 superpowers，再装 kevin-harness。**
 
 ```bash
-/plugin install superpowers
+/plugin install superpowers@claude-plugins-official
 ```
 
 确认已加载：`/plugin list` 应显示 `superpowers`。
