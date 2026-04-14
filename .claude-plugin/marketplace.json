@@ -1,18 +1,18 @@
 {
-  "name": "kevin-marketplace",
+  "name": "collie-marketplace",
   "owner": { "name": "kevin" },
   "metadata": {
-    "description": "Kevin 的自用 Claude Code 插件集合",
+    "description": "Collie 风格 Claude Code 插件集合",
     "version": "0.1.0"
   },
   "plugins": [
     {
-      "name": "kevin-harness",
+      "name": "collie-harness",
       "source": {
         "source": "url",
-        "url": "https://github.com/<USER>/kevin-harness.git"
+        "url": "https://github.com/<USER>/collie-harness.git"
       },
-      "description": "Kevin 风格自主开发 agent harness：rubric 审查 + 预算护栏 + 死循环防护",
+      "description": "Collie 风格自主开发 agent harness：rubric 审查 + 预算护栏 + 死循环防护",
       "version": "0.1.0",
       "strict": true
     }

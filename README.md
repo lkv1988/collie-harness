@@ -1,40 +1,40 @@
-# kevin-harness
+# collie-harness
 
-Kevin 风格自主开发 agent harness — 作为 Claude Code plugin 分发。
+Collie 风格自主开发 agent harness — 作为 Claude Code plugin 分发。
 
 ## 功能
 
 - **Layer 0**: `acceptEdits` 模式 + escalation 通道
 - **Layer 1**: 3 个断链修复 hook（writing-plans → plan-doc-reviewer → ExitPlanMode → gated-workflow）
-- **Layer 2**: `kevin-rubric-reviewer` agent（opus, rubric 式审美门，反附和）
-- **Layer 3**: `/kevin-auto` slash command（ralph-loop 封装）+ CronCreate 任务队列
+- **Layer 2**: `collie-rubric-reviewer` agent（opus, rubric 式审美门，反附和）
+- **Layer 3**: `/collie-auto` slash command（ralph-loop 封装）+ CronCreate 任务队列
 
 ## 使用
 
 ```bash
 # 单次任务
-/kevin-auto "给 foo 模块加一个 retry 机制"
+/collie-auto "给 foo 模块加一个 retry 机制"
 
 # 限制最大迭代次数
-/kevin-auto "重构 auth 模块" --max-iterations 30
+/collie-auto "重构 auth 模块" --max-iterations 30
 
 # 排队无人值守任务
-/kevin-queue
+/collie-queue
 ```
 
-任务完成的唯一信号是 `<promise>Kevin: SHIP IT</promise>`——这只在 `kevin-rubric-reviewer` 返回 PASS 后才会输出。
+任务完成的唯一信号是 `<promise>Collie: SHIP IT</promise>`——这只在 `collie-rubric-reviewer` 返回 PASS 后才会输出。
 
 ## 工作流
 
 ```
-/kevin-auto "task"
+/collie-auto "task"
   → superpowers:brainstorming
   → superpowers:writing-plans   ← hook 标记 plan 待审
   → plan-doc-reviewer           ← hook 提示调用 ExitPlanMode
   → ExitPlanMode                ← hook 提示调用 gated-workflow
   → gated-workflow skill
-  → kevin-rubric-reviewer (Opus)
-  → PASS → <promise>Kevin: SHIP IT</promise>
+  → collie-rubric-reviewer (Opus)
+  → PASS → <promise>Collie: SHIP IT</promise>
      WARN/BLOCK → 修复后重跑 gated-workflow
 ```
 
@@ -44,7 +44,7 @@ hook 的 warn 不是报错，是护栏：跳过任意一步都会被拦截提示
 
 ### 前置依赖：superpowers
 
-kevin-harness 的自动化流程（brainstorming、writing-plans、gated-workflow 等）完全依赖 superpowers plugin。**必须先装好 superpowers，再装 kevin-harness。**
+collie-harness 的自动化流程（brainstorming、writing-plans、gated-workflow 等）完全依赖 superpowers plugin。**必须先装好 superpowers，再装 collie-harness。**
 
 ```bash
 /plugin install superpowers@claude-plugins-official
@@ -54,16 +54,16 @@ kevin-harness 的自动化流程（brainstorming、writing-plans、gated-workflo
 
 ### 方式 A：Marketplace 安装（推荐，需要先发到 GitHub）
 ```bash
-/plugin marketplace add <USER>/kevin-harness
-/plugin install kevin-harness@kevin-marketplace
+/plugin marketplace add <USER>/collie-harness
+/plugin install collie-harness@collie-marketplace
 ```
 
 ### 方式 B：本地开发 symlink
 ```bash
-ln -s ~/git/kevin-harness ~/.claude/plugins/installed/kevin-harness
+ln -s ~/git/collie-harness ~/.claude/plugins/installed/collie-harness
 ```
 
-重启 Claude Code，运行 `/plugin list` 确认 `kevin-harness@0.1.0` 出现。
+重启 Claude Code，运行 `/plugin list` 确认 `collie-harness@0.1.0` 出现。
 
 ## 配置
 
@@ -80,16 +80,16 @@ ln -s ~/git/kevin-harness ~/.claude/plugins/installed/kevin-harness
 ### Escalation 通道（可选）
 
 ```bash
-export KEVIN_ESCALATE_CMD=~/bin/my-escalate.sh
+export COLLIE_ESCALATE_CMD=~/bin/my-escalate.sh
 ```
 
-Plugin 内置 stub，只写日志到 `~/.kevin-harness/escalations.log`。
+Plugin 内置 stub，只写日志到 `~/.collie-harness/escalations.log`。
 
 ### Quota 预算（必填，首次运行前）
 
-默认状态目录是 `~/.kevin-harness/`，可通过 `KEVIN_HARNESS_HOME` 环境变量覆盖。
+默认状态目录是 `~/.collie-harness/`，可通过 `COLLIE_HARNESS_HOME` 环境变量覆盖。
 
-创建 `~/.kevin-harness/config/budget.json`：
+创建 `~/.collie-harness/config/budget.json`：
 
 ```json
 {
@@ -107,20 +107,20 @@ Plugin 内置 stub，只写日志到 `~/.kevin-harness/escalations.log`。
 
 # 测试 escalation 通道
 ${CLAUDE_PLUGIN_ROOT}/scripts/escalate.sh TEST "hello" '{"test":true}'
-tail ~/.kevin-harness/escalations.log
+tail ~/.collie-harness/escalations.log
 
 # 运行单元测试
-cd ~/git/kevin-harness && node --test tests/*.test.js
+cd ~/git/collie-harness && node --test tests/*.test.js
 ```
 
 ## 文件结构
 
 ```
-~/git/kevin-harness/
+~/git/collie-harness/
 ├── .claude-plugin/plugin.json
-├── agents/kevin-rubric-reviewer.md   # opus rubric reviewer
-├── commands/kevin-auto.md            # /kevin-auto slash command
-├── skills/kevin-queue/SKILL.md       # CronCreate task queue
+├── agents/collie-rubric-reviewer.md   # opus rubric reviewer
+├── commands/collie-auto.md            # /collie-auto slash command
+├── skills/collie-queue/SKILL.md       # CronCreate task queue
 ├── hooks/
 │   ├── hooks.json                    # auto-loaded by Claude Code v2.1+
 │   ├── notification-escalate.js

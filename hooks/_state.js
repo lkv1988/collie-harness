@@ -3,8 +3,8 @@
 const os = require('os');
 const path = require('path');
 
-const STATE_HOME = process.env.KEVIN_HARNESS_HOME
-  || path.join(os.homedir(), '.kevin-harness');
+const STATE_HOME = process.env.COLLIE_HARNESS_HOME
+  || path.join(os.homedir(), '.collie-harness');
 
 module.exports = {
   STATE_HOME,

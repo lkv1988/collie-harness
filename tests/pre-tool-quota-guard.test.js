@@ -12,10 +12,10 @@ const HOOK = path.resolve(__dirname, '../hooks/pre-tool-quota-guard.js');
 let tmpHome;
 
 beforeEach(() => {
-  tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'kh-test-guard-'));
+  tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'co-test-guard-'));
   // Create necessary directories
-  fs.mkdirSync(path.join(tmpHome, '.kevin-harness', 'state'), { recursive: true });
-  fs.mkdirSync(path.join(tmpHome, '.kevin-harness', 'config'), { recursive: true });
+  fs.mkdirSync(path.join(tmpHome, '.collie-harness', 'state'), { recursive: true });
+  fs.mkdirSync(path.join(tmpHome, '.collie-harness', 'config'), { recursive: true });
 });
 
 afterEach(() => {
@@ -23,11 +23,11 @@ afterEach(() => {
 });
 
 function quotaFile() {
-  return path.join(tmpHome, '.kevin-harness', 'state', 'quota.json');
+  return path.join(tmpHome, '.collie-harness', 'state', 'quota.json');
 }
 
 function budgetFile() {
-  return path.join(tmpHome, '.kevin-harness', 'config', 'budget.json');
+  return path.join(tmpHome, '.collie-harness', 'config', 'budget.json');
 }
 
 function runHook(payload = {}) {

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# E2E smoke test for kevin-harness hook chain.
+# E2E smoke test for collie-harness hook chain.
 # Invokes hooks directly with crafted payloads — no live Claude Code session needed.
 set -euo pipefail
 
 PLUGIN_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-TMPDIR_BASE=$(mktemp -d /tmp/kh-smoke-XXXXXX)
+TMPDIR_BASE=$(mktemp -d /tmp/co-smoke-XXXXXX)
 export HOME="${TMPDIR_BASE}"
 export CLAUDE_PLUGIN_ROOT="${PLUGIN_ROOT}"
 
@@ -34,7 +34,7 @@ trap cleanup EXIT
 scenario1() {
   "${PLUGIN_ROOT}/scripts/escalate.sh" TEST "smoke-test" '{"test":true}' >/dev/null 2>&1
 
-  local log_file="${TMPDIR_BASE}/.kevin-harness/escalations.log"
+  local log_file="${TMPDIR_BASE}/.collie-harness/escalations.log"
   if [[ -f "${log_file}" ]] && grep -q "smoke-test" "${log_file}"; then
     run_scenario "Escalation channel writes log entry" "pass"
   else
@@ -54,7 +54,7 @@ scenario2() {
     | HOME="${TMPDIR_BASE}" CLAUDE_PLUGIN_ROOT="${PLUGIN_ROOT}" \
       node "${PLUGIN_ROOT}/hooks/post-writing-plans-reviewer.js" >/dev/null 2>&1
 
-  local state_file="${TMPDIR_BASE}/.kevin-harness/state/${session_id}/last-plan.json"
+  local state_file="${TMPDIR_BASE}/.collie-harness/state/${session_id}/last-plan.json"
   if [[ -f "${state_file}" ]] && grep -q '"reviewed": false' "${state_file}"; then
     run_scenario "Plan reviewer hook creates last-plan.json with reviewed:false" "pass"
   else
@@ -66,7 +66,7 @@ scenario2() {
 # Scenario 3: Quota guard blocks when rate-limited
 # ---------------------------------------------------------------------------
 scenario3() {
-  local state_dir="${TMPDIR_BASE}/.kevin-harness/state"
+  local state_dir="${TMPDIR_BASE}/.collie-harness/state"
   mkdir -p "${state_dir}"
   cat > "${state_dir}/quota.json" <<'EOF'
 {"rate_limit_cool_until": "2099-01-01T00:00:00.000Z", "exhausted": false, "daily_input_tokens": 0, "daily_output_tokens": 0}
@@ -89,7 +89,7 @@ EOF
 # ---------------------------------------------------------------------------
 scenario4() {
   local session_id="smoke-loop-session"
-  local state_dir="${TMPDIR_BASE}/.kevin-harness/state/${session_id}"
+  local state_dir="${TMPDIR_BASE}/.collie-harness/state/${session_id}"
   mkdir -p "${state_dir}"
 
   # Pre-seed counter with no_progress_steps=4; hook will increment to 5 → escalate
@@ -111,7 +111,7 @@ EOF
     | HOME="${TMPDIR_BASE}" CLAUDE_PLUGIN_ROOT="${PLUGIN_ROOT}" \
       node "${PLUGIN_ROOT}/hooks/stop-steps-counter.js" >/dev/null 2>&1
 
-  local log_file="${TMPDIR_BASE}/.kevin-harness/escalations.log"
+  local log_file="${TMPDIR_BASE}/.collie-harness/escalations.log"
   if [[ -f "${log_file}" ]] && grep -q "no_progress" "${log_file}"; then
     run_scenario "Loop trap detection escalates no_progress" "pass"
   else
@@ -122,7 +122,7 @@ EOF
 # ---------------------------------------------------------------------------
 # Run all scenarios
 # ---------------------------------------------------------------------------
-echo "Running kevin-harness E2E smoke tests..."
+echo "Running collie-harness E2E smoke tests..."
 echo ""
 
 scenario1

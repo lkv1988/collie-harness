@@ -13,7 +13,7 @@ const ESCALATE_LOG = path.join(os.tmpdir(), 'escalate-calls-notification.log');
 let tmpRoot;
 
 function setupMockPlugin() {
-  tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'kh-test-notif-'));
+  tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'co-test-notif-'));
   const scriptsDir = path.join(tmpRoot, 'scripts');
   fs.mkdirSync(scriptsDir, { recursive: true });
   const escalateSh = path.join(scriptsDir, 'escalate.sh');

@@ -1,13 +1,11 @@
 {
-  "name": "kevin-harness",
+  "name": "collie-harness",
   "version": "0.1.0",
-  "description": "Kevin-style autonomous development agent harness: rubric review + budget guardrails + loop detection",
-  "author": { "name": "kevin" },
-  "homepage": "https://github.com/<USER>/kevin-harness",
-  "repository": "https://github.com/<USER>/kevin-harness.git",
+  "description": "Collie-style autonomous development agent harness: rubric review + budget guardrails + loop detection",
+  "homepage": "https://github.com/<USER>/collie-harness",
+  "repository": "https://github.com/<USER>/collie-harness.git",
   "license": "MIT",
-  "keywords": ["workflow", "automation", "review", "guardrails", "kevin"],
-  "agents": ["./agents/kevin-rubric-reviewer.md"],
+  "agents": ["./agents/collie-rubric-reviewer.md"],
   "commands": ["./commands/"],
   "skills": ["./skills/"]
 }

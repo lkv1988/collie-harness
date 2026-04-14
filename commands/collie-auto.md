@@ -1,18 +1,18 @@
 ---
-description: "Launch Kevin-style fully automated feature development loop (brainstorm → plan → reviewer → gated-workflow → rubric review)"
+description: "Launch Collie-style fully automated feature development loop (brainstorm → plan → reviewer → gated-workflow → rubric review)"
 argument-hint: "task description [--max-iterations N]"
 ---
 
-# Kevin Auto
+# Collie Auto
 
-Run the complete development workflow Kevin-style in fully automated, unattended mode.
+Run the complete development workflow Collie-style in fully automated, unattended mode.
 
 ## Completion Promise
 
-This command uses ralph-loop. Completion signal: `<promise>Kevin: SHIP IT</promise>`
+This command uses ralph-loop. Completion signal: `<promise>Collie: SHIP IT</promise>`
 
 **The completion signal can only be output when ALL of the following conditions are met:**
-1. kevin-rubric-reviewer returns `**Status:** PASS`
+1. collie-rubric-reviewer returns `**Status:** PASS`
 2. All code has been committed & pushed
 3. worktree has been cleaned up
 
@@ -26,8 +26,8 @@ This command uses ralph-loop. Completion signal: `<promise>Kevin: SHIP IT</promi
 ③ Agent(subagent_type="plan-doc-reviewer", model="opus") → validate plan
 ④ ExitPlanMode → exit planning mode
 ⑤ gated-workflow skill → complete implementation pipeline
-⑥ Agent(subagent_type="kevin-rubric-reviewer", model="opus") → final review
-⑦ If kevin-rubric-reviewer Status=PASS → output completion signal
+⑥ Agent(subagent_type="collie-rubric-reviewer", model="opus") → final review
+⑦ If collie-rubric-reviewer Status=PASS → output completion signal
    If WARN/BLOCK → fix and return to step ⑤
 ```
 
@@ -44,12 +44,12 @@ When starting, inject this as the working prompt (substitute $ARGUMENTS with the
 > Step 3: `Agent(subagent_type="plan-doc-reviewer", model="opus")` to validate plan
 > Step 4: ExitPlanMode
 > Step 5: Call `gated-workflow` skill to implement
-> Step 6: Call `Agent(subagent_type="kevin-rubric-reviewer", model="opus")` for final review
+> Step 6: Call `Agent(subagent_type="collie-rubric-reviewer", model="opus")` for final review
 >
-> Only when kevin-rubric-reviewer returns `**Status:** PASS`, output:
-> `<promise>Kevin: SHIP IT</promise>`
+> Only when collie-rubric-reviewer returns `**Status:** PASS`, output:
+> `<promise>Collie: SHIP IT</promise>`
 >
-> If kevin-rubric-reviewer returns WARN or BLOCK, you must fix the issues and restart from step ⑤, review again, until PASS is achieved.
+> If collie-rubric-reviewer returns WARN or BLOCK, you must fix the issues and restart from step ⑤, review again, until PASS is achieved.
 
 ## Intelligent Exit Policy
 
@@ -69,6 +69,6 @@ These are automatically detected by the `stop-steps-counter.js` hook with no man
 ## Usage Example
 
 ```
-/kevin-auto "add hello.js that prints 'kevin mode'"
-/kevin-auto "refactor auth module to use JWT" --max-iterations 30
+/collie-auto "add hello.js that prints 'collie mode'"
+/collie-auto "refactor auth module to use JWT" --max-iterations 30
 ```

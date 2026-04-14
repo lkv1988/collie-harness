@@ -12,7 +12,7 @@ const BUDGET_FILE = budgetFile();
 function block(reason) {
   process.stdout.write(JSON.stringify({
     decision: 'block',
-    reason: `⚠️ [kevin-harness] quota guard: ${reason}. Check ${STATE_FILE} and ${escalationsLog()}`,
+    reason: `⚠️ [collie-harness] quota guard: ${reason}. Check ${STATE_FILE} and ${escalationsLog()}`,
   }) + '\n');
   process.exit(0);
 }
@@ -30,7 +30,7 @@ function main() {
   try {
     quota = JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'));
   } catch (e) {
-    process.stderr.write('[kevin-harness/pre-tool-quota-guard] WARNING: quota.json not found, no quota protection active\n');
+    process.stderr.write('[collie-harness/pre-tool-quota-guard] WARNING: quota.json not found, no quota protection active\n');
     process.exit(0);
   }
 
@@ -77,7 +77,7 @@ function main() {
     budget = JSON.parse(fs.readFileSync(BUDGET_FILE, 'utf8'));
   } catch (e) {
     process.stdout.write(JSON.stringify({
-      additionalContext: '[kevin-harness] WARNING: budget.json not found, cannot perform budget check. Please create ~/.kevin-harness/config/budget.json, reference schema: {"daily_token_cap": 1000000, "weekly_token_cap": 5000000, "confirm_before_autoloop": true}',
+      additionalContext: '[collie-harness] WARNING: budget.json not found, cannot perform budget check. Please create ~/.collie-harness/config/budget.json, reference schema: {"daily_token_cap": 1000000, "weekly_token_cap": 5000000, "confirm_before_autoloop": true}',
     }) + '\n');
     process.exit(0);
   }

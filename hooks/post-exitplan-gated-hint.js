@@ -28,7 +28,7 @@ process.stdin.on('end', () => {
   }
 
   process.stdout.write(JSON.stringify({
-    additionalContext: '✅ [kevin-harness] ExitPlanMode done — next step: must call gated-workflow skill (~/.claude/skills/gated-workflow/SKILL.md). Skipping = red-line violation.'
+    additionalContext: '✅ [collie-harness] ExitPlanMode done — next step: must call gated-workflow skill (~/.claude/skills/gated-workflow/SKILL.md). Skipping = red-line violation.'
   }));
 
   process.exit(0);

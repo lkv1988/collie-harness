@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Purpose
 
-**kevin-harness** is a Claude Code plugin that automates the full "Kevin-style" feature development workflow: brainstorm → plan → plan review → gated implementation → rubric review. It enforces workflow integrity via hooks, quota safety, loop detection, and a rubric-based final review agent.
+**collie-harness** is a Claude Code plugin that automates the full "Collie-style" feature development workflow: brainstorm → plan → plan review → gated implementation → rubric review. It enforces workflow integrity via hooks, quota safety, loop detection, and a rubric-based final review agent.
 
 ## Development Commands
 
@@ -19,10 +19,10 @@ node --test tests/pre-tool-quota-guard.test.js
 ./tests/e2e/smoke.sh
 
 # Install as a development plugin (Claude Code v2.1+ auto-discovers)
-ln -s ~/git/kevin-harness ~/.claude/plugins/installed/kevin-harness
+ln -s ~/git/collie-harness ~/.claude/plugins/installed/collie-harness
 
 # Verify plugin is loaded inside Claude Code
-/plugin list   # Should show kevin-harness@0.1.0
+/plugin list   # Should show collie-harness@0.1.0
 ```
 
 No build step — pure Node.js, zero external dependencies.
@@ -33,20 +33,20 @@ No build step — pure Node.js, zero external dependencies.
 |-------|-------------|
 | **0** | `acceptEdits` mode + escalation channel (`scripts/escalate.sh`) |
 | **1** | 3 chain-link hooks that bridge workflow gaps Claude Code doesn't close natively |
-| **2** | Rubric review gate (`agents/kevin-rubric-reviewer.md`): 12 red-lines + 10 questions + ELEPHANT anti-sycophancy |
-| **3** | Self-driven harness (`commands/kevin-auto.md` + `skills/kevin-queue/`) with CronCreate task queue |
+| **2** | Rubric review gate (`agents/collie-rubric-reviewer.md`): 12 red-lines + 10 questions + ELEPHANT anti-sycophancy |
+| **3** | Self-driven harness (`commands/collie-auto.md` + `skills/collie-queue/`) with CronCreate task queue |
 
 ## Workflow Sequence (enforced by hooks)
 
 ```
-/kevin-auto "task"
+/collie-auto "task"
   → superpowers:brainstorming
   → superpowers:writing-plans   ← post-writing-plans-reviewer.js marks plan pending
   → plan-doc-reviewer           ← post-approved-exitplan-hint.js hints ExitPlanMode
   → ExitPlanMode                ← post-exitplan-gated-hint.js reminds gated-workflow
   → gated-workflow skill
-  → kevin-rubric-reviewer (Opus)
-  → PASS → <promise>Kevin: SHIP IT</promise>
+  → collie-rubric-reviewer (Opus)
+  → PASS → <promise>Collie: SHIP IT</promise>
      WARN/BLOCK → fix loop
 ```
 
@@ -64,26 +64,26 @@ No build step — pure Node.js, zero external dependencies.
 
 ## State Files (runtime, not committed)
 
-All runtime state lives under `~/.kevin-harness/`:
+All runtime state lives under `~/.collie-harness/`:
 
 ```
-~/.kevin-harness/
+~/.collie-harness/
   config/budget.json           # Token quota limits (daily/weekly caps)
   state/quota.json             # Live token usage + rate-limit timestamps
   state/{sessionId}/
     last-plan.json             # Plan review status per session
     counter.json               # Step count + error hash tracking
-  state/scheduled_tasks.lock   # Concurrency lock for kevin-queue
+  state/scheduled_tasks.lock   # Concurrency lock for collie-queue
   escalations.log              # All escalation events
-  queue/*.md                   # Unattended tasks for kevin-queue skill
+  queue/*.md                   # Unattended tasks for collie-queue skill
 ```
 
 ## Key Design Constraints
 
-- **Rubric red-lines** (BLOCK): 12 hard violations in `agents/kevin-rubric-reviewer.md`. Any single red-line = automatic BLOCK.
+- **Rubric red-lines** (BLOCK): 12 hard violations in `agents/collie-rubric-reviewer.md`. Any single red-line = automatic BLOCK.
 - **Quota guard** blocks at 70% of `daily_token_cap` (reserves 30% buffer). Rate-limit cool-down = 1 hour.
 - **Loop trap**: 3 identical error hashes in a row → WARN escalation; 5 steps without file changes → WARN escalation.
-- **Task queue** (`kevin-queue`) runs at `concurrency=1` — never two kevin sessions simultaneously.
+- **Task queue** (`collie-queue`) runs at `concurrency=1` — never two collie sessions simultaneously.
 - **ELEPHANT check** in rubric reviewer: 8-point sycophancy self-check; must answer all 8 before issuing PASS.
 
 ## Required First-Time Setup
@@ -93,14 +93,14 @@ All runtime state lives under `~/.kevin-harness/`:
 #    "permissions": { "defaultMode": "acceptEdits" }
 
 # 2. Create budget config
-mkdir -p ~/.kevin-harness/config
-cat > ~/.kevin-harness/config/budget.json << 'EOF'
+mkdir -p ~/.collie-harness/config
+cat > ~/.collie-harness/config/budget.json << 'EOF'
 { "daily_token_cap": 1000000, "weekly_token_cap": 5000000, "confirm_before_autoloop": true }
 EOF
 
 # 3. (Optional) Custom escalation handler
-export KEVIN_ESCALATE_CMD="your-notification-command"
+export COLLIE_ESCALATE_CMD="your-notification-command"
 
 # 3b. (Optional) Override state directory location
-export KEVIN_HARNESS_HOME="~/.my-harness"  # defaults to ~/.kevin-harness
+export COLLIE_HARNESS_HOME="~/.my-harness"  # defaults to ~/.collie-harness
 ```

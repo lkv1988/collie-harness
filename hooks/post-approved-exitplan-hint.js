@@ -91,7 +91,7 @@ async function main() {
   // Inject hint to call ExitPlanMode
   const out = {
     additionalContext:
-      '✅ [kevin-harness] plan-doc-reviewer Approved — next step: you MUST call ExitPlanMode now. Do not skip this step.',
+      '✅ [collie-harness] plan-doc-reviewer Approved — next step: you MUST call ExitPlanMode now. Do not skip this step.',
   };
   process.stdout.write(JSON.stringify(out) + '\n');
   process.exit(0);

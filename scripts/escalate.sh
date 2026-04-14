@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# kevin-harness escalation dispatcher
-# Supports user override via $KEVIN_ESCALATE_CMD environment variable.
+# collie-harness escalation dispatcher
+# Supports user override via $COLLIE_ESCALATE_CMD environment variable.
 #
 # Usage: escalate.sh <LEVEL> <MESSAGE> [CONTEXT_JSON]
 #   LEVEL:        INFO | WARN | CRITICAL
@@ -8,7 +8,7 @@
 #   CONTEXT_JSON: optional JSON context string
 #
 # To use a custom escalation channel:
-#   export KEVIN_ESCALATE_CMD=~/bin/my-escalate.sh
+#   export COLLIE_ESCALATE_CMD=~/bin/my-escalate.sh
 #
 set -euo pipefail
 
@@ -17,7 +17,7 @@ MSG="${2:-no-message}"
 CONTEXT="${3:-}"
 
 # Ensure log directory exists
-LOG_DIR="${KEVIN_HARNESS_HOME:-${HOME}/.kevin-harness}"
+LOG_DIR="${COLLIE_HARNESS_HOME:-${HOME}/.collie-harness}"
 mkdir -p "${LOG_DIR}"
 
 # Structured log entry
@@ -29,12 +29,12 @@ fi
 echo "${LOG_ENTRY}" >> "${LOG_DIR}/escalations.log"
 
 # Delegate to user-configured escalation command if set and executable
-if [[ -n "${KEVIN_ESCALATE_CMD:-}" && -x "${KEVIN_ESCALATE_CMD}" ]]; then
-  "${KEVIN_ESCALATE_CMD}" "${LEVEL}" "${MSG}" "${CONTEXT}" || true
+if [[ -n "${COLLIE_ESCALATE_CMD:-}" && -x "${COLLIE_ESCALATE_CMD}" ]]; then
+  "${COLLIE_ESCALATE_CMD}" "${LEVEL}" "${MSG}" "${CONTEXT}" || true
 fi
 
 # Desktop notification fallback (macOS terminal-notifier or osascript)
-NOTIFY_TITLE="kevin-harness [${LEVEL}]"
+NOTIFY_TITLE="collie-harness [${LEVEL}]"
 NOTIFY_BODY="${MSG}"
 
 if command -v terminal-notifier >/dev/null 2>&1; then
