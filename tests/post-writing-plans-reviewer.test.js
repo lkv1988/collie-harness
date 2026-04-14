@@ -88,7 +88,7 @@ test('post-writing-plans-reviewer: Write to non-plan file → no last-plan.json 
   assert.ok(!fs.existsSync(lastPlanFile()), 'last-plan.json should NOT be written for non-plan files');
 });
 
-test('post-writing-plans-reviewer: ExitPlanMode with unreviewed plan → stdout contains additionalContext WARN', () => {
+test('post-writing-plans-reviewer: ExitPlanMode with unreviewed plan → stdout contains decision:block', () => {
   // Pre-create a last-plan.json with both reviewers pending
   fs.mkdirSync(stateDir(), { recursive: true });
   fs.writeFileSync(lastPlanFile(), JSON.stringify({
@@ -107,12 +107,12 @@ test('post-writing-plans-reviewer: ExitPlanMode with unreviewed plan → stdout 
   assert.strictEqual(result.status, 0, `Hook failed: ${result.stderr}`);
   assert.ok(result.stdout.trim().length > 0, 'stdout should not be empty for unreviewed plan');
   const out = JSON.parse(result.stdout.trim());
-  assert.ok(out.additionalContext, 'output should have additionalContext field');
+  assert.strictEqual(out.decision, 'block', 'output should have decision:block');
+  assert.ok(out.reason, 'output should have reason field');
   assert.ok(
-    out.additionalContext.includes('approved by:') &&
-    out.additionalContext.includes('plan-doc-reviewer') &&
-    out.additionalContext.includes('collie-reviewer'),
-    'additionalContext should mention both reviewers in missing list'
+    out.reason.includes('plan-doc-reviewer') &&
+    out.reason.includes('collie-reviewer'),
+    'reason should mention both reviewers in missing list'
   );
 });
 
@@ -162,11 +162,9 @@ test('post-writing-plans-reviewer: ExitPlanMode WARN when both reviewers pending
   const result = runHook({ tool_name: 'ExitPlanMode', session_id: SESSION_ID });
   assert.strictEqual(result.status, 0);
   const out = JSON.parse(result.stdout.trim());
-  // Both reviewers should appear in "approved by: <missingList>" portion
-  const approvedByMatch = out.additionalContext.match(/approved by: ([^.]+)/);
-  assert.ok(approvedByMatch, 'message should contain "approved by:"');
-  assert.ok(approvedByMatch[1].includes('plan-doc-reviewer'), 'missing list should include plan-doc-reviewer');
-  assert.ok(approvedByMatch[1].includes('collie-reviewer'), 'missing list should include collie-reviewer');
+  assert.strictEqual(out.decision, 'block', 'decision should be block');
+  assert.ok(out.reason.includes('plan-doc-reviewer'), 'reason should include plan-doc-reviewer');
+  assert.ok(out.reason.includes('collie-reviewer'), 'reason should include collie-reviewer');
 });
 
 test('post-writing-plans-reviewer: ExitPlanMode WARN when only plan-doc-reviewer approved', () => {
@@ -180,10 +178,12 @@ test('post-writing-plans-reviewer: ExitPlanMode WARN when only plan-doc-reviewer
   const result = runHook({ tool_name: 'ExitPlanMode', session_id: SESSION_ID });
   assert.strictEqual(result.status, 0);
   const out = JSON.parse(result.stdout.trim());
-  const approvedByMatch = out.additionalContext.match(/approved by: ([^.]+)/);
-  assert.ok(approvedByMatch, 'message should contain "approved by:"');
-  assert.ok(approvedByMatch[1].includes('collie-reviewer'), 'missing list should include collie-reviewer');
-  assert.ok(!approvedByMatch[1].includes('plan-doc-reviewer'), 'missing list should NOT include already-approved plan-doc-reviewer');
+  assert.strictEqual(out.decision, 'block', 'decision should be block');
+  assert.ok(out.reason.includes('collie-reviewer'), 'reason should include collie-reviewer');
+  // The missing list (before 批准) should only mention collie-reviewer, not plan-doc-reviewer
+  const missingMatch7 = out.reason.match(/尚未被 ([^批]+)批准/);
+  assert.ok(missingMatch7, 'reason should contain missing list pattern');
+  assert.ok(!missingMatch7[1].includes('plan-doc-reviewer'), 'missing list should NOT include already-approved plan-doc-reviewer');
 });
 
 test('post-writing-plans-reviewer: ExitPlanMode WARN when only collie-reviewer approved', () => {
@@ -197,10 +197,12 @@ test('post-writing-plans-reviewer: ExitPlanMode WARN when only collie-reviewer a
   const result = runHook({ tool_name: 'ExitPlanMode', session_id: SESSION_ID });
   assert.strictEqual(result.status, 0);
   const out = JSON.parse(result.stdout.trim());
-  const approvedByMatch = out.additionalContext.match(/approved by: ([^.]+)/);
-  assert.ok(approvedByMatch, 'message should contain "approved by:"');
-  assert.ok(approvedByMatch[1].includes('plan-doc-reviewer'), 'missing list should include plan-doc-reviewer');
-  assert.ok(!approvedByMatch[1].includes('collie-reviewer'), 'missing list should NOT include already-approved collie-reviewer');
+  assert.strictEqual(out.decision, 'block', 'decision should be block');
+  assert.ok(out.reason.includes('plan-doc-reviewer'), 'reason should include plan-doc-reviewer');
+  // The missing list (before 批准) should only mention plan-doc-reviewer, not collie-reviewer
+  const missingMatch8 = out.reason.match(/尚未被 ([^批]+)批准/);
+  assert.ok(missingMatch8, 'reason should contain missing list pattern');
+  assert.ok(!missingMatch8[1].includes('collie-reviewer'), 'missing list should NOT include already-approved collie-reviewer');
 });
 
 test('post-writing-plans-reviewer: ExitPlanMode silent when both reviewers approved', () => {

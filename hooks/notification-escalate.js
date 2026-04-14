@@ -28,7 +28,7 @@ const context = JSON.stringify({
 });
 
 try {
-  execFileSync(escalate, [level, msg, context], { stdio: 'inherit' });
+  execFileSync(escalate, [level, msg, context], { stdio: ['ignore', 'ignore', 'inherit'] });
 } catch (e) {
   process.stderr.write('[collie-harness/notification-escalate] escalate.sh failed: ' + e.message + '\n');
 }

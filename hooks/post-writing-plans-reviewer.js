@@ -107,22 +107,24 @@ if (toolName === 'ExitPlanMode') {
 
     if (needsWarn) {
       const missingList = missing.join(' + ');
-      process.stderr.write(`[collie-harness] WARN: plan file not approved by ${missingList} before ExitPlanMode\n`);
+      process.stderr.write(`[collie-harness] BLOCK: plan file not approved by ${missingList} before ExitPlanMode\n`);
 
       try {
         execFileSync(escalateScript, [
           'WARN',
           'plan-not-reviewed-before-exit-plan-mode',
           JSON.stringify({ session_id: sessionId, missing }),
-        ], { stdio: 'inherit' });
+        ], { stdio: ['ignore', 'ignore', 'inherit'] });
       } catch (e) {
         process.stderr.write('[collie-harness/post-writing-plans-reviewer] escalate.sh failed: ' + e.message + '\n');
       }
 
       const output = {
-        additionalContext: `⚠️ [collie-harness] plan file has NOT been approved by: ${missingList}. You MUST run BOTH Agent(subagent_type='plan-doc-reviewer', model='opus') AND Skill('collie-reviewer', Mode=plan), wait for BOTH to approve, then call ExitPlanMode. Calling ExitPlanMode without both approvals is a workflow violation.`,
+        decision: 'block',
+        reason: `⚠️ [collie-harness] ExitPlanMode 被拦截：plan 尚未被 ${missingList} 批准。必须先并行调用 Agent(subagent_type='plan-doc-reviewer', model='opus') 和 Skill('collie-reviewer', Mode=plan)，双方都返回批准后才能 ExitPlanMode。`,
       };
       process.stdout.write(JSON.stringify(output) + '\n');
+      process.exit(0);
     }
   } catch (e) {
     process.stderr.write('[collie-harness/post-writing-plans-reviewer] Error in ExitPlanMode handler: ' + e.message + '\n');

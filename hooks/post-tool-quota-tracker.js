@@ -59,7 +59,7 @@ function isRateLimitError(text) {
 function escalate(level, event, context) {
   try {
     const escalateSh = path.join(pluginRoot, 'scripts', 'escalate.sh');
-    execFileSync(escalateSh, [level, event, JSON.stringify(context)], { stdio: 'inherit' });
+    execFileSync(escalateSh, [level, event, JSON.stringify(context)], { stdio: ['ignore', 'ignore', 'inherit'] });
   } catch (_) {
     // best effort — escalate.sh failure must not crash the hook
   }

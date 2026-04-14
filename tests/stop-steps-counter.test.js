@@ -156,3 +156,88 @@ test('stop-steps-counter: Write success in transcript → no escalation, exits 0
   assert.strictEqual(result.stdout.trim(), '', 'stdout should be empty when there is progress');
   assert.ok(!fs.existsSync(ESCALATE_LOG), 'escalate.sh should NOT have been called');
 });
+
+test('stop-steps-counter: same_error_count ≥3 block → counter reset to 0', () => {
+  // Transcript with the same error
+  const errorText = 'Error: Cannot find module foo';
+  const transcriptLines = [
+    { role: 'tool', name: 'Bash', content: errorText },
+    { role: 'tool', name: 'Bash', content: errorText },
+    { role: 'tool', name: 'Bash', content: errorText },
+  ];
+  const transcriptPath = makeTranscriptFile(transcriptLines);
+
+  // Pre-seed counter so this run triggers block (same_error_count will reach 3)
+  writeCounterState({
+    last_tool_errors: [],
+    same_error_count: 2,
+    no_progress_steps: 0,
+    last_file_change_at: null,
+    total_steps: 5,
+  });
+
+  const result = runHook(transcriptPath);
+  assert.strictEqual(result.status, 0, `Hook failed: ${result.stderr}`);
+  const out = JSON.parse(result.stdout.trim());
+  assert.strictEqual(out.decision, 'block', 'should block');
+
+  // Verify counter was reset
+  const counterPath = path.join(stateDir(), 'counter.json');
+  const state = JSON.parse(fs.readFileSync(counterPath, 'utf8'));
+  assert.strictEqual(state.same_error_count, 0, 'same_error_count must be reset to 0 after block');
+  assert.strictEqual(state.last_tool_errors.length, 0, 'last_tool_errors must be cleared after block');
+});
+
+test('stop-steps-counter: no_progress_steps ≥5 block → counter reset to 0', () => {
+  const transcriptLines = [
+    { role: 'tool', name: 'Bash', content: 'some output' },
+    { role: 'tool', name: 'Bash', content: 'some output' },
+    { role: 'tool', name: 'Bash', content: 'some output' },
+    { role: 'tool', name: 'Bash', content: 'some output' },
+    { role: 'tool', name: 'Bash', content: 'some output' },
+  ];
+  const transcriptPath = makeTranscriptFile(transcriptLines);
+
+  writeCounterState({
+    last_tool_errors: [],
+    same_error_count: 0,
+    no_progress_steps: 4,
+    last_file_change_at: null,
+    total_steps: 10,
+  });
+
+  const result = runHook(transcriptPath);
+  assert.strictEqual(result.status, 0, `Hook failed: ${result.stderr}`);
+  const out = JSON.parse(result.stdout.trim());
+  assert.strictEqual(out.decision, 'block', 'should block');
+
+  const counterPath = path.join(stateDir(), 'counter.json');
+  const state = JSON.parse(fs.readFileSync(counterPath, 'utf8'));
+  assert.strictEqual(state.no_progress_steps, 0, 'no_progress_steps must be reset to 0 after block');
+});
+
+test('stop-steps-counter: after block + reset, second run with same transcript does not block again', () => {
+  const transcriptLines = [
+    { role: 'tool', name: 'Bash', content: 'some output' },
+    { role: 'tool', name: 'Bash', content: 'some output' },
+    { role: 'tool', name: 'Bash', content: 'some output' },
+    { role: 'tool', name: 'Bash', content: 'some output' },
+    { role: 'tool', name: 'Bash', content: 'some output' },
+  ];
+  const transcriptPath = makeTranscriptFile(transcriptLines);
+
+  // First run: triggers no_progress block
+  writeCounterState({
+    last_tool_errors: [],
+    same_error_count: 0,
+    no_progress_steps: 4,
+    last_file_change_at: null,
+    total_steps: 10,
+  });
+  const result1 = runHook(transcriptPath);
+  assert.strictEqual(JSON.parse(result1.stdout.trim()).decision, 'block', 'first run should block');
+
+  // Second run: state was reset by first run, should NOT block
+  const result2 = runHook(transcriptPath);
+  assert.strictEqual(result2.stdout.trim(), '', 'second run should NOT block after counter reset');
+});

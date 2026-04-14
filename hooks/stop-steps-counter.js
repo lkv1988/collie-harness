@@ -190,34 +190,45 @@ if (last3Errors.length === 3 && last3Errors[0] === last3Errors[1] && last3Errors
 }
 
 state.total_steps += 1;
-saveState(state);
 
 // --- Escalation checks ---
+// saveState is called once per path: inside each block branch (after reset) or at the normal exit below.
 function callEscalate(level, msg, context) {
   try {
-    execFileSync(escalateScript, [level, msg, JSON.stringify(context)], { stdio: 'inherit' });
+    execFileSync(escalateScript, [level, msg, JSON.stringify(context)], { stdio: ['ignore', 'ignore', 'inherit'] });
   } catch (e) {
     process.stderr.write('[collie-harness/stop-steps-counter] escalate.sh failed: ' + e.message + '\n');
   }
 }
 
 if (state.same_error_count >= 3) {
-  callEscalate('WARN', 'loop_on_same_error', { same_error_count: state.same_error_count, session_id: sessionId });
+  callEscalate('WARN', 'loop_on_same_error', {
+    same_error_count: state.same_error_count,
+    error_hash: state.last_tool_errors[state.last_tool_errors.length - 1] || null,
+    session_id: sessionId,
+  });
+  // Reset so next Stop doesn't re-block on the same reason
+  state.same_error_count = 0;
+  state.last_tool_errors = [];
+  saveState(state);
   process.stdout.write(JSON.stringify({
     decision: 'block',
-    reason: '⚠️ Same error detected 3 times in a row. Please investigate the root cause before continuing.',
+    reason: '⚠️ Same error detected 3 times in a row. Counters reset — investigate root cause (see escalations.log for error hash) before continuing.',
   }) + '\n');
   process.exit(0);
 }
 
 if (state.no_progress_steps >= 5) {
   callEscalate('WARN', 'no_progress', { no_progress_steps: state.no_progress_steps, session_id: sessionId });
+  state.no_progress_steps = 0;
+  saveState(state);
   process.stdout.write(JSON.stringify({
     decision: 'block',
-    reason: '⚠️ 5 consecutive steps with no file changes. Please check if the agent is stuck.',
+    reason: '⚠️ 5 consecutive steps with no file changes. Counter reset — check if the agent is stuck or needs a different approach.',
   }) + '\n');
   process.exit(0);
 }
 
-// No trigger — approve stop normally
+// No trigger — persist state and approve stop normally
+saveState(state);
 process.exit(0);
