@@ -87,13 +87,13 @@ if (toolName === 'ExitPlanMode') {
   try {
     let needsWarn = true;
 
-    if (fs.existsSync(lastPlanFile)) {
-      try {
-        const state = JSON.parse(fs.readFileSync(lastPlanFile, 'utf8'));
-        if (state.reviewed === true) {
-          needsWarn = false;
-        }
-      } catch (e) {
+    try {
+      const state = JSON.parse(fs.readFileSync(lastPlanFile, 'utf8'));
+      if (state.reviewed === true) {
+        needsWarn = false;
+      }
+    } catch (e) {
+      if (e.code !== 'ENOENT') {
         process.stderr.write('[kevin-harness/post-writing-plans-reviewer] Could not parse last-plan.json: ' + e.message + '\n');
       }
     }

@@ -4,7 +4,7 @@
 // This guard exists specifically to stop all tool calls cold when rate-limited.
 
 const fs = require('fs');
-const { quotaFile, budgetFile } = require('./_state');
+const { quotaFile, budgetFile, escalationsLog } = require('./_state');
 
 const STATE_FILE = quotaFile();
 const BUDGET_FILE = budgetFile();
@@ -12,7 +12,7 @@ const BUDGET_FILE = budgetFile();
 function block(reason) {
   process.stdout.write(JSON.stringify({
     decision: 'block',
-    reason: `⚠️ [kevin-harness] quota guard: ${reason}. Check ~/.kevin-harness/state/quota.json and ~/.kevin-harness/escalations.log`,
+    reason: `⚠️ [kevin-harness] quota guard: ${reason}. Check ${STATE_FILE} and ${escalationsLog()}`,
   }) + '\n');
   process.exit(0);
 }

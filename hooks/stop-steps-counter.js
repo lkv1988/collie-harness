@@ -42,11 +42,11 @@ function simpleHash(str) {
 // --- Load or create counter state ---
 function loadState() {
   try {
-    if (fs.existsSync(counterFile)) {
-      return JSON.parse(fs.readFileSync(counterFile, 'utf8'));
-    }
+    return JSON.parse(fs.readFileSync(counterFile, 'utf8'));
   } catch (e) {
-    process.stderr.write('[kevin-harness/stop-steps-counter] Could not read counter.json: ' + e.message + '\n');
+    if (e.code !== 'ENOENT') {
+      process.stderr.write('[kevin-harness/stop-steps-counter] Could not read counter.json: ' + e.message + '\n');
+    }
   }
   return {
     last_tool_errors: [],
