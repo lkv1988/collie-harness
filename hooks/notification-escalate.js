@@ -12,7 +12,11 @@ try {
   process.stderr.write('[kevin-proxy/notification-escalate] Failed to parse stdin: ' + e.message + '\n');
 }
 
-const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || path.join(require('os').homedir(), '.claude', 'plugins', 'installed', 'kevin-proxy');
+const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT;
+if (!pluginRoot) {
+  process.stderr.write('[kevin-proxy/notification-escalate] WARN: CLAUDE_PLUGIN_ROOT not set, skipping\n');
+  process.exit(0);
+}
 const escalate = path.join(pluginRoot, 'scripts', 'escalate.sh');
 
 const level = 'INFO';

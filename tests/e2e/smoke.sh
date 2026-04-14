@@ -3,7 +3,7 @@
 # Invokes hooks directly with crafted payloads — no live Claude Code session needed.
 set -euo pipefail
 
-PLUGIN_ROOT="${HOME}/git/kevin-proxy"
+PLUGIN_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 TMPDIR_BASE=$(mktemp -d /tmp/kp-smoke-XXXXXX)
 export HOME="${TMPDIR_BASE}"
 export CLAUDE_PLUGIN_ROOT="${PLUGIN_ROOT}"

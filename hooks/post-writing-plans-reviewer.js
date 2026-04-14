@@ -21,8 +21,11 @@ const toolInput = payload.tool_input || {};
 const sessionId = payload.session_id || 'unknown';
 
 // --- Helpers ---
-const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT ||
-  path.join(os.homedir(), '.claude', 'plugins', 'installed', 'kevin-proxy');
+const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT;
+if (!pluginRoot) {
+  process.stderr.write('[kevin-proxy/post-writing-plans-reviewer] WARN: CLAUDE_PLUGIN_ROOT not set, skipping\n');
+  process.exit(0);
+}
 const escalateScript = path.join(pluginRoot, 'scripts', 'escalate.sh');
 
 const stateDir = path.join(os.homedir(), '.kevin-proxy', 'state', sessionId);

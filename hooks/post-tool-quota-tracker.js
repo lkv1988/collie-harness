@@ -9,6 +9,12 @@ const STATE_DIR = path.join(os.homedir(), '.kevin-proxy', 'state');
 const STATE_FILE = path.join(STATE_DIR, 'quota.json');
 const BUDGET_FILE = path.join(os.homedir(), '.kevin-proxy', 'config', 'budget.json');
 
+const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT;
+if (!pluginRoot) {
+  process.stderr.write('[kevin-proxy/post-tool-quota-tracker] WARN: CLAUDE_PLUGIN_ROOT not set, skipping\n');
+  process.exit(0);
+}
+
 const DEFAULT_QUOTA = {
   daily_input_tokens: 0,
   daily_output_tokens: 0,
@@ -52,7 +58,6 @@ function isRateLimitError(text) {
 
 function escalate(level, event, context) {
   try {
-    const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || path.join(os.homedir(), '.claude', 'plugins', 'installed', 'kevin-proxy');
     const escalateSh = path.join(pluginRoot, 'scripts', 'escalate.sh');
     execFileSync(escalateSh, [level, event, JSON.stringify(context)], { stdio: 'ignore' });
   } catch (_) {

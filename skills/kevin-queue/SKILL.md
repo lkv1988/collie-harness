@@ -24,7 +24,7 @@ max_iterations: 20
 scheduled_at: "2026-04-14T03:00:00+08:00"
 status: pending
 worktree: .worktrees/task-001
-project_dir: /Users/kevin/git/corp/my-project
+project_dir: /path/to/project-a
 ---
 
 # Optional: additional context
@@ -130,8 +130,8 @@ CronCreate({
 
 2. 创建 `~/.kevin-proxy/queue/allowlist.txt`（每行一个项目路径）：
 ```
-/Users/kevin/git/corp/my-project
-/Users/kevin/git/corp/another-project
+/path/to/project-a
+/path/to/project-b
 ```
 
 3. 测试 escalation 通道正常：

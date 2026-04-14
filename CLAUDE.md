@@ -81,7 +81,7 @@ All runtime state lives under `~/.kevin-proxy/`:
 ## Key Design Constraints
 
 - **Rubric red-lines** (BLOCK): 12 hard violations in `agents/kevin-rubric-reviewer.md`. Any single red-line = automatic BLOCK.
-- **Quota guard** blocks at 70% of `daily_cap` (reserves 30% buffer). Rate-limit cool-down = 1 hour.
+- **Quota guard** blocks at 70% of `daily_token_cap` (reserves 30% buffer). Rate-limit cool-down = 1 hour.
 - **Loop trap**: 3 identical error hashes in a row → WARN escalation; 5 steps without file changes → WARN escalation.
 - **Task queue** (`kevin-queue`) runs at `concurrency=1` — never two kevin sessions simultaneously.
 - **ELEPHANT check** in rubric reviewer: 8-point sycophancy self-check; must answer all 8 before issuing PASS.
@@ -95,7 +95,7 @@ All runtime state lives under `~/.kevin-proxy/`:
 # 2. Create budget config
 mkdir -p ~/.kevin-proxy/config
 cat > ~/.kevin-proxy/config/budget.json << 'EOF'
-{ "daily_cap": 500000, "weekly_cap": 2000000, "auto_confirm_threshold": 50000 }
+{ "daily_token_cap": 1000000, "weekly_token_cap": 5000000, "confirm_before_autoloop": true }
 EOF
 
 # 3. (Optional) Custom escalation handler
