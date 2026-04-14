@@ -9,6 +9,37 @@ Kevin 风格自主开发 agent harness — 作为 Claude Code plugin 分发。
 - **Layer 2**: `kevin-rubric-reviewer` agent（opus, rubric 式审美门，反附和）
 - **Layer 3**: `/kevin-auto` slash command（ralph-loop 封装）+ CronCreate 任务队列
 
+## 使用
+
+```bash
+# 单次任务
+/kevin-auto "给 foo 模块加一个 retry 机制"
+
+# 限制最大迭代次数
+/kevin-auto "重构 auth 模块" --max-iterations 30
+
+# 排队无人值守任务
+/kevin-queue
+```
+
+任务完成的唯一信号是 `<promise>Kevin: SHIP IT</promise>`——这只在 `kevin-rubric-reviewer` 返回 PASS 后才会输出。
+
+## 工作流
+
+```
+/kevin-auto "task"
+  → superpowers:brainstorming
+  → superpowers:writing-plans   ← hook 标记 plan 待审
+  → plan-doc-reviewer           ← hook 提示调用 ExitPlanMode
+  → ExitPlanMode                ← hook 提示调用 gated-workflow
+  → gated-workflow skill
+  → kevin-rubric-reviewer (Opus)
+  → PASS → <promise>Kevin: SHIP IT</promise>
+     WARN/BLOCK → 修复后重跑 gated-workflow
+```
+
+hook 的 warn 不是报错，是护栏：跳过任意一步都会被拦截提示。
+
 ## 安装
 
 ### 方式 A：Marketplace 安装（推荐，需要先发到 GitHub）
@@ -26,6 +57,16 @@ ln -s ~/git/kevin-harness ~/.claude/plugins/installed/kevin-harness
 
 ## 配置
 
+### acceptEdits 模式（必填）
+
+在 `~/.claude/settings.json` 加入：
+
+```json
+"permissions": { "defaultMode": "acceptEdits" }
+```
+
+没有这个配置，Layer 0 的自动执行不会生效。
+
 ### Escalation 通道（可选）
 
 ```bash
@@ -35,6 +76,8 @@ export KEVIN_ESCALATE_CMD=~/bin/my-escalate.sh
 Plugin 内置 stub，只写日志到 `~/.kevin-harness/escalations.log`。
 
 ### Quota 预算（必填，首次运行前）
+
+默认状态目录是 `~/.kevin-harness/`，可通过 `KEVIN_HARNESS_HOME` 环境变量覆盖。
 
 创建 `~/.kevin-harness/config/budget.json`：
 
