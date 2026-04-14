@@ -91,7 +91,7 @@ async function main() {
   // Inject hint to call ExitPlanMode
   const out = {
     additionalContext:
-      '✅ [kevin-proxy] plan-doc-reviewer Approved — 下一步调用 ExitPlanMode。',
+      '✅ [kevin-proxy] plan-doc-reviewer Approved — next step: you MUST call ExitPlanMode now. Do not skip this step.',
   };
   process.stdout.write(JSON.stringify(out) + '\n');
   process.exit(0);

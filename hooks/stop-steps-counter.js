@@ -205,7 +205,7 @@ if (state.same_error_count >= 3) {
   callEscalate('WARN', 'loop_on_same_error', { same_error_count: state.same_error_count, session_id: sessionId });
   process.stdout.write(JSON.stringify({
     decision: 'block',
-    reason: '⚠️ 检测到同一错误连续出现3次，请检查根因后再继续',
+    reason: '⚠️ Same error detected 3 times in a row. Please investigate the root cause before continuing.',
   }) + '\n');
   process.exit(0);
 }
@@ -214,7 +214,7 @@ if (state.no_progress_steps >= 5) {
   callEscalate('WARN', 'no_progress', { no_progress_steps: state.no_progress_steps, session_id: sessionId });
   process.stdout.write(JSON.stringify({
     decision: 'block',
-    reason: '⚠️ 连续5步没有文件变更，请检查是否卡住',
+    reason: '⚠️ 5 consecutive steps with no file changes. Please check if the agent is stuck.',
   }) + '\n');
   process.exit(0);
 }

@@ -114,7 +114,7 @@ if (toolName === 'ExitPlanMode') {
 
       // Soft WARN: inject additionalContext (not a block)
       const output = {
-        additionalContext: '⚠️ [kevin-proxy] plan 文件还没过 plan-doc-reviewer！正确流程：先 Agent(subagent_type=\'plan-doc-reviewer\', model=\'opus\')，Approved 后再 ExitPlanMode。',
+        additionalContext: '⚠️ [kevin-proxy] plan file has NOT been reviewed by plan-doc-reviewer! You MUST run Agent(subagent_type=\'plan-doc-reviewer\', model=\'opus\') first, wait for Approved, then call ExitPlanMode. Calling ExitPlanMode without approval is a workflow violation.',
       };
       process.stdout.write(JSON.stringify(output) + '\n');
     }

@@ -13,7 +13,7 @@ const BUDGET_FILE = path.join(os.homedir(), '.kevin-proxy', 'config', 'budget.js
 function block(reason) {
   process.stdout.write(JSON.stringify({
     decision: 'block',
-    reason: `⚠️ [kevin-proxy] quota 护栏: ${reason}. 检查 ~/.kevin-proxy/state/quota.json 和 ~/.kevin-proxy/escalations.log`,
+    reason: `⚠️ [kevin-proxy] quota guard: ${reason}. Check ~/.kevin-proxy/state/quota.json and ~/.kevin-proxy/escalations.log`,
   }) + '\n');
   process.exit(0);
 }
@@ -63,13 +63,13 @@ function main() {
     const coolUntil = new Date(quota.rate_limit_cool_until).getTime();
     if (now < coolUntil) {
       const minutesLeft = Math.ceil((coolUntil - now) / 60000);
-      block(`rate limit 冷却中，还需等待约 ${minutesLeft} 分钟 (cool_until: ${quota.rate_limit_cool_until})`);
+      block(`rate limit cooling down, approximately ${minutesLeft} minute(s) remaining (cool_until: ${quota.rate_limit_cool_until})`);
     }
   }
 
   // Check exhausted flag
   if (quota.exhausted === true) {
-    block('日 token 配额已耗尽 (exhausted=true)');
+    block('daily token quota exhausted (exhausted=true)');
   }
 
   // Read budget.json — if not found, allow but hint
@@ -78,7 +78,7 @@ function main() {
     budget = JSON.parse(fs.readFileSync(BUDGET_FILE, 'utf8'));
   } catch (e) {
     process.stdout.write(JSON.stringify({
-      additionalContext: '[kevin-proxy] WARNING: budget.json 未找到，无法执行预算检查。请创建 ~/.kevin-proxy/config/budget.json，参考 schema: {"daily_token_cap": 1000000, "weekly_token_cap": 5000000, "confirm_before_autoloop": true}',
+      additionalContext: '[kevin-proxy] WARNING: budget.json not found, cannot perform budget check. Please create ~/.kevin-proxy/config/budget.json, reference schema: {"daily_token_cap": 1000000, "weekly_token_cap": 5000000, "confirm_before_autoloop": true}',
     }) + '\n');
     process.exit(0);
   }
@@ -89,7 +89,7 @@ function main() {
     // Block at 70% to keep 30% buffer for interactive use
     if (dailyInputUsed > dailyCap * 0.7) {
       const pct = ((dailyInputUsed / dailyCap) * 100).toFixed(1);
-      block(`日 input token 用量已达 ${pct}% (${dailyInputUsed}/${dailyCap})，保留 30% 缓冲区供交互使用`);
+      block(`daily input token usage has reached ${pct}% (${dailyInputUsed}/${dailyCap}), reserving 30% buffer for interactive use`);
     }
   }
 

@@ -1,19 +1,19 @@
 ---
 name: kevin-queue
-description: "CronCreate 任务队列调度 skill。扫描 ~/.kevin-proxy/queue/*.md 中的待执行任务，通过 CronCreate 工具调度 /kevin-auto 执行。支持定时任务、concurrency=1 保护、daily token budget 检查。"
+description: "CronCreate task queue scheduler skill. Scans tasks in ~/.kevin-proxy/queue/*.md, schedules /kevin-auto execution via CronCreate tool. Supports scheduled tasks, concurrency=1 protection, and daily token budget checks."
 ---
 
 # Kevin Queue Skill
 
-无人值守任务调度器。把需求写进队列文件，设好时间，Claude 自动跑。
+Unattended task scheduler. Write requirements to queue files, set timing, and Claude runs automatically.
 
-## Task File 格式
+## Task File Format
 
-队列文件存放在 `~/.kevin-proxy/queue/` 目录，每个文件是一个任务。
+Queue files are stored in `~/.kevin-proxy/queue/` directory, each file is one task.
 
-### 文件格式（YAML frontmatter + 可选 body）
+### File Format (YAML frontmatter + optional body)
 
-文件名格式：`task-<id>.md`（例如 `task-001.md`）
+File naming: `task-<id>.md` (example: `task-001.md`)
 
 ```yaml
 ---
@@ -31,29 +31,29 @@ project_dir: /path/to/project-a
 Any additional context for the task goes here.
 ```
 
-### Status 字段
+### Status Field
 
-- `pending`: 待执行
-- `running`: 执行中（自动更新）
-- `done`: 成功完成
-- `failed`: 执行失败
-- `escalated`: 触发了 escalation
+- `pending`: waiting to execute
+- `running`: currently executing (auto-updated)
+- `done`: successfully completed
+- `failed`: execution failed
+- `escalated`: triggered an escalation
 
-## 使用方法
+## Usage
 
-### 1. 创建任务文件
+### 1. Create Task File
 
-手动创建 `~/.kevin-proxy/queue/task-001.md`，填入任务信息。
+Manually create `~/.kevin-proxy/queue/task-001.md` with task information.
 
-### 2. 触发队列执行
+### 2. Trigger Queue Execution
 
-调用本 skill 即可扫描并调度：
+Call this skill to scan and schedule:
 
 ```
 Use kevin-queue skill to check and schedule pending tasks
 ```
 
-### 3. 查看执行状态
+### 3. Check Execution Status
 
 ```bash
 ls ~/.kevin-proxy/queue/
@@ -61,28 +61,28 @@ grep "^status:" ~/.kevin-proxy/queue/*.md
 tail ~/.kevin-proxy/escalations.log
 ```
 
-## 执行流程
+## Execution Flow
 
-本 skill 被调用时：
+When this skill is invoked:
 
-1. **扫描队列**：读取 `~/.kevin-proxy/queue/*.md`，找出 `status: pending` 且 `scheduled_at <= now` 的任务
+1. **Scan Queue**: Read `~/.kevin-proxy/queue/*.md`, find tasks with `status: pending` and `scheduled_at <= now`
 
-2. **Concurrency 检查**（CRITICAL）：
-   - 检查 `~/.kevin-proxy/state/scheduled_tasks.lock` 是否存在
-   - 如果存在：说明有任务正在执行，跳过本次调度并输出提示
-   - Lock 文件格式：`{ task_id, started_at, pid }`
-   - 锁超时：如果 lock 文件超过 2 小时没更新，视为僵尸锁，删除后继续
+2. **Concurrency Check** (CRITICAL):
+   - Check if `~/.kevin-proxy/state/scheduled_tasks.lock` exists
+   - If exists: a task is running, skip this scheduling and output notice
+   - Lock file format: `{ task_id, started_at, pid }`
+   - Lock timeout: if lock file is not updated for 2+ hours, treat as zombie lock, delete and continue
 
-3. **Budget 检查**：
-   - 读取 `~/.kevin-proxy/state/quota.json`
-   - 如果 `exhausted: true` → 停止调度，escalate WARN "quota_exhausted"
-   - 如果 `daily_input_tokens > daily_token_cap * 0.7`（读 `~/.kevin-proxy/config/budget.json`）→ 停止调度，escalate WARN "budget_70pct"
+3. **Budget Check**:
+   - Read `~/.kevin-proxy/state/quota.json`
+   - If `exhausted: true` → stop scheduling, escalate WARN "quota_exhausted"
+   - If `daily_input_tokens > daily_token_cap * 0.7` (read from `~/.kevin-proxy/config/budget.json`) → stop scheduling, escalate WARN "budget_70pct"
 
-4. **更新任务状态**：把第一个符合条件的任务 status 改为 `running`
+4. **Update Task Status**: Set first matching task status to `running`
 
-5. **写 lock 文件**：`~/.kevin-proxy/state/scheduled_tasks.lock`
+5. **Write Lock File**: `~/.kevin-proxy/state/scheduled_tasks.lock`
 
-6. **使用 CronCreate 工具调度**：
+6. **Schedule Using CronCreate Tool**:
 
 ```
 CronCreate({
@@ -92,34 +92,34 @@ CronCreate({
 })
 ```
 
-实际执行的 prompt 内容（注入到 <<autonomous-loop>> 中）：
+Actual prompt content injected into `<<autonomous-loop>>`:
 
-> 执行 kevin-proxy 任务队列任务 {task_id}：
+> Execute kevin-proxy task queue task {task_id}:
 >
-> 任务文件：{task_file_path}
-> 提示词：{task.prompt}
-> 目标目录：{task.project_dir}
+> Task file: {task_file_path}
+> Prompt: {task.prompt}
+> Target directory: {task.project_dir}
 >
-> 执行步骤：
-> 1. cd 到 {task.project_dir}
-> 2. 运行 /kevin-auto "{task.prompt}" --max-iterations {task.max_iterations}
-> 3. 完成后更新任务文件 status 为 "done"
-> 4. 删除 ~/.kevin-proxy/state/scheduled_tasks.lock
+> Execution steps:
+> 1. cd to {task.project_dir}
+> 2. Run /kevin-auto "{task.prompt}" --max-iterations {task.max_iterations}
+> 3. After completion, update task file status to "done"
+> 4. Delete ~/.kevin-proxy/state/scheduled_tasks.lock
 
-7. **完成提示**：输出已调度的任务列表
+7. **Completion Notice**: Output list of scheduled tasks
 
-## 护栏规则（硬约束）
+## Guardrails (Hard Constraints)
 
-- **Concurrency = 1**：同时只能有一个任务运行（lock 文件保护）
-- **Allowlist**：只执行 `project_dir` 在 `~/.kevin-proxy/queue/allowlist.txt` 中列出的项目
-  - 如果 allowlist.txt 不存在：提示 Kevin 需要创建 allowlist 后才能执行
-  - allowlist.txt 格式：每行一个绝对路径
-- **Budget 保护**：daily token > 70% → 停止（留 buffer 给日常交互）
-- **Lock 超时**：僵尸锁（>2h）自动清除
+- **Concurrency = 1**: Only one task can run simultaneously (lock file protection)
+- **Allowlist**: Only execute `project_dir` listed in `~/.kevin-proxy/queue/allowlist.txt`
+  - If allowlist.txt does not exist: prompt Kevin to create allowlist before execution
+  - allowlist.txt format: one absolute path per line
+- **Budget Protection**: daily tokens > 70% → stop (reserves buffer for daily interaction)
+- **Lock Timeout**: zombie locks (>2h) auto-cleared
 
-## 首次使用前必须完成
+## Required Setup Before First Use
 
-1. 创建 `~/.kevin-proxy/config/budget.json`：
+1. Create `~/.kevin-proxy/config/budget.json`:
 ```json
 {
   "daily_token_cap": 1000000,
@@ -128,22 +128,22 @@ CronCreate({
 }
 ```
 
-2. 创建 `~/.kevin-proxy/queue/allowlist.txt`（每行一个项目路径）：
+2. Create `~/.kevin-proxy/queue/allowlist.txt` (one project path per line):
 ```
 /path/to/project-a
 /path/to/project-b
 ```
 
-3. 测试 escalation 通道正常：
+3. Test escalation channel is working:
 ```bash
 ~/git/kevin-proxy/scripts/escalate.sh TEST "queue test" '{}'
 ```
 
-## 故障排查
+## Troubleshooting
 
-| 症状 | 检查 |
-|------|------|
-| 任务没有被调度 | `grep "^status:" ~/.kevin-proxy/queue/*.md` 确认是 pending |
-| 卡在 running 很久 | 检查 lock 文件：`cat ~/.kevin-proxy/state/scheduled_tasks.lock` |
-| escalation 没有触发 | `tail ~/.kevin-proxy/escalations.log` |
-| budget 检查失败 | 确认 `~/.kevin-proxy/config/budget.json` 存在 |
+| Symptom | Check |
+|---------|-------|
+| Task not being scheduled | `grep "^status:" ~/.kevin-proxy/queue/*.md` verify it's pending |
+| Stuck running for long | Check lock file: `cat ~/.kevin-proxy/state/scheduled_tasks.lock` |
+| Escalation not triggered | `tail ~/.kevin-proxy/escalations.log` |
+| Budget check fails | Verify `~/.kevin-proxy/config/budget.json` exists |

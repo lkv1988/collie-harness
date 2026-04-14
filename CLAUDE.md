@@ -75,7 +75,7 @@ All runtime state lives under `~/.kevin-proxy/`:
     counter.json               # Step count + error hash tracking
   state/scheduled_tasks.lock   # Concurrency lock for kevin-queue
   escalations.log              # All escalation events
-  queue/*.yaml                 # Unattended tasks for kevin-queue skill
+  queue/*.md                   # Unattended tasks for kevin-queue skill
 ```
 
 ## Key Design Constraints

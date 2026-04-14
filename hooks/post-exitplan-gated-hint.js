@@ -28,7 +28,7 @@ process.stdin.on('end', () => {
   }
 
   process.stdout.write(JSON.stringify({
-    additionalContext: '✅ [kevin-proxy] ExitPlanMode 完成 — 下一步必须调用 gated-workflow skill（~/.claude/skills/gated-workflow/SKILL.md）。跳过 = 红线。'
+    additionalContext: '✅ [kevin-proxy] ExitPlanMode done — next step: must call gated-workflow skill (~/.claude/skills/gated-workflow/SKILL.md). Skipping = red-line violation.'
   }));
 
   process.exit(0);
