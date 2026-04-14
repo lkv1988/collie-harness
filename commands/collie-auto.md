@@ -23,7 +23,10 @@ This command uses ralph-loop. Completion signal: `<promise>Collie: SHIP IT</prom
 ```
 ① superpowers:brainstorming → design alignment
 ② superpowers:writing-plans → generate implementation plan
-③ Agent(subagent_type="plan-doc-reviewer", model="opus") → validate plan
+③ PARALLEL: Agent(subagent_type="plan-doc-reviewer", model="opus")
+           AND Skill("collie-reviewer") with Mode=plan, Target=<plan-doc-path>
+   → validate plan structure AND Collie-style rubric
+   (both must return approval before step ④)
 ④ ExitPlanMode → exit planning mode
 ⑤ gated-workflow skill → complete implementation pipeline
 ⑥ Agent(subagent_type="collie-rubric-reviewer", model="opus") → final review
@@ -41,7 +44,10 @@ When starting, inject this as the working prompt (substitute $ARGUMENTS with the
 >
 > Step 1: Call `superpowers:brainstorming` skill to complete design brainstorming
 > Step 2: Call `superpowers:writing-plans` skill to write implementation plan
-> Step 3: `Agent(subagent_type="plan-doc-reviewer", model="opus")` to validate plan
+> Step 3: In parallel, dispatch BOTH reviewers:
+>   a) `Agent(subagent_type="plan-doc-reviewer", model="opus")` — structural plan validation
+>   b) `Skill("collie-reviewer")` with `Mode=plan`, `Target=<path to the plan file just written>` — Collie-style rubric review
+>   **Both reviewers must return approval before step 4. Do not call ExitPlanMode until both approve.**
 > Step 4: ExitPlanMode
 > Step 5: Call `gated-workflow` skill to implement
 > Step 6: Call `Agent(subagent_type="collie-rubric-reviewer", model="opus")` for final review

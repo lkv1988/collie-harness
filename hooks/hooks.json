@@ -24,7 +24,7 @@
         ]
       },
       {
-        "matcher": "Agent",
+        "matcher": "Agent|Skill",
         "hooks": [
           { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/post-approved-exitplan-hint.js\"" }
         ]

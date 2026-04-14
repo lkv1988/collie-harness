@@ -67,7 +67,9 @@ test('post-writing-plans-reviewer: Write to plan file → last-plan.json written
   assert.strictEqual(result.status, 0, `Hook failed: ${result.stderr}`);
   assert.ok(fs.existsSync(lastPlanFile()), 'last-plan.json should have been written');
   const state = JSON.parse(fs.readFileSync(lastPlanFile(), 'utf8'));
-  assert.strictEqual(state.reviewed, false, 'reviewed should be false');
+  assert.deepStrictEqual(state.plan_doc_reviewer, { approved: false, approved_at: null });
+  assert.deepStrictEqual(state.collie_reviewer, { approved: false, approved_at: null });
+  assert.strictEqual(state.reviewed, undefined, 'legacy reviewed field must not exist');
   assert.ok(state.path.includes('plans'), 'path should reference the plan file');
 });
 
@@ -87,13 +89,13 @@ test('post-writing-plans-reviewer: Write to non-plan file → no last-plan.json 
 });
 
 test('post-writing-plans-reviewer: ExitPlanMode with unreviewed plan → stdout contains additionalContext WARN', () => {
-  // Pre-create a last-plan.json with reviewed:false
+  // Pre-create a last-plan.json with both reviewers pending
   fs.mkdirSync(stateDir(), { recursive: true });
   fs.writeFileSync(lastPlanFile(), JSON.stringify({
     path: 'docs/plans/2026-04-14-collie-harness-plan.md',
-    reviewed: false,
-    approved: false,
     written_at: new Date().toISOString(),
+    plan_doc_reviewer: { approved: false, approved_at: null },
+    collie_reviewer:   { approved: false, approved_at: null },
   }), 'utf8');
 
   const payload = {
@@ -107,19 +109,21 @@ test('post-writing-plans-reviewer: ExitPlanMode with unreviewed plan → stdout 
   const out = JSON.parse(result.stdout.trim());
   assert.ok(out.additionalContext, 'output should have additionalContext field');
   assert.ok(
-    out.additionalContext.includes('plan-doc-reviewer') || out.additionalContext.includes('plan'),
-    'additionalContext should mention plan-doc-reviewer'
+    out.additionalContext.includes('approved by:') &&
+    out.additionalContext.includes('plan-doc-reviewer') &&
+    out.additionalContext.includes('collie-reviewer'),
+    'additionalContext should mention both reviewers in missing list'
   );
 });
 
 test('post-writing-plans-reviewer: ExitPlanMode with reviewed plan → stdout empty, exits 0', () => {
-  // Pre-create a last-plan.json with reviewed:true
+  // Pre-create a last-plan.json with both reviewers approved
   fs.mkdirSync(stateDir(), { recursive: true });
   fs.writeFileSync(lastPlanFile(), JSON.stringify({
     path: 'docs/plans/2026-04-14-collie-harness-plan.md',
-    reviewed: true,
-    approved: true,
     written_at: new Date().toISOString(),
+    plan_doc_reviewer: { approved: true, approved_at: '2026-04-14T00:00:00Z' },
+    collie_reviewer:   { approved: true, approved_at: '2026-04-14T00:00:00Z' },
   }), 'utf8');
 
   const payload = {
@@ -130,4 +134,84 @@ test('post-writing-plans-reviewer: ExitPlanMode with reviewed plan → stdout em
   const result = runHook(payload);
   assert.strictEqual(result.status, 0, `Hook failed: ${result.stderr}`);
   assert.strictEqual(result.stdout.trim(), '', 'stdout should be empty when plan is already reviewed');
+});
+
+test('post-writing-plans-reviewer: Write creates dual-reviewer schema (no legacy fields)', () => {
+  const payload = {
+    tool_name: 'Write',
+    session_id: SESSION_ID,
+    tool_input: { file_path: 'docs/plans/2026-04-14-foo-plan.md', content: '# Plan' },
+  };
+  const result = runHook(payload);
+  assert.strictEqual(result.status, 0);
+  const state = JSON.parse(fs.readFileSync(lastPlanFile(), 'utf8'));
+  assert.deepStrictEqual(state.plan_doc_reviewer, { approved: false, approved_at: null });
+  assert.deepStrictEqual(state.collie_reviewer, { approved: false, approved_at: null });
+  assert.strictEqual(state.reviewed, undefined, 'legacy reviewed field must not exist');
+  assert.strictEqual(state.approved, undefined, 'legacy approved field must not exist');
+});
+
+test('post-writing-plans-reviewer: ExitPlanMode WARN when both reviewers pending', () => {
+  fs.mkdirSync(stateDir(), { recursive: true });
+  fs.writeFileSync(lastPlanFile(), JSON.stringify({
+    path: 'docs/plans/foo-plan.md',
+    written_at: new Date().toISOString(),
+    plan_doc_reviewer: { approved: false, approved_at: null },
+    collie_reviewer:   { approved: false, approved_at: null },
+  }), 'utf8');
+  const result = runHook({ tool_name: 'ExitPlanMode', session_id: SESSION_ID });
+  assert.strictEqual(result.status, 0);
+  const out = JSON.parse(result.stdout.trim());
+  // Both reviewers should appear in "approved by: <missingList>" portion
+  const approvedByMatch = out.additionalContext.match(/approved by: ([^.]+)/);
+  assert.ok(approvedByMatch, 'message should contain "approved by:"');
+  assert.ok(approvedByMatch[1].includes('plan-doc-reviewer'), 'missing list should include plan-doc-reviewer');
+  assert.ok(approvedByMatch[1].includes('collie-reviewer'), 'missing list should include collie-reviewer');
+});
+
+test('post-writing-plans-reviewer: ExitPlanMode WARN when only plan-doc-reviewer approved', () => {
+  fs.mkdirSync(stateDir(), { recursive: true });
+  fs.writeFileSync(lastPlanFile(), JSON.stringify({
+    path: 'docs/plans/foo-plan.md',
+    written_at: new Date().toISOString(),
+    plan_doc_reviewer: { approved: true, approved_at: '2026-04-14T00:00:00Z' },
+    collie_reviewer:   { approved: false, approved_at: null },
+  }), 'utf8');
+  const result = runHook({ tool_name: 'ExitPlanMode', session_id: SESSION_ID });
+  assert.strictEqual(result.status, 0);
+  const out = JSON.parse(result.stdout.trim());
+  const approvedByMatch = out.additionalContext.match(/approved by: ([^.]+)/);
+  assert.ok(approvedByMatch, 'message should contain "approved by:"');
+  assert.ok(approvedByMatch[1].includes('collie-reviewer'), 'missing list should include collie-reviewer');
+  assert.ok(!approvedByMatch[1].includes('plan-doc-reviewer'), 'missing list should NOT include already-approved plan-doc-reviewer');
+});
+
+test('post-writing-plans-reviewer: ExitPlanMode WARN when only collie-reviewer approved', () => {
+  fs.mkdirSync(stateDir(), { recursive: true });
+  fs.writeFileSync(lastPlanFile(), JSON.stringify({
+    path: 'docs/plans/foo-plan.md',
+    written_at: new Date().toISOString(),
+    plan_doc_reviewer: { approved: false, approved_at: null },
+    collie_reviewer:   { approved: true, approved_at: '2026-04-14T00:00:00Z' },
+  }), 'utf8');
+  const result = runHook({ tool_name: 'ExitPlanMode', session_id: SESSION_ID });
+  assert.strictEqual(result.status, 0);
+  const out = JSON.parse(result.stdout.trim());
+  const approvedByMatch = out.additionalContext.match(/approved by: ([^.]+)/);
+  assert.ok(approvedByMatch, 'message should contain "approved by:"');
+  assert.ok(approvedByMatch[1].includes('plan-doc-reviewer'), 'missing list should include plan-doc-reviewer');
+  assert.ok(!approvedByMatch[1].includes('collie-reviewer'), 'missing list should NOT include already-approved collie-reviewer');
+});
+
+test('post-writing-plans-reviewer: ExitPlanMode silent when both reviewers approved', () => {
+  fs.mkdirSync(stateDir(), { recursive: true });
+  fs.writeFileSync(lastPlanFile(), JSON.stringify({
+    path: 'docs/plans/foo-plan.md',
+    written_at: new Date().toISOString(),
+    plan_doc_reviewer: { approved: true, approved_at: '2026-04-14T00:00:00Z' },
+    collie_reviewer:   { approved: true, approved_at: '2026-04-14T00:00:00Z' },
+  }), 'utf8');
+  const result = runHook({ tool_name: 'ExitPlanMode', session_id: SESSION_ID });
+  assert.strictEqual(result.status, 0);
+  assert.strictEqual(result.stdout.trim(), '', 'stdout must be empty when both reviewers approved');
 });

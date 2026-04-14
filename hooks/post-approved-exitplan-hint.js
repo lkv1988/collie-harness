@@ -22,16 +22,21 @@ async function main() {
     process.exit(0);
   }
 
-  // Only handle Agent tool
-  if (payload.tool_name !== 'Agent') {
-    process.exit(0);
-  }
-
-  // Only handle plan-doc-reviewer subagent
+  // Detect which reviewer completed: plan-doc-reviewer (Agent) or collie-reviewer (Skill)
+  const REVIEWER = {
+    'plan-doc-reviewer': { ownKey: 'plan_doc_reviewer', otherKey: 'collie_reviewer',   otherName: 'collie-reviewer (Mode=plan)' },
+    'collie-reviewer':   { ownKey: 'collie_reviewer',   otherKey: 'plan_doc_reviewer', otherName: 'plan-doc-reviewer' },
+  };
+  let source = null;
   const toolInput = payload.tool_input || {};
-  if (toolInput.subagent_type !== 'plan-doc-reviewer') {
-    process.exit(0);
+  if (payload.tool_name === 'Agent') {
+    if (toolInput.subagent_type === 'plan-doc-reviewer') source = 'plan-doc-reviewer';
   }
+  if (payload.tool_name === 'Skill') {
+    const skillName = toolInput.skill || toolInput.skill_name || '';
+    if (/collie-reviewer/.test(skillName)) source = 'collie-reviewer';
+  }
+  if (!source) process.exit(0);
 
   // Extract response content — may be string or object
   let responseContent = '';
@@ -53,10 +58,14 @@ async function main() {
     }
   }
 
-  // Check for Approved status
-  if (!responseContent.includes('**Status:** Approved')) {
-    process.exit(0);
+  // Check for approval based on source
+  let approved = false;
+  if (source === 'plan-doc-reviewer') {
+    approved = responseContent.includes('**Status:** Approved');
+  } else if (source === 'collie-reviewer') {
+    approved = /##\s*Collie Reviewer[\s\S]*?\*\*Status:\*\*\s*PASS\b/.test(responseContent);
   }
+  if (!approved) process.exit(0);
 
   // Approved — update state file
   const sessionId = payload.session_id || 'unknown';
@@ -76,11 +85,10 @@ async function main() {
     // file doesn't exist or is invalid — start fresh
   }
 
-  const updated = Object.assign({}, existing, {
-    reviewed: true,
-    approved: true,
-    approved_at: new Date().toISOString(),
-  });
+  const { ownKey, otherKey, otherName } = REVIEWER[source];
+  const now = new Date().toISOString();
+  const updated = Object.assign({}, existing);
+  updated[ownKey] = { approved: true, approved_at: now };
 
   try {
     fs.writeFileSync(stateFile, JSON.stringify(updated, null, 2), 'utf8');
@@ -88,11 +96,13 @@ async function main() {
     // best effort
   }
 
-  // Inject hint to call ExitPlanMode
-  const out = {
-    additionalContext:
-      '✅ [collie-harness] plan-doc-reviewer Approved — next step: you MUST call ExitPlanMode now. Do not skip this step.',
-  };
+  const otherDone = updated[otherKey] && updated[otherKey].approved === true;
+
+  const hint = otherDone
+    ? `✅ [collie-harness] both plan-doc-reviewer AND collie-reviewer approved — next step: you MUST call ExitPlanMode now.`
+    : `✅ [collie-harness] ${source} approved — still waiting on ${otherName}. Dispatch it now (in parallel is fine), then call ExitPlanMode.`;
+
+  const out = { additionalContext: hint };
   process.stdout.write(JSON.stringify(out) + '\n');
   process.exit(0);
 }

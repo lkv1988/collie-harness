@@ -32,8 +32,8 @@ No build step — pure Node.js, zero external dependencies.
 | Layer | What it does |
 |-------|-------------|
 | **0** | `acceptEdits` mode + escalation channel (`scripts/escalate.sh`) |
-| **1** | 3 chain-link hooks that bridge workflow gaps Claude Code doesn't close natively |
-| **2** | Rubric review gate (`agents/collie-rubric-reviewer.md`): 12 red-lines + 10 questions + ELEPHANT anti-sycophancy |
+| **1** | Chain-link hooks enforcing dual-reviewer handshake (plan-doc-reviewer + collie-reviewer) before ExitPlanMode |
+| **2** | `skills/collie-reviewer/` — single source of truth for Collie's 12 red-lines + 10 questions + Reflexion + ELEPHANT. `agents/collie-rubric-reviewer.md` is a thin shell delegating to this skill. |
 | **3** | Self-driven harness (`commands/collie-auto.md` + `skills/collie-queue/`) with CronCreate task queue |
 
 ## Workflow Sequence (enforced by hooks)
@@ -41,11 +41,14 @@ No build step — pure Node.js, zero external dependencies.
 ```
 /collie-auto "task"
   → superpowers:brainstorming
-  → superpowers:writing-plans   ← post-writing-plans-reviewer.js marks plan pending
-  → plan-doc-reviewer           ← post-approved-exitplan-hint.js hints ExitPlanMode
+  → superpowers:writing-plans   ← post-writing-plans-reviewer.js marks plan pending (both reviewers)
+  → PARALLEL:
+      plan-doc-reviewer (structural)   ← post-approved-exitplan-hint.js marks plan_doc_reviewer.approved
+      collie-reviewer (Collie rubric)  ← post-approved-exitplan-hint.js marks collie_reviewer.approved
+  → (only when BOTH approved)
   → ExitPlanMode                ← post-exitplan-gated-hint.js reminds gated-workflow
   → gated-workflow skill
-  → collie-rubric-reviewer (Opus)
+  → collie-rubric-reviewer (thin shell → collie-reviewer skill, code mode)
   → PASS → <promise>Collie: SHIP IT</promise>
      WARN/BLOCK → fix loop
 ```
@@ -57,8 +60,8 @@ No build step — pure Node.js, zero external dependencies.
 | `notification-escalate.js` | Notification | Routes to `escalate.sh` |
 | `pre-tool-quota-guard.js` | PreToolUse (all) | Blocks if rate-limited or budget >70% |
 | `post-tool-quota-tracker.js` | PostToolUse (all) | Accumulates token usage, detects rate-limit errors |
-| `post-writing-plans-reviewer.js` | PostToolUse Write/Edit + ExitPlanMode | Flags plan for review; warns if ExitPlanMode called without approval |
-| `post-approved-exitplan-hint.js` | PostToolUse Agent | Detects `plan-doc-reviewer` Approved; hints to call ExitPlanMode |
+| `post-writing-plans-reviewer.js` | PostToolUse Write/Edit + ExitPlanMode | Creates dual-reviewer state; warns if ExitPlanMode called before BOTH reviewers approve |
+| `post-approved-exitplan-hint.js` | PostToolUse Agent + PostToolUse Skill | Detects plan-doc-reviewer Approved OR collie-reviewer PASS; updates per-reviewer state; hints next step |
 | `post-exitplan-gated-hint.js` | PostToolUse ExitPlanMode | Reminds to call `gated-workflow` skill |
 | `stop-steps-counter.js` | Stop | Escalates on same error ×3 or 5+ steps without file changes |
 
@@ -80,7 +83,8 @@ All runtime state lives under `~/.collie-harness/`:
 
 ## Key Design Constraints
 
-- **Rubric red-lines** (BLOCK): 12 hard violations in `agents/collie-rubric-reviewer.md`. Any single red-line = automatic BLOCK.
+- **Rubric red-lines** (BLOCK): 12 hard violations in `skills/collie-reviewer/references/rubric-red-lines.md` (single source of truth). Any single red-line = automatic BLOCK.
+- **Dual reviewer at plan stage**: `plan-doc-reviewer` (structural) AND `collie-reviewer` (Collie rubric) must both approve before ExitPlanMode. Enforced by `post-writing-plans-reviewer.js` + `post-approved-exitplan-hint.js`.
 - **Quota guard** blocks at 70% of `daily_token_cap` (reserves 30% buffer). Rate-limit cool-down = 1 hour.
 - **Loop trap**: 3 identical error hashes in a row → WARN escalation; 5 steps without file changes → WARN escalation.
 - **Task queue** (`collie-queue`) runs at `concurrency=1` — never two collie sessions simultaneously.

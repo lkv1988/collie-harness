@@ -69,9 +69,9 @@ if (toolName === 'Write' || toolName === 'Edit' || toolName === 'MultiEdit') {
       fs.mkdirSync(sessionStateDir, { recursive: true });
       const state = {
         path: matched,
-        reviewed: false,
-        approved: false,
         written_at: new Date().toISOString(),
+        plan_doc_reviewer: { approved: false, approved_at: null },
+        collie_reviewer:   { approved: false, approved_at: null },
       };
       fs.writeFileSync(lastPlanFile, JSON.stringify(state, null, 2), 'utf8');
     }
@@ -86,35 +86,41 @@ if (toolName === 'Write' || toolName === 'Edit' || toolName === 'MultiEdit') {
 if (toolName === 'ExitPlanMode') {
   try {
     let needsWarn = true;
+    let missing = [];
 
     try {
       const state = JSON.parse(fs.readFileSync(lastPlanFile, 'utf8'));
-      if (state.reviewed === true) {
+      const planDocOk = state.plan_doc_reviewer && state.plan_doc_reviewer.approved === true;
+      const collieOk  = state.collie_reviewer  && state.collie_reviewer.approved === true;
+      if (planDocOk && collieOk) {
         needsWarn = false;
+      } else {
+        if (!planDocOk) missing.push('plan-doc-reviewer');
+        if (!collieOk)  missing.push('collie-reviewer');
       }
     } catch (e) {
       if (e.code !== 'ENOENT') {
         process.stderr.write('[collie-harness/post-writing-plans-reviewer] Could not parse last-plan.json: ' + e.message + '\n');
       }
+      missing = ['plan-doc-reviewer', 'collie-reviewer'];
     }
 
     if (needsWarn) {
-      process.stderr.write('[collie-harness] WARN: plan file not reviewed by plan-doc-reviewer before ExitPlanMode\n');
+      const missingList = missing.join(' + ');
+      process.stderr.write(`[collie-harness] WARN: plan file not approved by ${missingList} before ExitPlanMode\n`);
 
-      // Call escalate.sh (best-effort)
       try {
         execFileSync(escalateScript, [
           'WARN',
           'plan-not-reviewed-before-exit-plan-mode',
-          JSON.stringify({ session_id: sessionId }),
+          JSON.stringify({ session_id: sessionId, missing }),
         ], { stdio: 'inherit' });
       } catch (e) {
         process.stderr.write('[collie-harness/post-writing-plans-reviewer] escalate.sh failed: ' + e.message + '\n');
       }
 
-      // Soft WARN: inject additionalContext (not a block)
       const output = {
-        additionalContext: '⚠️ [collie-harness] plan file has NOT been reviewed by plan-doc-reviewer! You MUST run Agent(subagent_type=\'plan-doc-reviewer\', model=\'opus\') first, wait for Approved, then call ExitPlanMode. Calling ExitPlanMode without approval is a workflow violation.',
+        additionalContext: `⚠️ [collie-harness] plan file has NOT been approved by: ${missingList}. You MUST run BOTH Agent(subagent_type='plan-doc-reviewer', model='opus') AND Skill('collie-reviewer', Mode=plan), wait for BOTH to approve, then call ExitPlanMode. Calling ExitPlanMode without both approvals is a workflow violation.`,
       };
       process.stdout.write(JSON.stringify(output) + '\n');
     }
