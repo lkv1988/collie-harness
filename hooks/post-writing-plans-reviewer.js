@@ -3,8 +3,8 @@
 
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
 const { execFileSync } = require('child_process');
+const { stateDir } = require('./_state');
 
 // --- Read stdin payload ---
 let payload = {};
@@ -12,7 +12,7 @@ try {
   const raw = fs.readFileSync(0, 'utf8');
   payload = JSON.parse(raw);
 } catch (e) {
-  process.stderr.write('[kevin-proxy/post-writing-plans-reviewer] Failed to parse stdin: ' + e.message + '\n');
+  process.stderr.write('[kevin-harness/post-writing-plans-reviewer] Failed to parse stdin: ' + e.message + '\n');
   process.exit(0);
 }
 
@@ -23,13 +23,13 @@ const sessionId = payload.session_id || 'unknown';
 // --- Helpers ---
 const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT;
 if (!pluginRoot) {
-  process.stderr.write('[kevin-proxy/post-writing-plans-reviewer] WARN: CLAUDE_PLUGIN_ROOT not set, skipping\n');
+  process.stderr.write('[kevin-harness/post-writing-plans-reviewer] WARN: CLAUDE_PLUGIN_ROOT not set, skipping\n');
   process.exit(0);
 }
 const escalateScript = path.join(pluginRoot, 'scripts', 'escalate.sh');
 
-const stateDir = path.join(os.homedir(), '.kevin-proxy', 'state', sessionId);
-const lastPlanFile = path.join(stateDir, 'last-plan.json');
+const sessionStateDir = stateDir(sessionId);
+const lastPlanFile = path.join(sessionStateDir, 'last-plan.json');
 
 /**
  * Returns true if the given file path matches any plan file pattern.
@@ -66,7 +66,7 @@ if (toolName === 'Write' || toolName === 'Edit' || toolName === 'MultiEdit') {
     const matched = filePaths.find(isPlanFile);
 
     if (matched) {
-      fs.mkdirSync(stateDir, { recursive: true });
+      fs.mkdirSync(sessionStateDir, { recursive: true });
       const state = {
         path: matched,
         reviewed: false,
@@ -77,7 +77,7 @@ if (toolName === 'Write' || toolName === 'Edit' || toolName === 'MultiEdit') {
     }
     // If no match, exit silently
   } catch (e) {
-    process.stderr.write('[kevin-proxy/post-writing-plans-reviewer] Error in Write/Edit handler: ' + e.message + '\n');
+    process.stderr.write('[kevin-harness/post-writing-plans-reviewer] Error in Write/Edit handler: ' + e.message + '\n');
   }
   process.exit(0);
 }
@@ -94,12 +94,12 @@ if (toolName === 'ExitPlanMode') {
           needsWarn = false;
         }
       } catch (e) {
-        process.stderr.write('[kevin-proxy/post-writing-plans-reviewer] Could not parse last-plan.json: ' + e.message + '\n');
+        process.stderr.write('[kevin-harness/post-writing-plans-reviewer] Could not parse last-plan.json: ' + e.message + '\n');
       }
     }
 
     if (needsWarn) {
-      process.stderr.write('[kevin-proxy] WARN: plan file not reviewed by plan-doc-reviewer before ExitPlanMode\n');
+      process.stderr.write('[kevin-harness] WARN: plan file not reviewed by plan-doc-reviewer before ExitPlanMode\n');
 
       // Call escalate.sh (best-effort)
       try {
@@ -109,17 +109,17 @@ if (toolName === 'ExitPlanMode') {
           JSON.stringify({ session_id: sessionId }),
         ], { stdio: 'inherit' });
       } catch (e) {
-        process.stderr.write('[kevin-proxy/post-writing-plans-reviewer] escalate.sh failed: ' + e.message + '\n');
+        process.stderr.write('[kevin-harness/post-writing-plans-reviewer] escalate.sh failed: ' + e.message + '\n');
       }
 
       // Soft WARN: inject additionalContext (not a block)
       const output = {
-        additionalContext: '⚠️ [kevin-proxy] plan file has NOT been reviewed by plan-doc-reviewer! You MUST run Agent(subagent_type=\'plan-doc-reviewer\', model=\'opus\') first, wait for Approved, then call ExitPlanMode. Calling ExitPlanMode without approval is a workflow violation.',
+        additionalContext: '⚠️ [kevin-harness] plan file has NOT been reviewed by plan-doc-reviewer! You MUST run Agent(subagent_type=\'plan-doc-reviewer\', model=\'opus\') first, wait for Approved, then call ExitPlanMode. Calling ExitPlanMode without approval is a workflow violation.',
       };
       process.stdout.write(JSON.stringify(output) + '\n');
     }
   } catch (e) {
-    process.stderr.write('[kevin-proxy/post-writing-plans-reviewer] Error in ExitPlanMode handler: ' + e.message + '\n');
+    process.stderr.write('[kevin-harness/post-writing-plans-reviewer] Error in ExitPlanMode handler: ' + e.message + '\n');
   }
   process.exit(0);
 }

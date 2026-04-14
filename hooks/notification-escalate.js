@@ -9,12 +9,12 @@ try {
   const raw = fs.readFileSync(0, 'utf8');
   payload = JSON.parse(raw);
 } catch (e) {
-  process.stderr.write('[kevin-proxy/notification-escalate] Failed to parse stdin: ' + e.message + '\n');
+  process.stderr.write('[kevin-harness/notification-escalate] Failed to parse stdin: ' + e.message + '\n');
 }
 
 const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT;
 if (!pluginRoot) {
-  process.stderr.write('[kevin-proxy/notification-escalate] WARN: CLAUDE_PLUGIN_ROOT not set, skipping\n');
+  process.stderr.write('[kevin-harness/notification-escalate] WARN: CLAUDE_PLUGIN_ROOT not set, skipping\n');
   process.exit(0);
 }
 const escalate = path.join(pluginRoot, 'scripts', 'escalate.sh');
@@ -30,7 +30,7 @@ const context = JSON.stringify({
 try {
   execFileSync(escalate, [level, msg, context], { stdio: 'inherit' });
 } catch (e) {
-  process.stderr.write('[kevin-proxy/notification-escalate] escalate.sh failed: ' + e.message + '\n');
+  process.stderr.write('[kevin-harness/notification-escalate] escalate.sh failed: ' + e.message + '\n');
 }
 
 process.exit(0);

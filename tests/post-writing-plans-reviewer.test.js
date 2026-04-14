@@ -22,8 +22,8 @@ function setupMockPlugin() {
 }
 
 beforeEach(() => {
-  tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'kp-test-wpr-'));
-  tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'kp-root-wpr-'));
+  tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'kh-test-wpr-'));
+  tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'kh-root-wpr-'));
   setupMockPlugin();
 });
 
@@ -33,7 +33,7 @@ afterEach(() => {
 });
 
 function stateDir() {
-  return path.join(tmpHome, '.kevin-proxy', 'state', SESSION_ID);
+  return path.join(tmpHome, '.kevin-harness', 'state', SESSION_ID);
 }
 
 function lastPlanFile() {
@@ -58,7 +58,7 @@ test('post-writing-plans-reviewer: Write to plan file → last-plan.json written
     tool_name: 'Write',
     session_id: SESSION_ID,
     tool_input: {
-      file_path: 'docs/plans/2026-04-14-kevin-proxy-plan.md',
+      file_path: 'docs/plans/2026-04-14-kevin-harness-plan.md',
       content: '# Plan',
     },
   };
@@ -90,7 +90,7 @@ test('post-writing-plans-reviewer: ExitPlanMode with unreviewed plan → stdout 
   // Pre-create a last-plan.json with reviewed:false
   fs.mkdirSync(stateDir(), { recursive: true });
   fs.writeFileSync(lastPlanFile(), JSON.stringify({
-    path: 'docs/plans/2026-04-14-kevin-proxy-plan.md',
+    path: 'docs/plans/2026-04-14-kevin-harness-plan.md',
     reviewed: false,
     approved: false,
     written_at: new Date().toISOString(),
@@ -116,7 +116,7 @@ test('post-writing-plans-reviewer: ExitPlanMode with reviewed plan → stdout em
   // Pre-create a last-plan.json with reviewed:true
   fs.mkdirSync(stateDir(), { recursive: true });
   fs.writeFileSync(lastPlanFile(), JSON.stringify({
-    path: 'docs/plans/2026-04-14-kevin-proxy-plan.md',
+    path: 'docs/plans/2026-04-14-kevin-harness-plan.md',
     reviewed: true,
     approved: true,
     written_at: new Date().toISOString(),

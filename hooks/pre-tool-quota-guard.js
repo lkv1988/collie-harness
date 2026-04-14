@@ -4,16 +4,15 @@
 // This guard exists specifically to stop all tool calls cold when rate-limited.
 
 const fs = require('fs');
-const os = require('os');
-const path = require('path');
+const { quotaFile, budgetFile } = require('./_state');
 
-const STATE_FILE = path.join(os.homedir(), '.kevin-proxy', 'state', 'quota.json');
-const BUDGET_FILE = path.join(os.homedir(), '.kevin-proxy', 'config', 'budget.json');
+const STATE_FILE = quotaFile();
+const BUDGET_FILE = budgetFile();
 
 function block(reason) {
   process.stdout.write(JSON.stringify({
     decision: 'block',
-    reason: `⚠️ [kevin-proxy] quota guard: ${reason}. Check ~/.kevin-proxy/state/quota.json and ~/.kevin-proxy/escalations.log`,
+    reason: `⚠️ [kevin-harness] quota guard: ${reason}. Check ~/.kevin-harness/state/quota.json and ~/.kevin-harness/escalations.log`,
   }) + '\n');
   process.exit(0);
 }
@@ -31,7 +30,7 @@ function main() {
   try {
     quota = JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'));
   } catch (e) {
-    process.stderr.write('[kevin-proxy/pre-tool-quota-guard] WARNING: quota.json not found, no quota protection active\n');
+    process.stderr.write('[kevin-harness/pre-tool-quota-guard] WARNING: quota.json not found, no quota protection active\n');
     process.exit(0);
   }
 
@@ -78,7 +77,7 @@ function main() {
     budget = JSON.parse(fs.readFileSync(BUDGET_FILE, 'utf8'));
   } catch (e) {
     process.stdout.write(JSON.stringify({
-      additionalContext: '[kevin-proxy] WARNING: budget.json not found, cannot perform budget check. Please create ~/.kevin-proxy/config/budget.json, reference schema: {"daily_token_cap": 1000000, "weekly_token_cap": 5000000, "confirm_before_autoloop": true}',
+      additionalContext: '[kevin-harness] WARNING: budget.json not found, cannot perform budget check. Please create ~/.kevin-harness/config/budget.json, reference schema: {"daily_token_cap": 1000000, "weekly_token_cap": 5000000, "confirm_before_autoloop": true}',
     }) + '\n');
     process.exit(0);
   }

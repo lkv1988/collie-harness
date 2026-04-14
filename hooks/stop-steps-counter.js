@@ -3,8 +3,8 @@
 
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
 const { execFileSync } = require('child_process');
+const { stateDir } = require('./_state');
 
 // --- Read stdin payload ---
 let payload = {};
@@ -12,7 +12,7 @@ try {
   const raw = fs.readFileSync(0, 'utf8');
   payload = JSON.parse(raw);
 } catch (e) {
-  process.stderr.write('[kevin-proxy/stop-steps-counter] Failed to parse stdin: ' + e.message + '\n');
+  process.stderr.write('[kevin-harness/stop-steps-counter] Failed to parse stdin: ' + e.message + '\n');
   process.exit(0);
 }
 
@@ -22,13 +22,13 @@ const transcriptPath = payload.transcript_path || '';
 // --- Paths ---
 const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT;
 if (!pluginRoot) {
-  process.stderr.write('[kevin-proxy/stop-steps-counter] WARN: CLAUDE_PLUGIN_ROOT not set, skipping\n');
+  process.stderr.write('[kevin-harness/stop-steps-counter] WARN: CLAUDE_PLUGIN_ROOT not set, skipping\n');
   process.exit(0);
 }
 const escalateScript = path.join(pluginRoot, 'scripts', 'escalate.sh');
 
-const stateDir = path.join(os.homedir(), '.kevin-proxy', 'state', sessionId);
-const counterFile = path.join(stateDir, 'counter.json');
+const sessionStateDir = stateDir(sessionId);
+const counterFile = path.join(sessionStateDir, 'counter.json');
 
 // --- Simple hash: sum of char codes ---
 function simpleHash(str) {
@@ -46,7 +46,7 @@ function loadState() {
       return JSON.parse(fs.readFileSync(counterFile, 'utf8'));
     }
   } catch (e) {
-    process.stderr.write('[kevin-proxy/stop-steps-counter] Could not read counter.json: ' + e.message + '\n');
+    process.stderr.write('[kevin-harness/stop-steps-counter] Could not read counter.json: ' + e.message + '\n');
   }
   return {
     last_tool_errors: [],
@@ -60,10 +60,10 @@ function loadState() {
 // --- Save counter state ---
 function saveState(state) {
   try {
-    fs.mkdirSync(stateDir, { recursive: true });
+    fs.mkdirSync(sessionStateDir, { recursive: true });
     fs.writeFileSync(counterFile, JSON.stringify(state, null, 2), 'utf8');
   } catch (e) {
-    process.stderr.write('[kevin-proxy/stop-steps-counter] Could not write counter.json: ' + e.message + '\n');
+    process.stderr.write('[kevin-harness/stop-steps-counter] Could not write counter.json: ' + e.message + '\n');
   }
 }
 
@@ -83,7 +83,7 @@ function parseTranscriptTail(filePath, n) {
       }
     }
   } catch (e) {
-    process.stderr.write('[kevin-proxy/stop-steps-counter] Transcript parse error: ' + e.message + '\n');
+    process.stderr.write('[kevin-harness/stop-steps-counter] Transcript parse error: ' + e.message + '\n');
   }
   return results;
 }
@@ -197,7 +197,7 @@ function callEscalate(level, msg, context) {
   try {
     execFileSync(escalateScript, [level, msg, JSON.stringify(context)], { stdio: 'inherit' });
   } catch (e) {
-    process.stderr.write('[kevin-proxy/stop-steps-counter] escalate.sh failed: ' + e.message + '\n');
+    process.stderr.write('[kevin-harness/stop-steps-counter] escalate.sh failed: ' + e.message + '\n');
   }
 }
 

@@ -1,4 +1,4 @@
-# kevin-proxy
+# kevin-harness
 
 Kevin 风格自主开发 agent harness — 作为 Claude Code plugin 分发。
 
@@ -9,13 +9,20 @@ Kevin 风格自主开发 agent harness — 作为 Claude Code plugin 分发。
 - **Layer 2**: `kevin-rubric-reviewer` agent（opus, rubric 式审美门，反附和）
 - **Layer 3**: `/kevin-auto` slash command（ralph-loop 封装）+ CronCreate 任务队列
 
-## 安装（开发模式）
+## 安装
 
+### 方式 A：Marketplace 安装（推荐，需要先发到 GitHub）
 ```bash
-ln -s ~/git/kevin-proxy ~/.claude/plugins/installed/kevin-proxy
+/plugin marketplace add <USER>/kevin-harness
+/plugin install kevin-harness@kevin-marketplace
 ```
 
-重启 Claude Code，运行 `/plugin list` 确认 `kevin-proxy@0.1.0` 出现。
+### 方式 B：本地开发 symlink
+```bash
+ln -s ~/git/kevin-harness ~/.claude/plugins/installed/kevin-harness
+```
+
+重启 Claude Code，运行 `/plugin list` 确认 `kevin-harness@0.1.0` 出现。
 
 ## 配置
 
@@ -25,11 +32,11 @@ ln -s ~/git/kevin-proxy ~/.claude/plugins/installed/kevin-proxy
 export KEVIN_ESCALATE_CMD=~/bin/my-escalate.sh
 ```
 
-Plugin 内置 stub，只写日志到 `~/.kevin-proxy/escalations.log`。
+Plugin 内置 stub，只写日志到 `~/.kevin-harness/escalations.log`。
 
 ### Quota 预算（必填，首次运行前）
 
-创建 `~/.kevin-proxy/config/budget.json`：
+创建 `~/.kevin-harness/config/budget.json`：
 
 ```json
 {
@@ -47,16 +54,16 @@ Plugin 内置 stub，只写日志到 `~/.kevin-proxy/escalations.log`。
 
 # 测试 escalation 通道
 ${CLAUDE_PLUGIN_ROOT}/scripts/escalate.sh TEST "hello" '{"test":true}'
-tail ~/.kevin-proxy/escalations.log
+tail ~/.kevin-harness/escalations.log
 
 # 运行单元测试
-cd ~/git/kevin-proxy && node --test tests/*.test.js
+cd ~/git/kevin-harness && node --test tests/*.test.js
 ```
 
 ## 文件结构
 
 ```
-~/git/kevin-proxy/
+~/git/kevin-harness/
 ├── .claude-plugin/plugin.json
 ├── agents/kevin-rubric-reviewer.md   # opus rubric reviewer
 ├── commands/kevin-auto.md            # /kevin-auto slash command

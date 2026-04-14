@@ -13,7 +13,7 @@ const SESSION_ID = 'test-session-123';
 let tmpHome;
 
 beforeEach(() => {
-  tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'kp-test-gated-'));
+  tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'kh-test-gated-'));
 });
 
 afterEach(() => {
@@ -21,7 +21,7 @@ afterEach(() => {
 });
 
 function phaseFile() {
-  return path.join(tmpHome, '.kevin-proxy', 'state', SESSION_ID, 'phase.json');
+  return path.join(tmpHome, '.kevin-harness', 'state', SESSION_ID, 'phase.json');
 }
 
 function runHook(payload) {

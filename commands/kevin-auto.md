@@ -59,7 +59,7 @@ The following conditions automatically trigger escalation (detected by stop-step
 - 5 consecutive steps with no file changes → escalate WARN "no_progress"
 - Reaches `--max-iterations` (default 20) → escalate WARN "max_iterations"
 
-These are automatically detected by `~/.kevin-proxy/hooks/stop-steps-counter.js` with no manual handling needed.
+These are automatically detected by the `stop-steps-counter.js` hook with no manual handling needed.
 
 ## Arguments
 

@@ -1,17 +1,17 @@
 'use strict';
 
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
 const { execFileSync } = require('child_process');
+const { STATE_HOME, quotaFile, budgetFile } = require('./_state');
 
-const STATE_DIR = path.join(os.homedir(), '.kevin-proxy', 'state');
-const STATE_FILE = path.join(STATE_DIR, 'quota.json');
-const BUDGET_FILE = path.join(os.homedir(), '.kevin-proxy', 'config', 'budget.json');
+const STATE_DIR = path.join(STATE_HOME, 'state');
+const STATE_FILE = quotaFile();
+const BUDGET_FILE = budgetFile();
 
 const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT;
 if (!pluginRoot) {
-  process.stderr.write('[kevin-proxy/post-tool-quota-tracker] WARN: CLAUDE_PLUGIN_ROOT not set, skipping\n');
+  process.stderr.write('[kevin-harness/post-tool-quota-tracker] WARN: CLAUDE_PLUGIN_ROOT not set, skipping\n');
   process.exit(0);
 }
 
@@ -116,7 +116,7 @@ function main() {
     const raw = fs.readFileSync(0, 'utf8');
     payload = JSON.parse(raw);
   } catch (e) {
-    process.stderr.write('[kevin-proxy/post-tool-quota-tracker] Failed to parse stdin: ' + e.message + '\n');
+    process.stderr.write('[kevin-harness/post-tool-quota-tracker] Failed to parse stdin: ' + e.message + '\n');
     process.exit(0);
   }
 
@@ -138,13 +138,13 @@ function main() {
     try {
       writeQuota(quota);
     } catch (e) {
-      process.stderr.write('[kevin-proxy/post-tool-quota-tracker] Failed to write quota.json: ' + e.message + '\n');
+      process.stderr.write('[kevin-harness/post-tool-quota-tracker] Failed to write quota.json: ' + e.message + '\n');
     }
     escalate('CRITICAL', 'rate_limit_detected', {
       tool: payload.tool_name,
       session_id: payload.session_id,
     });
-    process.stderr.write('[kevin-proxy] CRITICAL: rate limit detected, tool calls blocked for 1 hour\n');
+    process.stderr.write('[kevin-harness] CRITICAL: rate limit detected, tool calls blocked for 1 hour\n');
     process.exit(0);
   }
 
@@ -174,7 +174,7 @@ function main() {
         daily_token_cap: budget.daily_token_cap,
         session_id: payload.session_id,
       });
-      process.stderr.write('[kevin-proxy] WARN: daily token budget exhausted, quota.exhausted set to true\n');
+      process.stderr.write('[kevin-harness] WARN: daily token budget exhausted, quota.exhausted set to true\n');
     }
   }
 
@@ -182,7 +182,7 @@ function main() {
   try {
     writeQuota(quota);
   } catch (e) {
-    process.stderr.write('[kevin-proxy/post-tool-quota-tracker] Failed to write quota.json: ' + e.message + '\n');
+    process.stderr.write('[kevin-harness/post-tool-quota-tracker] Failed to write quota.json: ' + e.message + '\n');
   }
 
   // Always exit 0 — this hook tracks, never blocks
@@ -193,6 +193,6 @@ try {
   main();
 } catch (e) {
   // Never crash — swallow all uncaught errors
-  process.stderr.write('[kevin-proxy/post-tool-quota-tracker] Uncaught error: ' + e.message + '\n');
+  process.stderr.write('[kevin-harness/post-tool-quota-tracker] Uncaught error: ' + e.message + '\n');
   process.exit(0);
 }

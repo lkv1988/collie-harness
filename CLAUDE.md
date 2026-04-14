@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Purpose
 
-**kevin-proxy** is a Claude Code plugin that automates the full "Kevin-style" feature development workflow: brainstorm → plan → plan review → gated implementation → rubric review. It enforces workflow integrity via hooks, quota safety, loop detection, and a rubric-based final review agent.
+**kevin-harness** is a Claude Code plugin that automates the full "Kevin-style" feature development workflow: brainstorm → plan → plan review → gated implementation → rubric review. It enforces workflow integrity via hooks, quota safety, loop detection, and a rubric-based final review agent.
 
 ## Development Commands
 
@@ -19,10 +19,10 @@ node --test tests/pre-tool-quota-guard.test.js
 ./tests/e2e/smoke.sh
 
 # Install as a development plugin (Claude Code v2.1+ auto-discovers)
-ln -s ~/git/kevin-proxy ~/.claude/plugins/installed/kevin-proxy
+ln -s ~/git/kevin-harness ~/.claude/plugins/installed/kevin-harness
 
 # Verify plugin is loaded inside Claude Code
-/plugin list   # Should show kevin-proxy@0.1.0
+/plugin list   # Should show kevin-harness@0.1.0
 ```
 
 No build step — pure Node.js, zero external dependencies.
@@ -64,10 +64,10 @@ No build step — pure Node.js, zero external dependencies.
 
 ## State Files (runtime, not committed)
 
-All runtime state lives under `~/.kevin-proxy/`:
+All runtime state lives under `~/.kevin-harness/`:
 
 ```
-~/.kevin-proxy/
+~/.kevin-harness/
   config/budget.json           # Token quota limits (daily/weekly caps)
   state/quota.json             # Live token usage + rate-limit timestamps
   state/{sessionId}/
@@ -93,11 +93,14 @@ All runtime state lives under `~/.kevin-proxy/`:
 #    "permissions": { "defaultMode": "acceptEdits" }
 
 # 2. Create budget config
-mkdir -p ~/.kevin-proxy/config
-cat > ~/.kevin-proxy/config/budget.json << 'EOF'
+mkdir -p ~/.kevin-harness/config
+cat > ~/.kevin-harness/config/budget.json << 'EOF'
 { "daily_token_cap": 1000000, "weekly_token_cap": 5000000, "confirm_before_autoloop": true }
 EOF
 
 # 3. (Optional) Custom escalation handler
 export KEVIN_ESCALATE_CMD="your-notification-command"
+
+# 3b. (Optional) Override state directory location
+export KEVIN_HARNESS_HOME="~/.my-harness"  # defaults to ~/.kevin-harness
 ```

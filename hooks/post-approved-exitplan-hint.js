@@ -1,8 +1,8 @@
 'use strict';
 
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
+const { stateDir } = require('./_state');
 async function main() {
   // Read full stdin
   const chunks = [];
@@ -60,15 +60,15 @@ async function main() {
 
   // Approved — update state file
   const sessionId = payload.session_id || 'unknown';
-  const stateDir = path.join(os.homedir(), '.kevin-proxy', 'state', sessionId);
+  const sessionStateDir = stateDir(sessionId);
 
   try {
-    fs.mkdirSync(stateDir, { recursive: true });
+    fs.mkdirSync(sessionStateDir, { recursive: true });
   } catch (_) {
     // best effort
   }
 
-  const stateFile = path.join(stateDir, 'last-plan.json');
+  const stateFile = path.join(sessionStateDir, 'last-plan.json');
   let existing = {};
   try {
     existing = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
@@ -91,7 +91,7 @@ async function main() {
   // Inject hint to call ExitPlanMode
   const out = {
     additionalContext:
-      '✅ [kevin-proxy] plan-doc-reviewer Approved — next step: you MUST call ExitPlanMode now. Do not skip this step.',
+      '✅ [kevin-harness] plan-doc-reviewer Approved — next step: you MUST call ExitPlanMode now. Do not skip this step.',
   };
   process.stdout.write(JSON.stringify(out) + '\n');
   process.exit(0);

@@ -15,8 +15,8 @@ let tmpHome;
 let tmpRoot;
 
 beforeEach(() => {
-  tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'kp-test-stop-'));
-  tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'kp-root-stop-'));
+  tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'kh-test-stop-'));
+  tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'kh-root-stop-'));
 
   const scriptsDir = path.join(tmpRoot, 'scripts');
   fs.mkdirSync(scriptsDir, { recursive: true });
@@ -34,7 +34,7 @@ afterEach(() => {
 });
 
 function stateDir() {
-  return path.join(tmpHome, '.kevin-proxy', 'state', SESSION_ID);
+  return path.join(tmpHome, '.kevin-harness', 'state', SESSION_ID);
 }
 
 function makeTranscriptFile(lines) {

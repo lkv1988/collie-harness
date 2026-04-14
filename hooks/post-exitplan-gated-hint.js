@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
+const { stateDir } = require('./_state');
 
 let input = '';
 process.stdin.setEncoding('utf8');
@@ -16,11 +16,11 @@ process.stdin.on('end', () => {
     // ignore parse errors
   }
 
-  const stateDir = path.join(os.homedir(), '.kevin-proxy', 'state', sessionId);
+  const sessionStateDir = stateDir(sessionId);
   try {
-    fs.mkdirSync(stateDir, { recursive: true });
+    fs.mkdirSync(sessionStateDir, { recursive: true });
     fs.writeFileSync(
-      path.join(stateDir, 'phase.json'),
+      path.join(sessionStateDir, 'phase.json'),
       JSON.stringify({ phase: 'post-exit-plan', at: new Date().toISOString() })
     );
   } catch (_) {
@@ -28,7 +28,7 @@ process.stdin.on('end', () => {
   }
 
   process.stdout.write(JSON.stringify({
-    additionalContext: '✅ [kevin-proxy] ExitPlanMode done — next step: must call gated-workflow skill (~/.claude/skills/gated-workflow/SKILL.md). Skipping = red-line violation.'
+    additionalContext: '✅ [kevin-harness] ExitPlanMode done — next step: must call gated-workflow skill (~/.claude/skills/gated-workflow/SKILL.md). Skipping = red-line violation.'
   }));
 
   process.exit(0);

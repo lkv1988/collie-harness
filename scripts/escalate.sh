@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# kevin-proxy escalation dispatcher
+# kevin-harness escalation dispatcher
 # Supports user override via $KEVIN_ESCALATE_CMD environment variable.
 #
 # Usage: escalate.sh <LEVEL> <MESSAGE> [CONTEXT_JSON]
@@ -17,7 +17,7 @@ MSG="${2:-no-message}"
 CONTEXT="${3:-}"
 
 # Ensure log directory exists
-LOG_DIR="${HOME}/.kevin-proxy"
+LOG_DIR="${KEVIN_HARNESS_HOME:-${HOME}/.kevin-harness}"
 mkdir -p "${LOG_DIR}"
 
 # Structured log entry
@@ -34,7 +34,7 @@ if [[ -n "${KEVIN_ESCALATE_CMD:-}" && -x "${KEVIN_ESCALATE_CMD}" ]]; then
 fi
 
 # Desktop notification fallback (macOS terminal-notifier or osascript)
-NOTIFY_TITLE="kevin-proxy [${LEVEL}]"
+NOTIFY_TITLE="kevin-harness [${LEVEL}]"
 NOTIFY_BODY="${MSG}"
 
 if command -v terminal-notifier >/dev/null 2>&1; then

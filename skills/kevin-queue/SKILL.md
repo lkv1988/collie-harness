@@ -1,6 +1,6 @@
 ---
 name: kevin-queue
-description: "CronCreate task queue scheduler skill. Scans tasks in ~/.kevin-proxy/queue/*.md, schedules /kevin-auto execution via CronCreate tool. Supports scheduled tasks, concurrency=1 protection, and daily token budget checks."
+description: "CronCreate task queue scheduler skill. Scans tasks in ~/.kevin-harness/queue/*.md, schedules /kevin-auto execution via CronCreate tool. Supports scheduled tasks, concurrency=1 protection, and daily token budget checks."
 ---
 
 # Kevin Queue Skill
@@ -9,7 +9,7 @@ Unattended task scheduler. Write requirements to queue files, set timing, and Cl
 
 ## Task File Format
 
-Queue files are stored in `~/.kevin-proxy/queue/` directory, each file is one task.
+Queue files are stored in `~/.kevin-harness/queue/` directory, each file is one task.
 
 ### File Format (YAML frontmatter + optional body)
 
@@ -43,7 +43,7 @@ Any additional context for the task goes here.
 
 ### 1. Create Task File
 
-Manually create `~/.kevin-proxy/queue/task-001.md` with task information.
+Manually create `~/.kevin-harness/queue/task-001.md` with task information.
 
 ### 2. Trigger Queue Execution
 
@@ -56,31 +56,31 @@ Use kevin-queue skill to check and schedule pending tasks
 ### 3. Check Execution Status
 
 ```bash
-ls ~/.kevin-proxy/queue/
-grep "^status:" ~/.kevin-proxy/queue/*.md
-tail ~/.kevin-proxy/escalations.log
+ls ~/.kevin-harness/queue/
+grep "^status:" ~/.kevin-harness/queue/*.md
+tail ~/.kevin-harness/escalations.log
 ```
 
 ## Execution Flow
 
 When this skill is invoked:
 
-1. **Scan Queue**: Read `~/.kevin-proxy/queue/*.md`, find tasks with `status: pending` and `scheduled_at <= now`
+1. **Scan Queue**: Read `~/.kevin-harness/queue/*.md`, find tasks with `status: pending` and `scheduled_at <= now`
 
 2. **Concurrency Check** (CRITICAL):
-   - Check if `~/.kevin-proxy/state/scheduled_tasks.lock` exists
+   - Check if `~/.kevin-harness/state/scheduled_tasks.lock` exists
    - If exists: a task is running, skip this scheduling and output notice
    - Lock file format: `{ task_id, started_at, pid }`
    - Lock timeout: if lock file is not updated for 2+ hours, treat as zombie lock, delete and continue
 
 3. **Budget Check**:
-   - Read `~/.kevin-proxy/state/quota.json`
+   - Read `~/.kevin-harness/state/quota.json`
    - If `exhausted: true` → stop scheduling, escalate WARN "quota_exhausted"
-   - If `daily_input_tokens > daily_token_cap * 0.7` (read from `~/.kevin-proxy/config/budget.json`) → stop scheduling, escalate WARN "budget_70pct"
+   - If `daily_input_tokens > daily_token_cap * 0.7` (read from `~/.kevin-harness/config/budget.json`) → stop scheduling, escalate WARN "budget_70pct"
 
 4. **Update Task Status**: Set first matching task status to `running`
 
-5. **Write Lock File**: `~/.kevin-proxy/state/scheduled_tasks.lock`
+5. **Write Lock File**: `~/.kevin-harness/state/scheduled_tasks.lock`
 
 6. **Schedule Using CronCreate Tool**:
 
@@ -94,7 +94,7 @@ CronCreate({
 
 Actual prompt content injected into `<<autonomous-loop>>`:
 
-> Execute kevin-proxy task queue task {task_id}:
+> Execute kevin-harness task queue task {task_id}:
 >
 > Task file: {task_file_path}
 > Prompt: {task.prompt}
@@ -104,14 +104,14 @@ Actual prompt content injected into `<<autonomous-loop>>`:
 > 1. cd to {task.project_dir}
 > 2. Run /kevin-auto "{task.prompt}" --max-iterations {task.max_iterations}
 > 3. After completion, update task file status to "done"
-> 4. Delete ~/.kevin-proxy/state/scheduled_tasks.lock
+> 4. Delete ~/.kevin-harness/state/scheduled_tasks.lock
 
 7. **Completion Notice**: Output list of scheduled tasks
 
 ## Guardrails (Hard Constraints)
 
 - **Concurrency = 1**: Only one task can run simultaneously (lock file protection)
-- **Allowlist**: Only execute `project_dir` listed in `~/.kevin-proxy/queue/allowlist.txt`
+- **Allowlist**: Only execute `project_dir` listed in `~/.kevin-harness/queue/allowlist.txt`
   - If allowlist.txt does not exist: prompt Kevin to create allowlist before execution
   - allowlist.txt format: one absolute path per line
 - **Budget Protection**: daily tokens > 70% → stop (reserves buffer for daily interaction)
@@ -119,7 +119,7 @@ Actual prompt content injected into `<<autonomous-loop>>`:
 
 ## Required Setup Before First Use
 
-1. Create `~/.kevin-proxy/config/budget.json`:
+1. Create `~/.kevin-harness/config/budget.json`:
 ```json
 {
   "daily_token_cap": 1000000,
@@ -128,7 +128,7 @@ Actual prompt content injected into `<<autonomous-loop>>`:
 }
 ```
 
-2. Create `~/.kevin-proxy/queue/allowlist.txt` (one project path per line):
+2. Create `~/.kevin-harness/queue/allowlist.txt` (one project path per line):
 ```
 /path/to/project-a
 /path/to/project-b
@@ -136,14 +136,14 @@ Actual prompt content injected into `<<autonomous-loop>>`:
 
 3. Test escalation channel is working:
 ```bash
-~/git/kevin-proxy/scripts/escalate.sh TEST "queue test" '{}'
+~/git/kevin-harness/scripts/escalate.sh TEST "queue test" '{}'
 ```
 
 ## Troubleshooting
 
 | Symptom | Check |
 |---------|-------|
-| Task not being scheduled | `grep "^status:" ~/.kevin-proxy/queue/*.md` verify it's pending |
-| Stuck running for long | Check lock file: `cat ~/.kevin-proxy/state/scheduled_tasks.lock` |
-| Escalation not triggered | `tail ~/.kevin-proxy/escalations.log` |
-| Budget check fails | Verify `~/.kevin-proxy/config/budget.json` exists |
+| Task not being scheduled | `grep "^status:" ~/.kevin-harness/queue/*.md` verify it's pending |
+| Stuck running for long | Check lock file: `cat ~/.kevin-harness/state/scheduled_tasks.lock` |
+| Escalation not triggered | `tail ~/.kevin-harness/escalations.log` |
+| Budget check fails | Verify `~/.kevin-harness/config/budget.json` exists |

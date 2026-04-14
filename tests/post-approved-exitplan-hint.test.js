@@ -13,7 +13,7 @@ const SESSION_ID = 'test-session-123';
 let tmpHome;
 
 beforeEach(() => {
-  tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'kp-test-appr-'));
+  tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'kh-test-appr-'));
 });
 
 afterEach(() => {
@@ -21,7 +21,7 @@ afterEach(() => {
 });
 
 function stateDir() {
-  return path.join(tmpHome, '.kevin-proxy', 'state', SESSION_ID);
+  return path.join(tmpHome, '.kevin-harness', 'state', SESSION_ID);
 }
 
 function lastPlanFile() {

@@ -14,11 +14,11 @@ let tmpHome;
 let tmpRoot;
 
 beforeEach(() => {
-  tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'kp-test-quota-'));
-  tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'kp-root-quota-'));
+  tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'kh-test-quota-'));
+  tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'kh-root-quota-'));
 
-  fs.mkdirSync(path.join(tmpHome, '.kevin-proxy', 'state'), { recursive: true });
-  fs.mkdirSync(path.join(tmpHome, '.kevin-proxy', 'config'), { recursive: true });
+  fs.mkdirSync(path.join(tmpHome, '.kevin-harness', 'state'), { recursive: true });
+  fs.mkdirSync(path.join(tmpHome, '.kevin-harness', 'config'), { recursive: true });
 
   const scriptsDir = path.join(tmpRoot, 'scripts');
   fs.mkdirSync(scriptsDir, { recursive: true });
@@ -36,7 +36,7 @@ afterEach(() => {
 });
 
 function quotaFile() {
-  return path.join(tmpHome, '.kevin-proxy', 'state', 'quota.json');
+  return path.join(tmpHome, '.kevin-harness', 'state', 'quota.json');
 }
 
 function runHook(payload) {

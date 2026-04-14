@@ -1,11 +1,12 @@
 {
-  "name": "kevin-proxy",
+  "name": "kevin-harness",
   "version": "0.1.0",
-  "description": "Kevin 风格自主开发 agent harness（acceptEdits + gated workflow 断链修复 + rubric reviewer + ralph/cron harness + quota guard）",
-  "author": {
-    "name": "kevin"
-  },
-  "keywords": ["workflow", "automation", "review", "guardrails"],
+  "description": "Kevin-style autonomous development agent harness: rubric review + budget guardrails + loop detection",
+  "author": { "name": "kevin" },
+  "homepage": "https://github.com/<USER>/kevin-harness",
+  "repository": "https://github.com/<USER>/kevin-harness.git",
+  "license": "MIT",
+  "keywords": ["workflow", "automation", "review", "guardrails", "kevin"],
   "agents": ["./agents/kevin-rubric-reviewer.md"],
   "commands": ["./commands/"],
   "skills": ["./skills/"]
