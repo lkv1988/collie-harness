@@ -21,6 +21,18 @@ description: Post-planmode implementation workflow with quality gates. Use immed
 
 阅读计划文档，用 `TaskCreate` 建立整个实施阶段的 todo list。**List 不怕长，怕的是遗漏。**
 
+### 行号记录（与建 list 同步完成）
+
+Read 工具的输出带行号。阅读 plan 时，对每个有代码改动的 task，直接记下其在 plan 文件里的行号范围（如 `lines 45-103`）。记录格式：
+
+```
+task1: lines 45-103
+task2: lines 104-158
+task3: lines 159-201
+```
+
+⚠️ 这些行号对应 `$PLAN_SOURCE`，`cp` 归档后 `$ARCHIVE_PATH` 内容完全一致，行号直接适用。Step 3 dispatch 时用于 subagent 精确读取，主 session 只需记几个数字，不需要重新提取内容。
+
 ### 依赖分析（建 list 前必做）
 
 识别 task 间的依赖关系：
@@ -82,6 +94,10 @@ cp "$PLAN_SOURCE" "$ARCHIVE_PATH"
 
 完成后立即将 task0 标记为 completed。
 
+⚠️ **`$ARCHIVE_PATH` 在 Step 3 有两个用途**：
+1. 主 session dispatch 实现 subagent 时，连同 Step 1 记录的该 task 行号范围一起传入；subagent 用 `Read(path, offset, limit)` 精确读取对应段落，作为 VBC 的 acceptance criteria 来源（主 session 不提取内容，零 context 膨胀）
+2. CR subagent 需要全局视角，直接传入路径，按需读取
+
 ---
 
 ## Step 3：执行计划（GATE 4）
@@ -95,7 +111,40 @@ cp "$PLAN_SOURCE" "$ARCHIVE_PATH"
 2. 调用 `superpowers:dispatching-parallel-agents`，一次性 dispatch 整批
 3. 等本批全部完成后，进入下一批
 
-⚠️ **Worktree 路径传递**：每个 subagent 的 prompt 中必须包含当前 worktree 的绝对路径，要求 subagent 在该目录下工作，否则会破坏 worktree 隔离。
+⚠️ **强制注入到每个实现 subagent prompt 的三项参数**（缺一不可）：
+
+- **Worktree 路径**：subagent 必须在该目录下工作，否则破坏 worktree 隔离
+- **`$ARCHIVE_PATH`**（plan 归档绝对路径）：subagent 从该文件读取 plan 段落
+- **Task 行号范围**（Step 1 记录的 `lines X-Y`）：subagent 用此范围精确定位，无需 grep
+
+### Dispatch prompt 模板（每个实现 subagent）
+
+```
+Worktree: <绝对路径>
+Plan archive: <$ARCHIVE_PATH 绝对路径>
+Plan lines for this task: <lines X-Y>
+
+Your task: [task N] <一句话概要>
+
+在 worktree 目录下执行本 task。调用 superpowers:verification-before-completion 时，
+"Re-read plan" 步骤必须先执行：
+  Read(file=Plan archive, offset=X-1, limit=Y-X+1)
+读取本 task 对应的 plan 原文段落，以其中的 acceptance criteria 逐条生成 checklist 并验证。
+不得只验 prompt 里的任务概要描述。
+```
+
+### CR subagent 的 prompt 模板
+
+```
+Worktree: <绝对路径>
+Plan archive: <$ARCHIVE_PATH 绝对路径>
+Review target: [task N] 的实现
+
+请 Read Plan archive 中与 task N 相关的段落，对照实现做完整性和质量审查。
+调用 superpowers:requesting-code-review。
+```
+
+CR subagent 需要全局视角（跨 task 一致性），直接传路径让它按需读取比 inline 更合适。
 
 ---
 
@@ -106,6 +155,8 @@ cp "$PLAN_SOURCE" "$ARCHIVE_PATH"
 subagent 内部按 TDD 流程执行，缺一不可：
 1. 调用 `superpowers:test-driven-development` — 先写失败测试，再写最小实现使测试通过
 2. 调用 `superpowers:verification-before-completion` — 提供新鲜的验证证据后才能声明完成
+   - VBC 的 "Re-read plan" 步骤：用 prompt 里的 `Plan archive` 路径和 `Plan lines` 行号，执行 `Read(offset=X-1, limit=Y-X+1)` 读取本 task 对应 plan 段落，以其中 acceptance criteria 逐条生成 checklist 并验证
+   - ⛔ 只验 prompt 里的任务概要描述 = 退化为 task-level 自证 = VBC 失效
 
 ### [task N-CR]（CR task）
 
