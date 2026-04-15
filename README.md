@@ -2,12 +2,48 @@
 
 Collie 风格自主开发 agent harness — 作为 Claude Code plugin 分发。
 
-## 功能
+brainstorm → plan → 双 reviewer 审查 → gated 实施 → rubric 代码审查，每一步都有 hook 护栏强制执行。
 
-- **Layer 0**: `acceptEdits` 模式 + escalation 通道
-- **Layer 1**: hook 链强制双 reviewer 握手（collie-harness:plan-doc-reviewer + collie-harness:review 双方通过才允许 ExitPlanMode）
-- **Layer 2**: `skills/review/` — Collie 12 红线 + 10 问题 + ELEPHANT 的唯一真源；plan 阶段和 code 阶段都直接作为 skill 调用
-- **Layer 3**: `/collie-harness:auto` slash command（ralph-loop 封装）+ CronCreate 任务队列
+## 安装
+
+### 前置依赖
+
+collie-harness 依赖以下两个 plugin，必须先装好：
+
+```bash
+# brainstorming / writing-plans / gated-workflow 流程支撑
+/plugin install superpowers@claude-plugins-official
+# /collie-harness:auto 自驱循环机制
+/plugin install ralph-loop@claude-plugins-official
+```
+
+确认已加载：`/plugin list` 应同时显示 `superpowers` 和 `ralph-loop`。
+
+### 安装 collie-harness
+
+```bash
+claude plugin install https://github.com/lkv1988/collie-harness
+```
+
+## 配置
+
+### acceptEdits 模式（必填）
+
+在 `~/.claude/settings.json` 加入：
+
+```json
+"permissions": { "defaultMode": "acceptEdits" }
+```
+
+没有这个配置，Layer 0 的自动执行不会生效。
+
+### Escalation 通道（可选）
+
+```bash
+export COLLIE_ESCALATE_CMD=~/bin/my-escalate.sh
+```
+
+Plugin 内置 stub，只写日志到 `~/.collie-harness/escalations.log`。
 
 ## 使用
 
@@ -46,79 +82,31 @@ hook 的 warn 不是报错，是护栏：跳过任意一步都会被拦截提示
 
 任何 plan 若改动用户可见行为 / 架构约束 / 已有文档内容，必须包含显式的文档更新任务（README / CLAUDE.md / docs/\*-spec.md）。由 `collie-harness:plan-doc-reviewer` 的 Doc Maintenance 检查、`collie-harness:review` Red line #12 + Q8，以及 `gated-workflow` Step 5.5 共同强制。
 
-## 安装
+## 架构
 
-### 前置依赖：superpowers
+### 4 层设计
 
-collie-harness 的自动化流程（brainstorming、writing-plans、gated-workflow 等）完全依赖 superpowers plugin。**必须先装好 superpowers，再装 collie-harness。**
+| Layer | 作用 |
+|-------|------|
+| **0** | `acceptEdits` 模式 + escalation 通道（`scripts/escalate.sh`） |
+| **1** | hook 链强制双 reviewer 握手（plan-doc-reviewer + review 双方通过才允许 ExitPlanMode） |
+| **2** | `skills/review/` — Collie 12 红线 + 10 问题 + ELEPHANT 的唯一真源；plan 阶段和 code 阶段都直接调用 |
+| **3** | `/collie-harness:auto` slash command（ralph-loop 封装）+ CronCreate 任务队列 |
 
-```bash
-/plugin install superpowers@claude-plugins-official
-```
+### Hooks
 
-确认已加载：`/plugin list` 应显示 `superpowers`。
+| Hook 文件 | 事件 | 作用 |
+|-----------|------|------|
+| `notification-escalate.js` | Notification | 路由到 `escalate.sh` |
+| `post-writing-plans-reviewer.js` | PostToolUse Write/Edit + ExitPlanMode | 创建双 reviewer 状态；**硬拦截** ExitPlanMode，直到双方都通过 |
+| `post-approved-exitplan-hint.js` | PostToolUse Agent/Skill | 检测 plan-doc-reviewer Approved 或 review PASS；更新状态；提示下一步 |
+| `post-exitplan-gated-hint.js` | PostToolUse ExitPlanMode | 提醒调用 `collie-harness:gated-workflow`（双审通过后才生效，否则静默） |
+| `stop-steps-counter.js` | Stop | 相同错误连续 ×3 或 5 步无文件变动时 WARN 上报；触发后自动重置计数 |
 
-### 前置依赖：ralph-loop
-
-`/collie-harness:auto` command 的自动循环机制依赖 ralph-loop plugin。**必须先装好 ralph-loop，再装 collie-harness。**
-
-```bash
-/plugin install ralph-loop@claude-plugins-official
-```
-
-确认已加载：`/plugin list` 应显示 `ralph-loop`。
-
-### 方式 A：本地开发（session 级）
-```bash
-claude --plugin-dir ~/git/collie-harness
-```
-
-### 方式 B：Marketplace 安装（持久，需先发布到 GitHub）
-
-push 到 GitHub 后：
-```bash
-claude plugin marketplace add KevinLiu/collie-harness
-claude plugin install collie-harness@collie-marketplace
-```
-
-## 配置
-
-### acceptEdits 模式（必填）
-
-在 `~/.claude/settings.json` 加入：
-
-```json
-"permissions": { "defaultMode": "acceptEdits" }
-```
-
-没有这个配置，Layer 0 的自动执行不会生效。
-
-### Escalation 通道（可选）
-
-```bash
-export COLLIE_ESCALATE_CMD=~/bin/my-escalate.sh
-```
-
-Plugin 内置 stub，只写日志到 `~/.collie-harness/escalations.log`。
-
-## 验证
-
-```bash
-# 检查 plugin 已加载
-/plugin list
-
-# 测试 escalation 通道
-${CLAUDE_PLUGIN_ROOT}/scripts/escalate.sh TEST "hello" '{"test":true}'
-tail ~/.collie-harness/escalations.log
-
-# 运行单元测试
-cd ~/git/collie-harness && node --test tests/*.test.js
-```
-
-## 文件结构
+### 文件结构
 
 ```
-~/git/collie-harness/
+collie-harness/
 ├── .claude-plugin/plugin.json
 ├── agents/
 │   └── plan-doc-reviewer.md          # 结构审查 agent（collie-harness:plan-doc-reviewer）
@@ -142,4 +130,46 @@ cd ~/git/collie-harness && node --test tests/*.test.js
 │   ├── post-exitplan-gated-hint.js
 │   └── stop-steps-counter.js
 └── scripts/escalate.sh
+```
+
+### 运行时状态文件
+
+```
+~/.collie-harness/
+  state/{sessionId}/
+    last-plan.json             # 每 session 的 plan 审查状态
+    counter.json               # 步数 + 错误 hash 追踪
+  state/scheduled_tasks.lock   # collie-harness:queue 并发锁
+  escalations.log              # 所有 escalation 事件
+  queue/*.md                   # 待执行的无人值守任务
+```
+
+## 验证
+
+```bash
+# 检查 plugin 已加载
+/plugin list
+
+# 测试 escalation 通道
+${CLAUDE_PLUGIN_ROOT}/scripts/escalate.sh TEST "hello" '{"test":true}'
+tail ~/.collie-harness/escalations.log
+
+# 运行单元测试
+cd ~/git/collie-harness && node --test tests/*.test.js
+```
+
+## 本地开发
+
+```bash
+# 加载本地版本（session 级，不影响已安装版本）
+claude --plugin-dir ~/git/collie-harness
+
+# 运行单元测试
+node --test tests/*.test.js
+
+# 运行 E2E smoke 测试
+./tests/e2e/smoke.sh
+
+# 验证 plugin 结构
+claude plugin validate ~/git/collie-harness
 ```
