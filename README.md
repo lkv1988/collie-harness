@@ -37,7 +37,7 @@ Collie 风格自主开发 agent harness — 作为 Claude Code plugin 分发。
   → (双方都通过后)
   → ExitPlanMode                      ← hook 提示调用 collie-harness:gated-workflow
   → collie-harness:gated-workflow skill
-  → collie-harness:review skill (Mode=code, Target=worktree diff)
+  → collie-harness:review skill (Mode=code, Target=worktree diff, Context=plan doc)
   → PASS → <promise>Collie: SHIP IT</promise>
      WARN/BLOCK → 修复后重跑 gated-workflow
 ```
