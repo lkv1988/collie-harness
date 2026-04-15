@@ -4,13 +4,13 @@
     "name": "lkv1988"
   },
   "metadata": {
-    "version": "0.1.1",
+    "version": "0.1.2",
     "description": "Collie-style autonomous development agent harness for Claude Code"
   },
   "plugins": [
     {
       "name": "collie-harness",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "description": "Collie-style autonomous development agent harness: rubric review + budget guardrails + loop detection",
       "category": "development",
       "source": "./",
