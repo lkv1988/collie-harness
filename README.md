@@ -5,8 +5,8 @@ Collie 风格自主开发 agent harness — 作为 Claude Code plugin 分发。
 ## 功能
 
 - **Layer 0**: `acceptEdits` 模式 + escalation 通道
-- **Layer 1**: 3 个断链修复 hook（writing-plans → plan-doc-reviewer → ExitPlanMode → gated-workflow）
-- **Layer 2**: `collie-rubric-reviewer` agent（opus, rubric 式审美门，反附和）
+- **Layer 1**: hook 链强制双 reviewer 握手（plan-doc-reviewer + collie-reviewer 双方通过才允许 ExitPlanMode）
+- **Layer 2**: `skills/collie-reviewer/` — Collie 12 红线 + 10 问题 + ELEPHANT 的唯一真源；`collie-rubric-reviewer` 退化为瘦壳 agent
 - **Layer 3**: `/collie-auto` slash command（ralph-loop 封装）+ CronCreate 任务队列
 
 ## 使用
@@ -29,11 +29,14 @@ Collie 风格自主开发 agent harness — 作为 Claude Code plugin 分发。
 ```
 /collie-auto "task"
   → superpowers:brainstorming
-  → superpowers:writing-plans   ← hook 标记 plan 待审
-  → plan-doc-reviewer           ← hook 提示调用 ExitPlanMode
-  → ExitPlanMode                ← hook 提示调用 gated-workflow
+  → superpowers:writing-plans      ← hook 标记 plan 待双审
+  → PARALLEL:
+      plan-doc-reviewer (结构审查)  ← hook 记录 plan_doc_reviewer.approved
+      collie-reviewer (Collie rubric) ← hook 记录 collie_reviewer.approved
+  → (双方都通过后)
+  → ExitPlanMode                   ← hook 提示调用 gated-workflow
   → gated-workflow skill
-  → collie-rubric-reviewer (Opus)
+  → collie-rubric-reviewer (瘦壳 → collie-reviewer skill, code mode)
   → PASS → <promise>Collie: SHIP IT</promise>
      WARN/BLOCK → 修复后重跑 gated-workflow
 ```
@@ -118,9 +121,16 @@ cd ~/git/collie-harness && node --test tests/*.test.js
 ```
 ~/git/collie-harness/
 ├── .claude-plugin/plugin.json
-├── agents/collie-rubric-reviewer.md   # opus rubric reviewer
+├── agents/collie-rubric-reviewer.md   # 瘦壳，委托 collie-reviewer skill
 ├── commands/collie-auto.md            # /collie-auto slash command
-├── skills/collie-queue/SKILL.md       # CronCreate task queue
+├── skills/
+│   ├── collie-reviewer/               # Collie rubric 唯一真源
+│   │   ├── SKILL.md
+│   │   └── references/
+│   │       ├── rubric-red-lines.md   # 12 红线 + 10 问题 + Reflexion
+│   │       ├── elephant-check.md     # ELEPHANT 8 维反谄媚
+│   │       └── collie-voice.md       # Collie 声音句库
+│   └── collie-queue/SKILL.md         # CronCreate task queue
 ├── hooks/
 │   ├── hooks.json                    # auto-loaded by Claude Code v2.1+
 │   ├── notification-escalate.js

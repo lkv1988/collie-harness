@@ -60,10 +60,10 @@ No build step — pure Node.js, zero external dependencies.
 | `notification-escalate.js` | Notification | Routes to `escalate.sh` |
 | `pre-tool-quota-guard.js` | PreToolUse (all) | Blocks if rate-limited or budget >70% |
 | `post-tool-quota-tracker.js` | PostToolUse (all) | Accumulates token usage, detects rate-limit errors |
-| `post-writing-plans-reviewer.js` | PostToolUse Write/Edit + ExitPlanMode | Creates dual-reviewer state; warns if ExitPlanMode called before BOTH reviewers approve |
+| `post-writing-plans-reviewer.js` | PostToolUse Write/Edit + ExitPlanMode | Creates dual-reviewer state; **hard-blocks** (`decision:'block'`) ExitPlanMode if called before BOTH reviewers approve |
 | `post-approved-exitplan-hint.js` | PostToolUse Agent + PostToolUse Skill | Detects plan-doc-reviewer Approved OR collie-reviewer PASS; updates per-reviewer state; hints next step |
-| `post-exitplan-gated-hint.js` | PostToolUse ExitPlanMode | Reminds to call `gated-workflow` skill |
-| `stop-steps-counter.js` | Stop | Escalates on same error ×3 or 5+ steps without file changes |
+| `post-exitplan-gated-hint.js` | PostToolUse ExitPlanMode | Reminds to call `gated-workflow` skill — **only when both reviewers approved**; silent otherwise |
+| `stop-steps-counter.js` | Stop | Blocks on same error ×3 or 5+ steps without file changes; **resets counters after block** to prevent permanent lockout |
 
 ## State Files (runtime, not committed)
 
