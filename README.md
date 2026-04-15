@@ -6,7 +6,7 @@ Collie 风格自主开发 agent harness — 作为 Claude Code plugin 分发。
 
 - **Layer 0**: `acceptEdits` 模式 + escalation 通道
 - **Layer 1**: hook 链强制双 reviewer 握手（collie-harness:plan-doc-reviewer + collie-harness:review 双方通过才允许 ExitPlanMode）
-- **Layer 2**: `skills/review/` — Collie 12 红线 + 10 问题 + ELEPHANT 的唯一真源；`collie-harness:reviewer` 退化为瘦壳 agent
+- **Layer 2**: `skills/review/` — Collie 12 红线 + 10 问题 + ELEPHANT 的唯一真源；plan 阶段和 code 阶段都直接作为 skill 调用
 - **Layer 3**: `/auto` slash command（ralph-loop 封装）+ CronCreate 任务队列
 
 ## 使用
@@ -22,7 +22,7 @@ Collie 风格自主开发 agent harness — 作为 Claude Code plugin 分发。
 /queue
 ```
 
-任务完成的唯一信号是 `<promise>Collie: SHIP IT</promise>`——这只在 `collie-harness:reviewer` 返回 PASS 后才会输出。
+任务完成的唯一信号是 `<promise>Collie: SHIP IT</promise>`——这只在 `collie-harness:review` (Mode=code) 返回 PASS 后才会输出。
 
 ## 工作流
 
@@ -37,7 +37,7 @@ Collie 风格自主开发 agent harness — 作为 Claude Code plugin 分发。
   → (双方都通过后)
   → ExitPlanMode                      ← hook 提示调用 collie-harness:gated-workflow
   → collie-harness:gated-workflow skill
-  → collie-harness:reviewer (瘦壳 → collie-harness:review skill, code mode)
+  → collie-harness:review skill (Mode=code, Target=worktree diff)
   → PASS → <promise>Collie: SHIP IT</promise>
      WARN/BLOCK → 修复后重跑 gated-workflow
 ```
@@ -121,8 +121,7 @@ cd ~/git/collie-harness && node --test tests/*.test.js
 ~/git/collie-harness/
 ├── .claude-plugin/plugin.json
 ├── agents/
-│   ├── plan-doc-reviewer.md          # 结构审查 agent（collie-harness:plan-doc-reviewer）
-│   └── reviewer.md                   # 瘦壳，委托 collie-harness:review skill
+│   └── plan-doc-reviewer.md          # 结构审查 agent（collie-harness:plan-doc-reviewer）
 ├── commands/
 │   ├── auto.md                       # /auto slash command
 │   └── queue.md                      # /queue slash command

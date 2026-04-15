@@ -1,5 +1,5 @@
 ---
-description: "Launch Collie-style fully automated feature development loop (brainstorm → plan → reviewer → gated-workflow → rubric review)"
+description: "Launch Collie-style fully automated feature development loop (brainstorm → plan → review → gated-workflow → rubric review)"
 argument-hint: "task description [--max-iterations N]"
 ---
 
@@ -12,7 +12,7 @@ Run the complete development workflow Collie-style in fully automated, unattende
 This command uses ralph-loop. Completion signal: `<promise>Collie: SHIP IT</promise>`
 
 **The completion signal can only be output when ALL of the following conditions are met:**
-1. collie-harness:reviewer returns `**Status:** PASS`
+1. collie-harness:review (Mode=code) returns `**Status:** PASS`
 2. All code has been committed & pushed
 3. worktree has been cleaned up
 
@@ -30,8 +30,8 @@ This command uses ralph-loop. Completion signal: `<promise>Collie: SHIP IT</prom
    (both must return approval before step ④)
 ④ ExitPlanMode → exit planning mode
 ⑤ collie-harness:gated-workflow skill → complete implementation pipeline
-⑥ Agent(subagent_type="collie-harness:reviewer", model="opus") → final review
-⑦ If collie-harness:reviewer Status=PASS → output completion signal
+⑥ Skill("collie-harness:review") with Mode=code, Target=<worktree diff> → final review
+⑦ If collie-harness:review Status=PASS → output completion signal
    If WARN/BLOCK → fix and return to step ⑤
 ```
 
@@ -58,12 +58,12 @@ When starting, inject this as the working prompt (substitute $ARGUMENTS with the
 >   **Both reviewers must return approval before step 4. Do not call ExitPlanMode until both approve.**
 > Step 4: ExitPlanMode
 > Step 5: Call `collie-harness:gated-workflow` skill to implement
-> Step 6: Call `Agent(subagent_type="collie-harness:reviewer", model="opus")` for final review
+> Step 6: Call `Skill("collie-harness:review")` with `Mode=code`, `Target=<current worktree diff>` for final review
 >
-> Only when collie-harness:reviewer returns `**Status:** PASS`, output:
+> Only when collie-harness:review returns `**Status:** PASS`, output:
 > `<promise>Collie: SHIP IT</promise>`
 >
-> If collie-harness:reviewer returns WARN or BLOCK, you must fix the issues and restart from step ⑤, review again, until PASS is achieved.
+> If collie-harness:review returns WARN or BLOCK, you must fix the issues and restart from step ⑤, review again, until PASS is achieved.
 
 ## Intelligent Exit Policy
 

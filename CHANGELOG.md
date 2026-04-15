@@ -6,6 +6,13 @@ All notable changes to collie-harness are documented here.
 
 ## [Unreleased]
 
+### Removed
+
+- **Breaking**: 移除 `collie-harness:reviewer` agent（原为 thin shell，逻辑全部在 `collie-harness:review` skill）。
+  - **迁移方式**：原来写 `Agent(subagent_type="collie-harness:reviewer", model="opus")` 的地方改为 `Skill("collie-harness:review")` 并传 `Mode=code`、`Target=<worktree diff>`。Skill 内部已自动 dispatch `Agent(model="opus")` 做隔离，行为和输出契约（`**Status:** PASS` 等）完全保持一致。
+  - **动机**：消除 3 层调用间接、和 plan 阶段的直接 skill 调用对齐，降低 DRY 疑虑。
+  - `plugin.json` 的 `agents` 数组从 2 项减为 1 项（只剩 `plan-doc-reviewer.md`）。
+
 ### Changed
 
 - `agents/plan-doc-reviewer.md`: 增加 **Doc Maintenance** 检查（写侧）和 **Spec Consultation** 检查（读侧）
