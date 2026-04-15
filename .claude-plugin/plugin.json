@@ -2,10 +2,12 @@
   "name": "collie-harness",
   "version": "0.1.0",
   "description": "Collie-style autonomous development agent harness: rubric review + budget guardrails + loop detection",
-  "homepage": "https://github.com/<USER>/collie-harness",
-  "repository": "https://github.com/<USER>/collie-harness.git",
+  "homepage": "https://github.com/KevinLiu/collie-harness",
+  "repository": "https://github.com/KevinLiu/collie-harness.git",
+  "author": { "name": "KevinLiu" },
+  "keywords": ["workflow", "rubric-review", "agent", "collie", "autonomous", "gated-workflow"],
   "license": "MIT",
-  "agents": ["./agents/collie-rubric-reviewer.md"],
+  "agents": ["./agents/reviewer.md", "./agents/plan-doc-reviewer.md"],
   "commands": ["./commands/"],
   "skills": ["./skills/"]
 }

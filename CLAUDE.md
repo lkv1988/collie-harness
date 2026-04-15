@@ -18,11 +18,11 @@ node --test tests/pre-tool-quota-guard.test.js
 # Run E2E smoke tests (4 scenarios)
 ./tests/e2e/smoke.sh
 
-# Install as a development plugin (Claude Code v2.1+ auto-discovers)
-ln -s ~/git/collie-harness ~/.claude/plugins/installed/collie-harness
+# Load as a development plugin (session-only)
+claude --plugin-dir ~/git/collie-harness
 
 # Verify plugin is loaded inside Claude Code
-/plugin list   # Should show collie-harness@0.1.0
+/plugin list
 ```
 
 No build step — pure Node.js, zero external dependencies.
@@ -32,23 +32,23 @@ No build step — pure Node.js, zero external dependencies.
 | Layer | What it does |
 |-------|-------------|
 | **0** | `acceptEdits` mode + escalation channel (`scripts/escalate.sh`) |
-| **1** | Chain-link hooks enforcing dual-reviewer handshake (plan-doc-reviewer + collie-reviewer) before ExitPlanMode |
-| **2** | `skills/collie-reviewer/` — single source of truth for Collie's 12 red-lines + 10 questions + Reflexion + ELEPHANT. `agents/collie-rubric-reviewer.md` is a thin shell delegating to this skill. |
-| **3** | Self-driven harness (`commands/collie-auto.md` + `skills/collie-queue/`) with CronCreate task queue |
+| **1** | Chain-link hooks enforcing dual-reviewer handshake (collie-harness:plan-doc-reviewer + collie-harness:review) before ExitPlanMode |
+| **2** | `skills/review/` — single source of truth for Collie's 12 red-lines + 10 questions + Reflexion + ELEPHANT. `agents/reviewer.md` is a thin shell delegating to this skill. |
+| **3** | Self-driven harness (`commands/auto.md` + `skills/queue/`) with CronCreate task queue |
 
 ## Workflow Sequence (enforced by hooks)
 
 ```
-/collie-auto "task"
+/auto "task"
   → superpowers:brainstorming
   → superpowers:writing-plans   ← post-writing-plans-reviewer.js marks plan pending (both reviewers)
   → PARALLEL:
-      plan-doc-reviewer (structural)   ← post-approved-exitplan-hint.js marks plan_doc_reviewer.approved
-      collie-reviewer (Collie rubric)  ← post-approved-exitplan-hint.js marks collie_reviewer.approved
+      collie-harness:plan-doc-reviewer (structural) ← post-approved-exitplan-hint.js marks plan_doc_reviewer.approved
+      collie-harness:review (Collie rubric) ← post-approved-exitplan-hint.js marks collie_reviewer.approved
   → (only when BOTH approved)
   → ExitPlanMode                ← post-exitplan-gated-hint.js reminds gated-workflow
-  → gated-workflow skill
-  → collie-rubric-reviewer (thin shell → collie-reviewer skill, code mode)
+  → collie-harness:gated-workflow skill
+  → collie-harness:reviewer (thin shell → collie-harness:review skill, code mode)
   → PASS → <promise>Collie: SHIP IT</promise>
      WARN/BLOCK → fix loop
 ```
@@ -61,8 +61,8 @@ No build step — pure Node.js, zero external dependencies.
 | `pre-tool-quota-guard.js` | PreToolUse (all) | Blocks if rate-limited or budget >70% |
 | `post-tool-quota-tracker.js` | PostToolUse (all) | Accumulates token usage, detects rate-limit errors |
 | `post-writing-plans-reviewer.js` | PostToolUse Write/Edit + ExitPlanMode | Creates dual-reviewer state; **hard-blocks** (`decision:'block'`) ExitPlanMode if called before BOTH reviewers approve |
-| `post-approved-exitplan-hint.js` | PostToolUse Agent + PostToolUse Skill | Detects plan-doc-reviewer Approved OR collie-reviewer PASS; updates per-reviewer state; hints next step |
-| `post-exitplan-gated-hint.js` | PostToolUse ExitPlanMode | Reminds to call `gated-workflow` skill — **only when both reviewers approved**; silent otherwise |
+| `post-approved-exitplan-hint.js` | PostToolUse Agent + PostToolUse Skill | Detects collie-harness:plan-doc-reviewer Approved OR collie-harness:review PASS; updates per-reviewer state; hints next step |
+| `post-exitplan-gated-hint.js` | PostToolUse ExitPlanMode | Reminds to call `collie-harness:gated-workflow` skill — **only when both reviewers approved**; silent otherwise |
 | `stop-steps-counter.js` | Stop | Blocks on same error ×3 or 5+ steps without file changes; **resets counters after block** to prevent permanent lockout |
 
 ## State Files (runtime, not committed)
@@ -76,18 +76,18 @@ All runtime state lives under `~/.collie-harness/`:
   state/{sessionId}/
     last-plan.json             # Plan review status per session
     counter.json               # Step count + error hash tracking
-  state/scheduled_tasks.lock   # Concurrency lock for collie-queue
+  state/scheduled_tasks.lock   # Concurrency lock for collie-harness:queue
   escalations.log              # All escalation events
-  queue/*.md                   # Unattended tasks for collie-queue skill
+  queue/*.md                   # Unattended tasks for collie-harness:queue skill
 ```
 
 ## Key Design Constraints
 
-- **Rubric red-lines** (BLOCK): 12 hard violations in `skills/collie-reviewer/references/rubric-red-lines.md` (single source of truth). Any single red-line = automatic BLOCK.
-- **Dual reviewer at plan stage**: `plan-doc-reviewer` (structural) AND `collie-reviewer` (Collie rubric) must both approve before ExitPlanMode. Enforced by `post-writing-plans-reviewer.js` + `post-approved-exitplan-hint.js`.
+- **Rubric red-lines** (BLOCK): 12 hard violations in `skills/review/references/rubric-red-lines.md` (single source of truth). Any single red-line = automatic BLOCK.
+- **Dual reviewer at plan stage**: `collie-harness:plan-doc-reviewer` (structural) AND `collie-harness:review` (Collie rubric) must both approve before ExitPlanMode. Enforced by `post-writing-plans-reviewer.js` + `post-approved-exitplan-hint.js`.
 - **Quota guard** blocks at 70% of `daily_token_cap` (reserves 30% buffer). Rate-limit cool-down = 1 hour.
 - **Loop trap**: 3 identical error hashes in a row → WARN escalation; 5 steps without file changes → WARN escalation.
-- **Task queue** (`collie-queue`) runs at `concurrency=1` — never two collie sessions simultaneously.
+- **Task queue** (`collie-harness:queue`) runs at `concurrency=1` — never two collie sessions simultaneously.
 - **ELEPHANT check** in rubric reviewer: 8-point sycophancy self-check; must answer all 8 before issuing PASS.
 
 ## Required First-Time Setup
@@ -108,3 +108,41 @@ export COLLIE_ESCALATE_CMD="your-notification-command"
 # 3b. (Optional) Override state directory location
 export COLLIE_HARNESS_HOME="~/.my-harness"  # defaults to ~/.collie-harness
 ```
+
+## Release Checklist
+
+发布前必须同时满足以下所有条件：
+
+### 入口对应表审计
+
+每次 rename 重构后运行：
+```bash
+grep -n '/collie\|/auto\|/queue\|/reviewer' README.md CLAUDE.md
+ls commands/ skills/*/SKILL.md agents/*.md
+```
+`commands/` 每个 `.md` = 一个 slash 命令；`skills/` 每个 `SKILL.md` = 一个 Skill；`agents/` 每个 `.md` = 一个 Agent。任何 user-facing 名字与文件不对应 = 发布红线。
+
+### 发布前必须通过
+
+```bash
+claude plugin validate ~/git/collie-harness  # 期望 ✔ Validation passed
+node --test tests/*.test.js                  # 期望 all pass
+grep -rn '<USER>\|"kevin"' .claude-plugin/ README.md LICENSE  # 期望返空
+git status --ignored | grep .claude/         # 期望命中
+```
+
+### Commit 规范
+
+禁用 `git add -A`，每个逻辑变更拆一个 atomic commit，按具名文件 stage。
+
+### 必须 dogfood
+
+发布前调用 `superpowers:verification-before-completion` + `superpowers:requesting-code-review`。
+
+### 依赖审计（每次新增 agent/skill 依赖时）
+
+每个在 `commands/`、`hooks/`、`agents/`、`skills/` 中引用的 agent/skill 名必须属于：
+- collie-harness 自身定义（在 `agents/` 或 `skills/` 下有对应文件）
+- README 前置依赖章节明确列出的外部 plugin（当前：superpowers + ralph-loop）
+
+任何 `~/.claude/agents/` 或 `~/.claude/skills/` 绝对路径 = 发布红线（别人没有这个 home 目录）。

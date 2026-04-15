@@ -1,6 +1,6 @@
 {
   "name": "collie-marketplace",
-  "owner": { "name": "kevin" },
+  "owner": { "name": "KevinLiu" },
   "metadata": {
     "description": "Collie 风格 Claude Code 插件集合",
     "version": "0.1.0"
@@ -10,7 +10,7 @@
       "name": "collie-harness",
       "source": {
         "source": "url",
-        "url": "https://github.com/<USER>/collie-harness.git"
+        "url": "https://github.com/KevinLiu/collie-harness.git"
       },
       "description": "Collie 风格自主开发 agent harness：rubric 审查 + 预算护栏 + 死循环防护",
       "version": "0.1.0",

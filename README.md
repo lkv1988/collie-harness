@@ -5,38 +5,38 @@ Collie 风格自主开发 agent harness — 作为 Claude Code plugin 分发。
 ## 功能
 
 - **Layer 0**: `acceptEdits` 模式 + escalation 通道
-- **Layer 1**: hook 链强制双 reviewer 握手（plan-doc-reviewer + collie-reviewer 双方通过才允许 ExitPlanMode）
-- **Layer 2**: `skills/collie-reviewer/` — Collie 12 红线 + 10 问题 + ELEPHANT 的唯一真源；`collie-rubric-reviewer` 退化为瘦壳 agent
-- **Layer 3**: `/collie-auto` slash command（ralph-loop 封装）+ CronCreate 任务队列
+- **Layer 1**: hook 链强制双 reviewer 握手（collie-harness:plan-doc-reviewer + collie-harness:review 双方通过才允许 ExitPlanMode）
+- **Layer 2**: `skills/review/` — Collie 12 红线 + 10 问题 + ELEPHANT 的唯一真源；`collie-harness:reviewer` 退化为瘦壳 agent
+- **Layer 3**: `/auto` slash command（ralph-loop 封装）+ CronCreate 任务队列
 
 ## 使用
 
 ```bash
 # 单次任务
-/collie-auto "给 foo 模块加一个 retry 机制"
+/auto "给 foo 模块加一个 retry 机制"
 
 # 限制最大迭代次数
-/collie-auto "重构 auth 模块" --max-iterations 30
+/auto "重构 auth 模块" --max-iterations 30
 
 # 排队无人值守任务
-/collie-queue
+/queue
 ```
 
-任务完成的唯一信号是 `<promise>Collie: SHIP IT</promise>`——这只在 `collie-rubric-reviewer` 返回 PASS 后才会输出。
+任务完成的唯一信号是 `<promise>Collie: SHIP IT</promise>`——这只在 `collie-harness:reviewer` 返回 PASS 后才会输出。
 
 ## 工作流
 
 ```
-/collie-auto "task"
+/auto "task"
   → superpowers:brainstorming
-  → superpowers:writing-plans      ← hook 标记 plan 待双审
+  → superpowers:writing-plans         ← hook 标记 plan 待双审
   → PARALLEL:
-      plan-doc-reviewer (结构审查)  ← hook 记录 plan_doc_reviewer.approved
-      collie-reviewer (Collie rubric) ← hook 记录 collie_reviewer.approved
+      collie-harness:plan-doc-reviewer (结构审查) ← hook 记录 plan_doc_reviewer.approved
+      collie-harness:review (Collie rubric) ← hook 记录 collie_reviewer.approved
   → (双方都通过后)
-  → ExitPlanMode                   ← hook 提示调用 gated-workflow
-  → gated-workflow skill
-  → collie-rubric-reviewer (瘦壳 → collie-reviewer skill, code mode)
+  → ExitPlanMode                      ← hook 提示调用 collie-harness:gated-workflow
+  → collie-harness:gated-workflow skill
+  → collie-harness:reviewer (瘦壳 → collie-harness:review skill, code mode)
   → PASS → <promise>Collie: SHIP IT</promise>
      WARN/BLOCK → 修复后重跑 gated-workflow
 ```
@@ -55,18 +55,28 @@ collie-harness 的自动化流程（brainstorming、writing-plans、gated-workfl
 
 确认已加载：`/plugin list` 应显示 `superpowers`。
 
-### 方式 A：Marketplace 安装（推荐，需要先发到 GitHub）
+### 前置依赖：ralph-loop
+
+`/auto` command 的自动循环机制依赖 ralph-loop plugin。**必须先装好 ralph-loop，再装 collie-harness。**
+
 ```bash
-/plugin marketplace add <USER>/collie-harness
-/plugin install collie-harness@collie-marketplace
+/plugin install ralph-loop@claude-plugins-official
 ```
 
-### 方式 B：本地开发 symlink
+确认已加载：`/plugin list` 应显示 `ralph-loop`。
+
+### 方式 A：本地开发（session 级）
 ```bash
-ln -s ~/git/collie-harness ~/.claude/plugins/installed/collie-harness
+claude --plugin-dir ~/git/collie-harness
 ```
 
-重启 Claude Code，运行 `/plugin list` 确认 `collie-harness@0.1.0` 出现。
+### 方式 B：Marketplace 安装（持久，需先发布到 GitHub）
+
+push 到 GitHub 后：
+```bash
+claude plugin marketplace add KevinLiu/collie-harness
+claude plugin install collie-harness@collie-marketplace
+```
 
 ## 配置
 
@@ -121,16 +131,16 @@ cd ~/git/collie-harness && node --test tests/*.test.js
 ```
 ~/git/collie-harness/
 ├── .claude-plugin/plugin.json
-├── agents/collie-rubric-reviewer.md   # 瘦壳，委托 collie-reviewer skill
-├── commands/collie-auto.md            # /collie-auto slash command
+├── agents/reviewer.md                 # 瘦壳，委托 collie-harness:review skill
+├── commands/auto.md                   # /auto slash command
 ├── skills/
-│   ├── collie-reviewer/               # Collie rubric 唯一真源
+│   ├── review/                        # Collie rubric 唯一真源
 │   │   ├── SKILL.md
 │   │   └── references/
 │   │       ├── rubric-red-lines.md   # 12 红线 + 10 问题 + Reflexion
 │   │       ├── elephant-check.md     # ELEPHANT 8 维反谄媚
 │   │       └── collie-voice.md       # Collie 声音句库
-│   └── collie-queue/SKILL.md         # CronCreate task queue
+│   └── queue/SKILL.md                # CronCreate task queue
 ├── hooks/
 │   ├── hooks.json                    # auto-loaded by Claude Code v2.1+
 │   ├── notification-escalate.js
