@@ -93,7 +93,24 @@ if (toolName === 'ExitPlanMode') {
       const planDocOk = state.plan_doc_reviewer && state.plan_doc_reviewer.approved === true;
       const collieOk  = state.collie_reviewer  && state.collie_reviewer.approved === true;
       if (planDocOk && collieOk) {
-        needsWarn = false;
+        // Also verify plan metadata lines exist (plan-source + plan-topic)
+        try {
+          const planContent = fs.readFileSync(state.path, 'utf8');
+          const lines = planContent.split('\n');
+          const hasPlanSource = (lines[0] || '').startsWith('<!-- plan-source:');
+          const hasPlanTopic  = (lines[1] || '').startsWith('<!-- plan-topic:');
+          if (!hasPlanSource || !hasPlanTopic) {
+            const metaMissing = [
+              !hasPlanSource && 'plan-source',
+              !hasPlanTopic  && 'plan-topic',
+            ].filter(Boolean).join(' + ');
+            missing.push(`plan metadata missing (${metaMissing}) — add both lines at the top of the plan file per auto.md Step 2`);
+          } else {
+            needsWarn = false;
+          }
+        } catch (e) {
+          missing.push('plan file unreadable: ' + e.message);
+        }
       } else {
         if (!planDocOk) missing.push('collie-harness:plan-doc-reviewer');
         if (!collieOk)  missing.push('collie-harness:review');

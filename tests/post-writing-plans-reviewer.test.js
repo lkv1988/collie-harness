@@ -117,10 +117,13 @@ test('post-writing-plans-reviewer: ExitPlanMode with unreviewed plan → stdout 
 });
 
 test('post-writing-plans-reviewer: ExitPlanMode with reviewed plan → stdout empty, exits 0', () => {
-  // Pre-create a last-plan.json with both reviewers approved
+  // Pre-create a last-plan.json with both reviewers approved + actual plan file with metadata
+  const planPath = path.join(tmpRoot, 'docs', 'plans', '2026-04-14-collie-harness-plan.md');
+  fs.mkdirSync(path.dirname(planPath), { recursive: true });
+  fs.writeFileSync(planPath, `<!-- plan-source: ${planPath} -->\n<!-- plan-topic: collie-harness -->\n# Collie Harness Implementation Plan\n`, 'utf8');
   fs.mkdirSync(stateDir(), { recursive: true });
   fs.writeFileSync(lastPlanFile(), JSON.stringify({
-    path: 'docs/plans/2026-04-14-collie-harness-plan.md',
+    path: planPath,
     written_at: new Date().toISOString(),
     plan_doc_reviewer: { approved: true, approved_at: '2026-04-14T00:00:00Z' },
     collie_reviewer:   { approved: true, approved_at: '2026-04-14T00:00:00Z' },
@@ -206,9 +209,12 @@ test('post-writing-plans-reviewer: ExitPlanMode WARN when only collie-harness:re
 });
 
 test('post-writing-plans-reviewer: ExitPlanMode silent when both reviewers approved', () => {
+  const planPath = path.join(tmpRoot, 'docs', 'plans', 'foo-plan.md');
+  fs.mkdirSync(path.dirname(planPath), { recursive: true });
+  fs.writeFileSync(planPath, `<!-- plan-source: ${planPath} -->\n<!-- plan-topic: foo -->\n# Foo Implementation Plan\n`, 'utf8');
   fs.mkdirSync(stateDir(), { recursive: true });
   fs.writeFileSync(lastPlanFile(), JSON.stringify({
-    path: 'docs/plans/foo-plan.md',
+    path: planPath,
     written_at: new Date().toISOString(),
     plan_doc_reviewer: { approved: true, approved_at: '2026-04-14T00:00:00Z' },
     collie_reviewer:   { approved: true, approved_at: '2026-04-14T00:00:00Z' },

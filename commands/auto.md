@@ -52,12 +52,14 @@ When starting, inject this as the working prompt (substitute $ARGUMENTS with the
 >   - Document what you found (or ruled out) in one short paragraph before proceeding
 > Step 1: Call `superpowers:brainstorming` skill to complete design brainstorming
 > Step 2: Call `superpowers:writing-plans` skill to write the implementation plan.
->   - The plan MUST be written to the path specified in the planmode system prompt (Claude Code's official plan file). Do NOT write to a separate location like `docs/superpowers/plans/`.
->   - After writing, **prepend the following metadata line as the very first line of the plan file** (using Bash `sed -i`, not Write/Edit, to avoid LLM rewriting the content):
+>   - **User preference for plan location (overrides skill default per writing-plans line 19):** write to the path specified in the planmode system prompt. Do NOT write to `docs/superpowers/plans/` or `docs/superpowers/specs/`.
+>   - **The plan file MUST start with these two metadata lines** (written as part of the initial Write, before the `# [Feature Name] Implementation Plan` heading):
 >     ```
 >     <!-- plan-source: /absolute/path/to/this/plan/file.md -->
+>     <!-- plan-topic: my-feature-slug -->
 >     ```
->   - Record this path as `$PLAN_PATH`.
+>     `plan-topic` = kebab-case slug of the feature name (e.g. `binary-safe-prompts`).
+>   - Record this path as `$PLAN_PATH`. These two lines are the only mechanism that survives the "clear context and execute" boundary — gated-workflow depends on them.
 > Step 3: In parallel, dispatch BOTH reviewers:
 >   a) `Agent(subagent_type="collie-harness:plan-doc-reviewer", model="opus")` — structural plan validation
 >   b) `Skill("collie-harness:review")` with `Mode=plan`, `Target=$PLAN_PATH` — Collie-style rubric review
