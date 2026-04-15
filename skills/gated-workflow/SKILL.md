@@ -149,13 +149,3 @@ subagent 调用 `superpowers:requesting-code-review`。
 ## Step 6：收尾（GATE 6）
 
 调用 `superpowers:finishing-a-development-branch`（合并 / PR / 清理 worktree）。
-
-⚠️ **Commit message 须在 body 中包含 plan 引用**，将代码改动与当时的设计上下文永久关联：
-
-```
-<type>: <中文描述>
-
-Refs: <$ARCHIVE_PATH>
-```
-
-`$ARCHIVE_PATH` 即 Step 2 归档计划文档时确定的路径（`docs/plans/YYYY-MM-DD-<topic>-plan.md`）。如无计划文档（豁免场景），可省略此行。
