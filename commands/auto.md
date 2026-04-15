@@ -21,18 +21,19 @@ This command uses ralph-loop. Completion signal: `<promise>Collie: SHIP IT</prom
 ## Mandatory Sequence (no skipping allowed; skipping = red line)
 
 ```
-⓪ Research & Reuse → check internal specs (docs/*-spec.md, docs/superpowers/specs/) first, then search externally (GitHub, docs, registries)
-① superpowers:brainstorming → design alignment
-② superpowers:writing-plans → generate implementation plan
-③ PARALLEL: Agent(subagent_type="collie-harness:plan-doc-reviewer", model="opus")
+⓪ Create planning-phase TodoList via TaskCreate (6 items: [step1]–[step4a]/[step4b]–[step5])
+① Research & Reuse → check internal specs (docs/*-spec.md, docs/superpowers/specs/) first, then search externally (GitHub, docs, registries)
+② superpowers:brainstorming → design alignment
+③ superpowers:writing-plans → generate implementation plan
+④ PARALLEL: Agent(subagent_type="collie-harness:plan-doc-reviewer", model="opus")
            AND Skill("collie-harness:review") with Mode=plan, Target=<plan-doc-path>
    → validate plan structure AND Collie-style rubric
-   (both must return approval before step ④)
-④ ExitPlanMode → exit planning mode
-⑤ collie-harness:gated-workflow skill → complete implementation pipeline
-⑥ Skill("collie-harness:review") with Mode=code, Target=<worktree diff>, Context="Plan: <plan doc path from task0>" → final review
-⑦ If collie-harness:review Status=PASS → output completion signal
-   If WARN/BLOCK → fix and return to step ⑤
+   (both must return approval before step ⑤)
+⑤ ExitPlanMode → mark all [step1]–[step5] completed, close planning TaskList
+⑥ collie-harness:gated-workflow skill → complete implementation pipeline
+⑦ Skill("collie-harness:review") with Mode=code, Target=<worktree diff>, Context="Plan: $ARCHIVE_PATH (from gated-workflow [task0])" → final review
+⑧ If collie-harness:review Status=PASS → output completion signal
+   If WARN/BLOCK → fix and return to step ⑥
 ```
 
 ## Task Prompt
@@ -43,15 +44,23 @@ When starting, inject this as the working prompt (substitute $ARGUMENTS with the
 >
 > Execute strictly in the following order (no skipping allowed; skipping = BLOCK red line):
 >
-> Step 0: Research & Reuse — before designing anything, check existing work in this order:
+> Step 0: Use TaskCreate to create the following 6 planning-phase tasks (use TaskUpdate to mark each completed as you finish it):
+> - [step1] Research & Reuse (findings cited in plan)
+> - [step2] Brainstorming (superpowers:brainstorming)
+> - [step3] Write implementation plan (superpowers:writing-plans)
+> - [step4a] Plan-doc review (collie-harness:plan-doc-reviewer)
+> - [step4b] Collie rubric review (collie-harness:review Mode=plan)
+> - [step5] ExitPlanMode
+>
+> Step 1: Research & Reuse — before designing anything, check existing work in this order:
 >   - **Internal specs first**: scan `docs/*-spec.md` and `docs/superpowers/specs/` for relevant existing specs; read them in full if found and cite them in the plan
 >   - Web search (Google / Exa / GitHub) for how others have solved the same problem
 >   - Check package registries (npm / PyPI / crates.io / etc.) for battle-tested libraries
 >   - Use Context7 MCP to look up current docs for any relevant library or framework
 >   - Prefer adopting or wrapping a proven solution over writing net-new code
->   - Document what you found (or ruled out) in one short paragraph before proceeding
-> Step 1: Call `superpowers:brainstorming` skill to complete design brainstorming
-> Step 2: Call `superpowers:writing-plans` skill to write the implementation plan.
+>   - Document what you found (or ruled out) in one short paragraph **in the plan** before proceeding
+> Step 2: Call `superpowers:brainstorming` skill to complete design brainstorming
+> Step 3: Call `superpowers:writing-plans` skill to write the implementation plan.
 >   - **User preference for plan location (overrides skill default per writing-plans line 19):** write to the path specified in the planmode system prompt. Do NOT write to `docs/superpowers/plans/` or `docs/superpowers/specs/`.
 >   - **The plan file MUST start with these two metadata lines** (written as part of the initial Write, before the `# [Feature Name] Implementation Plan` heading):
 >     ```
@@ -60,18 +69,18 @@ When starting, inject this as the working prompt (substitute $ARGUMENTS with the
 >     ```
 >     `plan-topic` = kebab-case slug of the feature name (e.g. `binary-safe-prompts`).
 >   - Record this path as `$PLAN_PATH`. These two lines are the only mechanism that survives the "clear context and execute" boundary — gated-workflow depends on them.
-> Step 3: In parallel, dispatch BOTH reviewers:
+> Step 4: In parallel, dispatch BOTH reviewers:
 >   a) `Agent(subagent_type="collie-harness:plan-doc-reviewer", model="opus")` — structural plan validation
 >   b) `Skill("collie-harness:review")` with `Mode=plan`, `Target=$PLAN_PATH` — Collie-style rubric review
->   **Both reviewers must return approval before step 4. Do not call ExitPlanMode until both approve.**
-> Step 4: ExitPlanMode
-> Step 5: Call `collie-harness:gated-workflow` skill to implement.
-> Step 6: Call `Skill("collie-harness:review")` with `Mode=code`, `Target=<current worktree diff>`, `Context="Plan: <path to the plan doc archived in task0>"` for final review
+>   **Both reviewers must return approval before step 5. Do not call ExitPlanMode until both approve.**
+> Step 5: ExitPlanMode. After returning from planmode, use TaskUpdate to mark [step1]–[step5] (including [step4a]/[step4b]) all as completed. This closes the planning TaskList before gated-workflow appends the implementation tasks.
+> Step 6: Call `collie-harness:gated-workflow` skill to implement.
+> Step 7: Call `Skill("collie-harness:review")` with `Mode=code`, `Target=<current worktree diff>`, `Context="Plan: <$ARCHIVE_PATH — the path produced by gated-workflow [task0]>"` for final review
 >
 > Only when collie-harness:review returns `**Status:** PASS`, output:
 > `<promise>Collie: SHIP IT</promise>`
 >
-> If collie-harness:review returns WARN or BLOCK, you must fix the issues and restart from step ⑤, review again, until PASS is achieved.
+> If collie-harness:review returns WARN or BLOCK, you must fix the issues and restart from step ⑥, review again, until PASS is achieved.
 
 ## Intelligent Exit Policy
 
