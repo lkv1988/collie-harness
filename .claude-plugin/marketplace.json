@@ -1,12 +1,20 @@
 {
-  "version": "0.1.1",
-  "owner": "lkv1988",
-  "description": "Collie-style autonomous development agent harness for Claude Code",
+  "name": "collie-marketplace",
+  "owner": {
+    "name": "lkv1988"
+  },
+  "metadata": {
+    "version": "0.1.1",
+    "description": "Collie-style autonomous development agent harness for Claude Code"
+  },
   "plugins": [
     {
       "name": "collie-harness",
       "version": "0.1.1",
-      "description": "Collie-style autonomous development agent harness: rubric review + budget guardrails + loop detection"
+      "description": "Collie-style autonomous development agent harness: rubric review + budget guardrails + loop detection",
+      "category": "development",
+      "source": "./",
+      "homepage": "https://github.com/lkv1988/collie-harness"
     }
   ]
 }
