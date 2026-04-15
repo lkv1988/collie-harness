@@ -17,10 +17,18 @@ Any single red line → **BLOCK**. Do not downgrade to WARN.
 | 9 | Reinvent the wheel | "直接改原来的 skill 不行吗？为啥要创建新的？" | plan + code |
 | 10 | Implement before alignment | "别着急实施。确定没问题的话，再派 agent 出去" | plan |
 | 11 | Wrong response language — Chinese required for descriptive content | "simple chinese response plz" | plan + code |
-| 12 | New pitfall not distilled into spec | "把这个认知更新到 spec 中去，以后避免！！！" | code |
+| 12 | New pitfall not distilled into spec | "把这个认知更新到 spec 中去，以后避免！！！" | plan + code |
 
-**Plan-mode focus**: #1, #4, #5, #6, #9, #10 are the most common plan-stage traps.
+**Plan-mode focus**: #1, #4, #5, #6, #9, #10, #12 are the most common plan-stage traps.
 **Code-mode focus**: all 12 apply.
+
+### Red line #9 — 补充说明
+
+**Plan mode 额外含义**：plan 动笔前必须先扫描 `docs/*-spec.md` 和 `docs/superpowers/specs/`，如有相关 spec 必须在 plan 的 Context 或 References 章节引用。未咨询已有 spec 而提出新方案 = Red line #9 plan-mode 触发。
+
+### Red line #12 — 补充说明
+
+**Plan mode 额外含义**：计划中必须包含对 README / CLAUDE.md / spec 的更新任务，如果改动会影响用户可见行为、架构约束或已有 spec。Code mode 含义保持不变：实现过程中发现的新认知必须回写到 `docs/*-spec.md`。
 
 ## The 10 Review Questions
 
@@ -33,8 +41,8 @@ Scan the Target item by item. Each question answered `PASS` / `FAIL` with `file:
 5. **Gate omissions** — subagent / tdd / parallel / todolist / collie-harness:plan-doc-reviewer — any gate skipped?
 6. **Subagent model selection** — opus for research? haiku for bulk? Did main session do subagent work?
 7. **Mock vs real call** — Any mocked path bypass what matters? *(skip in plan mode)*
-8. **Spec distillation** — New insight written back to `docs/*-spec.md`?
-9. **No reinventing** — Existing implementation to reuse?
+8. **Spec distillation** — Plan mode: plan includes doc update tasks (README / CLAUDE.md / spec) where applicable. Code mode: new insight written back to `docs/*-spec.md`.
+9. **No reinventing** — Existing implementation **or spec** to reuse / reference? Plan mode specifically: did the plan consult `docs/*-spec.md` and `docs/superpowers/specs/` before proposing a new approach?
 10. **Sycophancy check** — Is this conclusion independent, or does it echo the user's framing?
 
 ## Reflexion Grounding Rules (mandatory)

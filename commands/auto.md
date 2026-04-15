@@ -21,7 +21,7 @@ This command uses ralph-loop. Completion signal: `<promise>Collie: SHIP IT</prom
 ## Mandatory Sequence (no skipping allowed; skipping = red line)
 
 ```
-⓪ Research & Reuse → search before building (GitHub, docs, registries)
+⓪ Research & Reuse → check internal specs (docs/*-spec.md, docs/superpowers/specs/) first, then search externally (GitHub, docs, registries)
 ① superpowers:brainstorming → design alignment
 ② superpowers:writing-plans → generate implementation plan
 ③ PARALLEL: Agent(subagent_type="collie-harness:plan-doc-reviewer", model="opus")
@@ -43,7 +43,8 @@ When starting, inject this as the working prompt (substitute $ARGUMENTS with the
 >
 > Execute strictly in the following order (no skipping allowed; skipping = BLOCK red line):
 >
-> Step 0: Research & Reuse — before designing anything, search for existing solutions:
+> Step 0: Research & Reuse — before designing anything, check existing work in this order:
+>   - **Internal specs first**: scan `docs/*-spec.md` and `docs/superpowers/specs/` for relevant existing specs; read them in full if found and cite them in the plan
 >   - Web search (Google / Exa / GitHub) for how others have solved the same problem
 >   - Check package registries (npm / PyPI / crates.io / etc.) for battle-tested libraries
 >   - Use Context7 MCP to look up current docs for any relevant library or framework

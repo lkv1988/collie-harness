@@ -36,6 +36,7 @@ description: Post-planmode implementation workflow with quality gates. Use immed
   - `[task N] <任务描述> [batch-X]`（有外部依赖时追加 `[blocked-by: task M]`）
   - `[task N-CR] code review for task N [batch-Y, blocked-by: task N]`
 - `[test-verify]` 运行单元测试，确保 0 失败
+- `[doc-refresh]` 对照实现结果核对 README / CLAUDE.md / spec，补更新遗漏
 - `[finish]` finishing-a-development-branch
 
 **示例**（3 个互相独立的 task）：
@@ -48,6 +49,7 @@ description: Post-planmode implementation workflow with quality gates. Use immed
 [task2-CR] code review task2 [batch-2, blocked-by: task2]
 [task3-CR] code review task3 [batch-2, blocked-by: task3]
 [test-verify] 运行单元测试
+[doc-refresh] 对照实现结果核对 README / CLAUDE.md / spec，补更新遗漏
 [finish] finishing-a-development-branch
 ```
 
@@ -126,6 +128,24 @@ subagent 调用 `superpowers:requesting-code-review`。
 - 运行完整单元测试套件，确保 **0 失败**
 - 集成测试／E2E：除非用户明确要求，否则可跳过
 - 有失败用例 → 必须修复，不得注释掉或跳过
+
+---
+
+## Step 5.5：文档对齐（GATE 5.95）
+
+⛔ **收尾前必须完成的文档核对，不得跳过。**
+
+按以下顺序逐项核对：
+
+1. **README.md** — 如果本次改动影响了 README 中描述的命令 / 工作流 / 配置 / 架构，必须同步更新
+2. **CLAUDE.md** — 如果本次改动影响了 CLAUDE.md 中描述的约束 / hook / state 文件 / 红线，必须同步更新
+3. **docs/\*-spec.md** — 如果实现过程中发现的新认知与 spec 有偏差，或学到了新 pitfall，必须回写到对应 spec
+4. **docs/plans/** — 本次计划文档已在 Step 2 归档，无需重复
+
+如果 plan 阶段已规划好对应的 doc 更新任务（通过 plan-doc-reviewer 和 collie-harness:review 的审查），这一步通常只是快速确认。
+如果没有规划，说明 plan 阶段双 reviewer 漏检，这一步就是安全网——必须补上再进入 Step 6。
+
+豁免情况：本次改动仅限于内部逻辑（无 user-facing 命令 / workflow / 配置 / 约束变更），且未新增 agent / skill / hook，可在 TodoList 里把 `[doc-refresh]` 直接标记为 N/A 并注明理由。
 
 ---
 

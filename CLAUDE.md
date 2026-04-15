@@ -40,7 +40,7 @@ No build step — pure Node.js, zero external dependencies.
 
 ```
 /auto "task"
-  → ⓪ Research & Reuse         ← web search / registry / docs, prefer reuse over net-new
+  → ⓪ Research & Reuse         ← internal specs first, then web search / registry / docs
   → superpowers:brainstorming
   → superpowers:writing-plans   ← post-writing-plans-reviewer.js marks plan pending (both reviewers)
   → PARALLEL:
@@ -90,6 +90,7 @@ All runtime state lives under `~/.collie-harness/`:
 - **Loop trap**: 3 identical error hashes in a row → WARN escalation; 5 steps without file changes → WARN escalation.
 - **Task queue** (`collie-harness:queue`) runs at `concurrency=1` — never two collie sessions simultaneously.
 - **ELEPHANT check** in rubric reviewer: 8-point sycophancy self-check; must answer all 8 before issuing PASS.
+- **Doc maintenance enforcement**：任何 plan 若改动用户可见行为 / 架构约束 / 已有文档内容，必须包含显式的文档更新任务（README / CLAUDE.md / docs/*-spec.md）。由 `collie-harness:plan-doc-reviewer` 的 Doc Maintenance 检查 + `collie-harness:review` 的 Red line #12 + Q8（文档同步检查）共同强制。`gated-workflow` Step 5.5 作为安全网。
 
 ## Required First-Time Setup
 
@@ -147,3 +148,11 @@ git status --ignored | grep .claude/         # 期望命中
 - README 前置依赖章节明确列出的外部 plugin（当前：superpowers + ralph-loop）
 
 任何 `~/.claude/agents/` 或 `~/.claude/skills/` 绝对路径 = 发布红线（别人没有这个 home 目录）。
+
+### 文档同步审计
+
+发布前运行：
+
+**手动对照**：打开 README.md 和 CLAUDE.md，逐一核查本次改动的 commands / hooks / agents / skills 对应描述是否已更新。
+
+任何 commit 若修改了 `commands/` `hooks/` `agents/` `skills/` 下的文件，必须在同一 commit 或紧邻 commit 里同步更新 README / CLAUDE.md 中的对应描述。发布前至少手动对照一次 README 的"工作流"章节和 CLAUDE.md 的"Workflow Sequence"章节是否与实际代码一致。
