@@ -1,11 +1,11 @@
 {
-  "version": "0.1.0",
+  "version": "0.1.1",
   "owner": "lkv1988",
   "description": "Collie-style autonomous development agent harness for Claude Code",
   "plugins": [
     {
       "name": "collie-harness",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "description": "Collie-style autonomous development agent harness: rubric review + budget guardrails + loop detection"
     }
   ]
