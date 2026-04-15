@@ -1,4 +1,5 @@
 {
+  "description": "Collie-harness hook chain: dual-reviewer plan gate, gated-workflow reminder, loop detection, and escalation routing.",
   "hooks": {
     "Notification": [
       {
