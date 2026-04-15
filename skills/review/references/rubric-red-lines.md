@@ -30,7 +30,7 @@ Scan the Target item by item. Each question answered `PASS` / `FAIL` with `file:
 2. **Generalize the fix** — Did this fix handle all occurrences? Similar bugs elsewhere?
 3. **Worktree isolation** — Changes inside the right worktree/branch? No accidental master edits? *(skip in plan mode)*
 4. **Real verification** — Verified for real, not via mocked critical paths? *(skip in plan mode)*
-5. **Gate omissions** — subagent / tdd / parallel / todolist / plan-doc-reviewer — any gate skipped?
+5. **Gate omissions** — subagent / tdd / parallel / todolist / collie-harness:plan-doc-reviewer — any gate skipped?
 6. **Subagent model selection** — opus for research? haiku for bulk? Did main session do subagent work?
 7. **Mock vs real call** — Any mocked path bypass what matters? *(skip in plan mode)*
 8. **Spec distillation** — New insight written back to `docs/*-spec.md`?

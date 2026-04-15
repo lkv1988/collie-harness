@@ -12,7 +12,7 @@ Run the complete development workflow Collie-style in fully automated, unattende
 This command uses ralph-loop. Completion signal: `<promise>Collie: SHIP IT</promise>`
 
 **The completion signal can only be output when ALL of the following conditions are met:**
-1. collie-rubric-reviewer returns `**Status:** PASS`
+1. collie-harness:reviewer returns `**Status:** PASS`
 2. All code has been committed & pushed
 3. worktree has been cleaned up
 
@@ -23,14 +23,14 @@ This command uses ralph-loop. Completion signal: `<promise>Collie: SHIP IT</prom
 ```
 ① superpowers:brainstorming → design alignment
 ② superpowers:writing-plans → generate implementation plan
-③ PARALLEL: Agent(subagent_type="plan-doc-reviewer", model="opus")
-           AND Skill("collie-reviewer") with Mode=plan, Target=<plan-doc-path>
+③ PARALLEL: Agent(subagent_type="collie-harness:plan-doc-reviewer", model="opus")
+           AND Skill("collie-harness:review") with Mode=plan, Target=<plan-doc-path>
    → validate plan structure AND Collie-style rubric
    (both must return approval before step ④)
 ④ ExitPlanMode → exit planning mode
-⑤ gated-workflow skill → complete implementation pipeline
-⑥ Agent(subagent_type="collie-rubric-reviewer", model="opus") → final review
-⑦ If collie-rubric-reviewer Status=PASS → output completion signal
+⑤ collie-harness:gated-workflow skill → complete implementation pipeline
+⑥ Agent(subagent_type="collie-harness:reviewer", model="opus") → final review
+⑦ If collie-harness:reviewer Status=PASS → output completion signal
    If WARN/BLOCK → fix and return to step ⑤
 ```
 
@@ -45,17 +45,17 @@ When starting, inject this as the working prompt (substitute $ARGUMENTS with the
 > Step 1: Call `superpowers:brainstorming` skill to complete design brainstorming
 > Step 2: Call `superpowers:writing-plans` skill to write implementation plan
 > Step 3: In parallel, dispatch BOTH reviewers:
->   a) `Agent(subagent_type="plan-doc-reviewer", model="opus")` — structural plan validation
->   b) `Skill("collie-reviewer")` with `Mode=plan`, `Target=<path to the plan file just written>` — Collie-style rubric review
+>   a) `Agent(subagent_type="collie-harness:plan-doc-reviewer", model="opus")` — structural plan validation
+>   b) `Skill("collie-harness:review")` with `Mode=plan`, `Target=<path to the plan file just written>` — Collie-style rubric review
 >   **Both reviewers must return approval before step 4. Do not call ExitPlanMode until both approve.**
 > Step 4: ExitPlanMode
-> Step 5: Call `gated-workflow` skill to implement
-> Step 6: Call `Agent(subagent_type="collie-rubric-reviewer", model="opus")` for final review
+> Step 5: Call `collie-harness:gated-workflow` skill to implement
+> Step 6: Call `Agent(subagent_type="collie-harness:reviewer", model="opus")` for final review
 >
-> Only when collie-rubric-reviewer returns `**Status:** PASS`, output:
+> Only when collie-harness:reviewer returns `**Status:** PASS`, output:
 > `<promise>Collie: SHIP IT</promise>`
 >
-> If collie-rubric-reviewer returns WARN or BLOCK, you must fix the issues and restart from step ⑤, review again, until PASS is achieved.
+> If collie-harness:reviewer returns WARN or BLOCK, you must fix the issues and restart from step ⑤, review again, until PASS is achieved.
 
 ## Intelligent Exit Policy
 
@@ -75,6 +75,6 @@ These are automatically detected by the `stop-steps-counter.js` hook with no man
 ## Usage Example
 
 ```
-/collie-auto "add hello.js that prints 'collie mode'"
-/collie-auto "refactor auth module to use JWT" --max-iterations 30
+/auto "add hello.js that prints 'collie mode'"
+/auto "refactor auth module to use JWT" --max-iterations 30
 ```

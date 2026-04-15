@@ -107,7 +107,7 @@ test('post-exitplan-gated-hint: only plan-doc-reviewer approved → stdout empty
 
   const result = runHook({ tool_name: 'ExitPlanMode', session_id: SESSION_ID });
   assert.strictEqual(result.status, 0, `Hook failed: ${result.stderr}`);
-  assert.strictEqual(result.stdout.trim(), '', 'stdout must be empty when collie-reviewer not approved');
+  assert.strictEqual(result.stdout.trim(), '', 'stdout must be empty when collie-harness:review not approved');
 });
 
 test('post-exitplan-gated-hint: last-plan.json missing → stdout empty (silent)', () => {

@@ -1,6 +1,6 @@
 ---
-name: collie-queue
-description: "CronCreate task queue scheduler skill. Scans tasks in ~/.collie-harness/queue/*.md, schedules /collie-auto execution via CronCreate tool. Supports scheduled tasks, concurrency=1 protection, and daily token budget checks."
+name: collie-harness:queue
+description: "CronCreate task queue scheduler skill. Scans tasks in ~/.collie-harness/queue/*.md, schedules /auto execution via CronCreate tool. Supports scheduled tasks, concurrency=1 protection, and daily token budget checks."
 ---
 
 # Collie Queue Skill
@@ -50,7 +50,7 @@ Manually create `~/.collie-harness/queue/task-001.md` with task information.
 Call this skill to scan and schedule:
 
 ```
-Use collie-queue skill to check and schedule pending tasks
+Use collie-harness:queue skill to check and schedule pending tasks
 ```
 
 ### 3. Check Execution Status
@@ -88,7 +88,7 @@ When this skill is invoked:
 CronCreate({
   prompt: "<<autonomous-loop>>",
   schedule: "in 1 minute",  // or based on scheduled_at
-  description: "collie-queue task: " + task.id
+  description: "collie-harness:queue task: " + task.id
 })
 ```
 
@@ -102,7 +102,7 @@ Actual prompt content injected into `<<autonomous-loop>>`:
 >
 > Execution steps:
 > 1. cd to {task.project_dir}
-> 2. Run /collie-auto "{task.prompt}" --max-iterations {task.max_iterations}
+> 2. Run /auto "{task.prompt}" --max-iterations {task.max_iterations}
 > 3. After completion, update task file status to "done"
 > 4. Delete ~/.collie-harness/state/scheduled_tasks.lock
 

@@ -1,6 +1,6 @@
 ---
-name: collie-reviewer
-description: "Collie-style unified rubric reviewer. Enforces 12 red lines + 10 questions + ELEPHANT anti-sycophancy + Reflexion grounding. Internally dispatches Agent(model=opus) for isolation. Use in three contexts: (1) Plan mode — Target is a plan doc matching *-plan.md or under plans/; called in parallel with plan-doc-reviewer at /collie-auto step ③ before ExitPlanMode. (2) Code mode — Target is a worktree diff or branch; called at /collie-auto step ⑥ via the collie-rubric-reviewer agent shell. (3) Ad-hoc — any file, diff, design doc, or subagent output needing Collie-style review."
+name: collie-harness:review
+description: "Collie-style unified rubric reviewer. Enforces 12 red lines + 10 questions + ELEPHANT anti-sycophancy + Reflexion grounding. Internally dispatches Agent(model=opus) for isolation. Use in three contexts: (1) Plan mode — Target is a plan doc matching *-plan.md or under plans/; called in parallel with plan-doc-reviewer at /auto step ③ before ExitPlanMode. (2) Code mode — Target is a worktree diff or branch; called at /auto step ⑥ via the collie-harness:reviewer agent shell. (3) Ad-hoc — any file, diff, design doc, or subagent output needing Collie-style review."
 ---
 
 # Collie Reviewer

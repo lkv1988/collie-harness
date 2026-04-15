@@ -22,19 +22,19 @@ async function main() {
     process.exit(0);
   }
 
-  // Detect which reviewer completed: plan-doc-reviewer (Agent) or collie-reviewer (Skill)
+  // Detect which reviewer completed: plan-doc-reviewer (Agent) or collie-harness:review (Skill)
   const REVIEWER = {
-    'plan-doc-reviewer': { ownKey: 'plan_doc_reviewer', otherKey: 'collie_reviewer',   otherName: 'collie-reviewer (Mode=plan)' },
-    'collie-reviewer':   { ownKey: 'collie_reviewer',   otherKey: 'plan_doc_reviewer', otherName: 'plan-doc-reviewer' },
+    'collie-harness:plan-doc-reviewer':   { ownKey: 'plan_doc_reviewer', otherKey: 'collie_reviewer',   otherName: 'collie-harness:review (Mode=plan)' },
+    'collie-harness:review': { ownKey: 'collie_reviewer',   otherKey: 'plan_doc_reviewer', otherName: 'collie-harness:plan-doc-reviewer' },
   };
   let source = null;
   const toolInput = payload.tool_input || {};
   if (payload.tool_name === 'Agent') {
-    if (toolInput.subagent_type === 'plan-doc-reviewer') source = 'plan-doc-reviewer';
+    if (toolInput.subagent_type === 'collie-harness:plan-doc-reviewer') source = 'collie-harness:plan-doc-reviewer';
   }
   if (payload.tool_name === 'Skill') {
     const skillName = toolInput.skill || toolInput.skill_name || '';
-    if (/collie-reviewer/.test(skillName)) source = 'collie-reviewer';
+    if (/collie-harness:review/.test(skillName)) source = 'collie-harness:review';
   }
   if (!source) process.exit(0);
 
@@ -60,9 +60,9 @@ async function main() {
 
   // Check for approval based on source
   let approved = false;
-  if (source === 'plan-doc-reviewer') {
+  if (source === 'collie-harness:plan-doc-reviewer') {
     approved = responseContent.includes('**Status:** Approved');
-  } else if (source === 'collie-reviewer') {
+  } else if (source === 'collie-harness:review') {
     approved = /##\s*Collie Reviewer[\s\S]*?\*\*Status:\*\*\s*PASS\b/.test(responseContent);
   }
   if (!approved) process.exit(0);
@@ -99,7 +99,7 @@ async function main() {
   const otherDone = updated[otherKey] && updated[otherKey].approved === true;
 
   const hint = otherDone
-    ? `✅ [collie-harness] both plan-doc-reviewer AND collie-reviewer approved — next step: you MUST call ExitPlanMode now.`
+    ? `✅ [collie-harness] both collie-harness:plan-doc-reviewer AND collie-harness:review approved — next step: you MUST call ExitPlanMode now.`
     : `✅ [collie-harness] ${source} approved — still waiting on ${otherName}. Dispatch it now (in parallel is fine), then call ExitPlanMode.`;
 
   const out = { additionalContext: hint };

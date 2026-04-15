@@ -95,14 +95,14 @@ if (toolName === 'ExitPlanMode') {
       if (planDocOk && collieOk) {
         needsWarn = false;
       } else {
-        if (!planDocOk) missing.push('plan-doc-reviewer');
-        if (!collieOk)  missing.push('collie-reviewer');
+        if (!planDocOk) missing.push('collie-harness:plan-doc-reviewer');
+        if (!collieOk)  missing.push('collie-harness:review');
       }
     } catch (e) {
       if (e.code !== 'ENOENT') {
         process.stderr.write('[collie-harness/post-writing-plans-reviewer] Could not parse last-plan.json: ' + e.message + '\n');
       }
-      missing = ['plan-doc-reviewer', 'collie-reviewer'];
+      missing = ['collie-harness:plan-doc-reviewer', 'collie-harness:review'];
     }
 
     if (needsWarn) {
@@ -121,7 +121,7 @@ if (toolName === 'ExitPlanMode') {
 
       const output = {
         decision: 'block',
-        reason: `⚠️ [collie-harness] ExitPlanMode 被拦截：plan 尚未被 ${missingList} 批准。必须先并行调用 Agent(subagent_type='plan-doc-reviewer', model='opus') 和 Skill('collie-reviewer', Mode=plan)，双方都返回批准后才能 ExitPlanMode。`,
+        reason: `⚠️ [collie-harness] ExitPlanMode 被拦截：plan 尚未被 ${missingList} 批准。必须先并行调用 Agent(subagent_type='collie-harness:plan-doc-reviewer', model='opus') 和 Skill('collie-harness:review', Mode=plan)，双方都返回批准后才能 ExitPlanMode。`,
       };
       process.stdout.write(JSON.stringify(output) + '\n');
       process.exit(0);

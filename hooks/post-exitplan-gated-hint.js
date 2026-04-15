@@ -41,7 +41,7 @@ try {
 
 if (bothApproved) {
   process.stdout.write(JSON.stringify({
-    additionalContext: '✅ [collie-harness] ExitPlanMode done — next step: must call gated-workflow skill (~/.claude/skills/gated-workflow/SKILL.md). Skipping = red-line violation.',
+    additionalContext: '✅ [collie-harness] ExitPlanMode done — next step: must call Skill(\'collie-harness:gated-workflow\'). Skipping = red-line violation.',
   }));
 }
 
