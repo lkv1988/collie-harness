@@ -41,7 +41,7 @@ Scan the Target item by item. Each question answered `PASS` / `FAIL` with `file:
 5. **Gate omissions** — subagent / tdd / parallel / todolist / collie-harness:plan-doc-reviewer — any gate skipped?
 6. **Subagent model selection** — opus for research? haiku for bulk? Did main session do subagent work?
 7. **Mock vs real call** — Any mocked path bypass what matters? *(skip in plan mode)*
-8. **Spec distillation** — Plan mode: plan includes doc update tasks (README / CLAUDE.md / spec) where applicable. Code mode: new insight written back to `docs/*-spec.md`.
+8. **Spec distillation** — Plan mode: plan includes doc update tasks (README / CLAUDE.md / spec) where applicable. Code mode: 枚举本次 diff 涉及的所有模块/文件，对每一项显式判断是否产生新认知或非显而易见的约束，并提供 `file:line` 证据：有新认知 → 引用写入 spec 的 `file:line`；无新认知 → 引用**已有 spec 中覆盖该行为的 `file:line`**（无法引用已有 spec = FAIL，必须写入 spec）。
 9. **No reinventing** — Existing implementation **or spec** to reuse / reference? Plan mode specifically: did the plan consult `docs/*-spec.md` and `docs/superpowers/specs/` before proposing a new approach?
 10. **Sycophancy check** — Is this conclusion independent, or does it echo the user's framing?
 

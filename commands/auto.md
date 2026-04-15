@@ -30,7 +30,7 @@ This command uses ralph-loop. Completion signal: `<promise>Collie: SHIP IT</prom
    (both must return approval before step ④)
 ④ ExitPlanMode → exit planning mode
 ⑤ collie-harness:gated-workflow skill → complete implementation pipeline
-⑥ Skill("collie-harness:review") with Mode=code, Target=<worktree diff> → final review
+⑥ Skill("collie-harness:review") with Mode=code, Target=<worktree diff>, Context="Plan: <plan doc path from task0>" → final review
 ⑦ If collie-harness:review Status=PASS → output completion signal
    If WARN/BLOCK → fix and return to step ⑤
 ```
@@ -58,7 +58,7 @@ When starting, inject this as the working prompt (substitute $ARGUMENTS with the
 >   **Both reviewers must return approval before step 4. Do not call ExitPlanMode until both approve.**
 > Step 4: ExitPlanMode
 > Step 5: Call `collie-harness:gated-workflow` skill to implement
-> Step 6: Call `Skill("collie-harness:review")` with `Mode=code`, `Target=<current worktree diff>` for final review
+> Step 6: Call `Skill("collie-harness:review")` with `Mode=code`, `Target=<current worktree diff>`, `Context="Plan: <path to the plan doc archived in task0>"` for final review
 >
 > Only when collie-harness:review returns `**Status:** PASS`, output:
 > `<promise>Collie: SHIP IT</promise>`
