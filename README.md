@@ -19,10 +19,15 @@ collie-harness 依赖以下两个 plugin，必须先装好：
 
 确认已加载：`/plugin list` 应同时显示 `superpowers` 和 `ralph-loop`。
 
-### 安装 collie-harness
+### 添加 marketplace
 
 ```bash
 claude plugin marketplace add lkv1988/collie-harness
+```
+
+### 安装插件
+
+```bash
 claude plugin install collie-harness@collie-marketplace
 ```
 
