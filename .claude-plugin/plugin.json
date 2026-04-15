@@ -7,7 +7,7 @@
   "author": { "name": "KevinLiu" },
   "keywords": ["workflow", "rubric-review", "agent", "collie", "autonomous", "gated-workflow"],
   "license": "MIT",
-  "agents": ["./agents/reviewer.md", "./agents/plan-doc-reviewer.md"],
+  "agents": ["./agents/plan-doc-reviewer.md"],
   "commands": ["./commands/"],
   "skills": ["./skills/"]
 }
