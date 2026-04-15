@@ -7,19 +7,19 @@ Collie 风格自主开发 agent harness — 作为 Claude Code plugin 分发。
 - **Layer 0**: `acceptEdits` 模式 + escalation 通道
 - **Layer 1**: hook 链强制双 reviewer 握手（collie-harness:plan-doc-reviewer + collie-harness:review 双方通过才允许 ExitPlanMode）
 - **Layer 2**: `skills/review/` — Collie 12 红线 + 10 问题 + ELEPHANT 的唯一真源；plan 阶段和 code 阶段都直接作为 skill 调用
-- **Layer 3**: `/auto` slash command（ralph-loop 封装）+ CronCreate 任务队列
+- **Layer 3**: `/collie-harness:auto` slash command（ralph-loop 封装）+ CronCreate 任务队列
 
 ## 使用
 
 ```bash
 # 单次任务
-/auto "给 foo 模块加一个 retry 机制"
+/collie-harness:auto "给 foo 模块加一个 retry 机制"
 
 # 限制最大迭代次数
-/auto "重构 auth 模块" --max-iterations 30
+/collie-harness:auto "重构 auth 模块" --max-iterations 30
 
 # 排队无人值守任务
-/queue
+/collie-harness:queue
 ```
 
 任务完成的唯一信号是 `<promise>Collie: SHIP IT</promise>`——这只在 `collie-harness:review` (Mode=code) 返回 PASS 后才会输出。
@@ -27,7 +27,7 @@ Collie 风格自主开发 agent harness — 作为 Claude Code plugin 分发。
 ## 工作流
 
 ```
-/auto "task"
+/collie-harness:auto "task"
   → ⓪ Research & Reuse               ← 内部 spec 优先，再搜网 / registry / 文档，优先复用
   → superpowers:brainstorming
   → superpowers:writing-plans         ← hook 标记 plan 待双审
@@ -60,7 +60,7 @@ collie-harness 的自动化流程（brainstorming、writing-plans、gated-workfl
 
 ### 前置依赖：ralph-loop
 
-`/auto` command 的自动循环机制依赖 ralph-loop plugin。**必须先装好 ralph-loop，再装 collie-harness。**
+`/collie-harness:auto` command 的自动循环机制依赖 ralph-loop plugin。**必须先装好 ralph-loop，再装 collie-harness。**
 
 ```bash
 /plugin install ralph-loop@claude-plugins-official
@@ -123,8 +123,8 @@ cd ~/git/collie-harness && node --test tests/*.test.js
 ├── agents/
 │   └── plan-doc-reviewer.md          # 结构审查 agent（collie-harness:plan-doc-reviewer）
 ├── commands/
-│   ├── auto.md                       # /auto slash command
-│   └── queue.md                      # /queue slash command
+│   ├── auto.md                       # /collie-harness:auto slash command
+│   └── queue.md                      # /collie-harness:queue slash command
 ├── skills/
 │   ├── gated-workflow/SKILL.md       # 实施阶段门禁流程
 │   ├── review/                       # Collie rubric 唯一真源

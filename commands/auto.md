@@ -83,6 +83,6 @@ These are automatically detected by the `stop-steps-counter.js` hook with no man
 ## Usage Example
 
 ```
-/auto "add hello.js that prints 'collie mode'"
-/auto "refactor auth module to use JWT" --max-iterations 30
+/collie-harness:auto "add hello.js that prints 'collie mode'"
+/collie-harness:auto "refactor auth module to use JWT" --max-iterations 30
 ```

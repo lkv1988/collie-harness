@@ -33,13 +33,13 @@ No build step — pure Node.js, zero external dependencies.
 |-------|-------------|
 | **0** | `acceptEdits` mode + escalation channel (`scripts/escalate.sh`) |
 | **1** | Chain-link hooks enforcing dual-reviewer handshake (collie-harness:plan-doc-reviewer + collie-harness:review) before ExitPlanMode |
-| **2** | `skills/review/` — single source of truth for Collie's 12 red-lines + 10 questions + Reflexion + ELEPHANT. Called directly at both plan stage (parallel with `plan-doc-reviewer`) and code stage (`/auto` step ⑥). |
+| **2** | `skills/review/` — single source of truth for Collie's 12 red-lines + 10 questions + Reflexion + ELEPHANT. Called directly at both plan stage (parallel with `plan-doc-reviewer`) and code stage (`/collie-harness:auto` step ⑥). |
 | **3** | Self-driven harness (`commands/auto.md` + `skills/queue/`) with CronCreate task queue |
 
 ## Workflow Sequence (enforced by hooks)
 
 ```
-/auto "task"
+/collie-harness:auto "task"
   → ⓪ Research & Reuse         ← internal specs first, then web search / registry / docs
   → superpowers:brainstorming
   → superpowers:writing-plans   ← post-writing-plans-reviewer.js marks plan pending (both reviewers)
@@ -108,7 +108,7 @@ export COLLIE_HARNESS_HOME="~/.my-harness"  # defaults to ~/.collie-harness
 
 每次 rename 重构后运行：
 ```bash
-grep -n '/collie\|/auto\|/queue\|/reviewer' README.md CLAUDE.md
+grep -n '/collie-harness' README.md CLAUDE.md
 ls commands/ skills/*/SKILL.md agents/*.md
 ```
 `commands/` 每个 `.md` = 一个 slash 命令；`skills/` 每个 `SKILL.md` = 一个 Skill；`agents/` 每个 `.md` = 一个 Agent。任何 user-facing 名字与文件不对应 = 发布红线。
