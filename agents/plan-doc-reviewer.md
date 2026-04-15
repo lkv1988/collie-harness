@@ -40,6 +40,7 @@ You will be given a plan file path and optionally a spec file path. Read both do
 - Critical dependencies between tasks are missing or misordered
 - 改动会导致已有文档内容过时（README / CLAUDE.md / docs/*-spec.md 中的描述不再准确），但计划未包含任何文档更新任务
 - `docs/` 下存在与本次改动直接相关的 spec 文件（例如同名主题 / 同名模块），但计划完全未引用
+- Plan 中存在 Commit step，但 commit message 未在 body 中包含 `Refs: docs/plans/<plan-filename>.md`（缺少 plan 引用会导致日后无法从 git log 回溯当时的设计上下文）
 
 **Do NOT flag these (advisory only):**
 - Minor wording improvements or stylistic preferences
