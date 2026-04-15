@@ -1,20 +1,18 @@
 {
   "name": "collie-marketplace",
-  "owner": { "name": "KevinLiu" },
-  "metadata": {
-    "description": "Collie 风格 Claude Code 插件集合",
-    "version": "0.1.0"
+  "description": "Collie-style autonomous development agent harness for Claude Code",
+  "owner": {
+    "name": "lkv1988"
   },
   "plugins": [
     {
       "name": "collie-harness",
-      "source": {
-        "source": "url",
-        "url": "https://github.com/KevinLiu/collie-harness.git"
-      },
-      "description": "Collie 风格自主开发 agent harness：rubric 审查 + 预算护栏 + 死循环防护",
+      "description": "Collie-style autonomous development agent harness: rubric review + budget guardrails + loop detection",
       "version": "0.1.0",
-      "strict": true
+      "source": "./",
+      "author": {
+        "name": "lkv1988"
+      }
     }
   ]
 }

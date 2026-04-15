@@ -22,7 +22,8 @@ collie-harness 依赖以下两个 plugin，必须先装好：
 ### 安装 collie-harness
 
 ```bash
-claude plugin install https://github.com/lkv1988/collie-harness
+claude plugin marketplace add lkv1988/collie-harness
+claude plugin install collie-harness@collie-marketplace
 ```
 
 ## 配置
