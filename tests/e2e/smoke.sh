@@ -55,10 +55,10 @@ scenario2() {
       node "${PLUGIN_ROOT}/hooks/post-writing-plans-reviewer.js" >/dev/null 2>&1
 
   local state_file="${TMPDIR_BASE}/.collie-harness/state/${session_id}/last-plan.json"
-  if [[ -f "${state_file}" ]] && grep -q '"reviewed": false' "${state_file}"; then
-    run_scenario "Plan reviewer hook creates last-plan.json with reviewed:false" "pass"
+  if [[ -f "${state_file}" ]] && grep -q '"plan_doc_reviewer"' "${state_file}" && grep -q '"collie_reviewer"' "${state_file}"; then
+    run_scenario "Plan reviewer hook creates last-plan.json with dual-reviewer schema" "pass"
   else
-    run_scenario "Plan reviewer hook creates last-plan.json with reviewed:false" "fail"
+    run_scenario "Plan reviewer hook creates last-plan.json with dual-reviewer schema" "fail"
   fi
 }
 

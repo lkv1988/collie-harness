@@ -69,7 +69,7 @@
 node --test tests/*.test.js                          # 7 个测试文件全绿
 ./tests/e2e/smoke.sh                                 # 4 个 scenario 全过
 grep -rn "daily_token_cap" CLAUDE.md README.md hooks/   # 三份一致
-grep -rn "/Users/kevin" skills/ README.md CLAUDE.md     # 无匹配
+grep -rn "~" skills/ README.md CLAUDE.md     # 无匹配
 ```
 
 **Commit message**: `fix: 修复 budget schema 文档不一致、hooks fallback 路径和 smoke 测试路径`

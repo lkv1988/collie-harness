@@ -19,7 +19,7 @@
 - `ralph-loop` plugin → **README 补充安装说明**
 
 已实测事实（避免 v1 的无证据结论）：
-- `claude plugin validate /Users/kevin/git/collie-harness` **存在且可用** — 本 session 早些时候试过，返回 `✔ Validation passed`
+- `claude plugin validate ~/git/collie-harness` **存在且可用** — 本 session 早些时候试过，返回 `✔ Validation passed`
 - `marketplace.json` 当前的 `"source": { "source": "url", "url": "..." }` schema **合法** — 同一次 validate 通过
 - `~/.claude/agents/plan-doc-reviewer.md` 有效内容只在 1-74 行，75-208 行是 auto-generated memory scaffolding，内化必须删掉
 - frontmatter 含 `memory: user` 字段，内化时去掉

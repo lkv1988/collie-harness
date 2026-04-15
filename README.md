@@ -28,7 +28,7 @@ Collie 风格自主开发 agent harness — 作为 Claude Code plugin 分发。
 
 ```
 /auto "task"
-  → ⓪ Research & Reuse               ← 搜网、查 registry、查文档，优先复用
+  → ⓪ Research & Reuse               ← 内部 spec 优先，再搜网 / registry / 文档，优先复用
   → superpowers:brainstorming
   → superpowers:writing-plans         ← hook 标记 plan 待双审
   → PARALLEL:
@@ -43,6 +43,8 @@ Collie 风格自主开发 agent harness — 作为 Claude Code plugin 分发。
 ```
 
 hook 的 warn 不是报错，是护栏：跳过任意一步都会被拦截提示。
+
+任何 plan 若改动用户可见行为 / 架构约束 / 已有文档内容，必须包含显式的文档更新任务（README / CLAUDE.md / docs/\*-spec.md）。由 `collie-harness:plan-doc-reviewer` 的 Doc Maintenance 检查、`collie-harness:review` Red line #12 + Q8，以及 `gated-workflow` Step 5.5 共同强制。
 
 ## 安装
 
@@ -132,16 +134,21 @@ cd ~/git/collie-harness && node --test tests/*.test.js
 ```
 ~/git/collie-harness/
 ├── .claude-plugin/plugin.json
-├── agents/reviewer.md                 # 瘦壳，委托 collie-harness:review skill
-├── commands/auto.md                   # /auto slash command
+├── agents/
+│   ├── plan-doc-reviewer.md          # 结构审查 agent（collie-harness:plan-doc-reviewer）
+│   └── reviewer.md                   # 瘦壳，委托 collie-harness:review skill
+├── commands/
+│   ├── auto.md                       # /auto slash command
+│   └── queue.md                      # /queue slash command
 ├── skills/
-│   ├── review/                        # Collie rubric 唯一真源
+│   ├── gated-workflow/SKILL.md       # 实施阶段门禁流程
+│   ├── review/                       # Collie rubric 唯一真源
 │   │   ├── SKILL.md
 │   │   └── references/
-│   │       ├── rubric-red-lines.md   # 12 红线 + 10 问题 + Reflexion
-│   │       ├── elephant-check.md     # ELEPHANT 8 维反谄媚
-│   │       └── collie-voice.md       # Collie 声音句库
-│   └── queue/SKILL.md                # CronCreate task queue
+│   │       ├── rubric-red-lines.md  # 12 红线 + 10 问题 + Reflexion
+│   │       ├── elephant-check.md    # ELEPHANT 8 维反谄媚
+│   │       └── collie-voice.md      # Collie 声音句库
+│   └── queue/SKILL.md               # CronCreate task queue
 ├── hooks/
 │   ├── hooks.json                    # auto-loaded by Claude Code v2.1+
 │   ├── notification-escalate.js
