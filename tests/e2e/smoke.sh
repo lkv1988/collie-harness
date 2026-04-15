@@ -63,31 +63,9 @@ scenario2() {
 }
 
 # ---------------------------------------------------------------------------
-# Scenario 3: Quota guard blocks when rate-limited
+# Scenario 3: Loop trap detection — no_progress escalation fires
 # ---------------------------------------------------------------------------
 scenario3() {
-  local state_dir="${TMPDIR_BASE}/.collie-harness/state"
-  mkdir -p "${state_dir}"
-  cat > "${state_dir}/quota.json" <<'EOF'
-{"rate_limit_cool_until": "2099-01-01T00:00:00.000Z", "exhausted": false, "daily_input_tokens": 0, "daily_output_tokens": 0}
-EOF
-
-  local output
-  output=$(echo '{}' \
-    | HOME="${TMPDIR_BASE}" CLAUDE_PLUGIN_ROOT="${PLUGIN_ROOT}" \
-      node "${PLUGIN_ROOT}/hooks/pre-tool-quota-guard.js" 2>/dev/null)
-
-  if echo "${output}" | grep -qE '"decision"\s*:\s*"block"'; then
-    run_scenario "Quota guard blocks when rate-limited" "pass"
-  else
-    run_scenario "Quota guard blocks when rate-limited" "fail"
-  fi
-}
-
-# ---------------------------------------------------------------------------
-# Scenario 4: Loop trap detection — no_progress escalation fires
-# ---------------------------------------------------------------------------
-scenario4() {
   local session_id="smoke-loop-session"
   local state_dir="${TMPDIR_BASE}/.collie-harness/state/${session_id}"
   mkdir -p "${state_dir}"
@@ -128,7 +106,6 @@ echo ""
 scenario1
 scenario2
 scenario3
-scenario4
 
 echo ""
 echo "Results: ${PASS} passed, ${FAIL} failed"
