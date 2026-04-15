@@ -101,20 +101,6 @@ export COLLIE_ESCALATE_CMD=~/bin/my-escalate.sh
 
 Plugin 内置 stub，只写日志到 `~/.collie-harness/escalations.log`。
 
-### Quota 预算（必填，首次运行前）
-
-默认状态目录是 `~/.collie-harness/`，可通过 `COLLIE_HARNESS_HOME` 环境变量覆盖。
-
-创建 `~/.collie-harness/config/budget.json`：
-
-```json
-{
-  "daily_token_cap": 1000000,
-  "weekly_token_cap": 5000000,
-  "confirm_before_autoloop": true
-}
-```
-
 ## 验证
 
 ```bash
@@ -155,8 +141,6 @@ cd ~/git/collie-harness && node --test tests/*.test.js
 │   ├── post-writing-plans-reviewer.js
 │   ├── post-approved-exitplan-hint.js
 │   ├── post-exitplan-gated-hint.js
-│   ├── stop-steps-counter.js
-│   ├── pre-tool-quota-guard.js
-│   └── post-tool-quota-tracker.js
+│   └── stop-steps-counter.js
 └── scripts/escalate.sh
 ```

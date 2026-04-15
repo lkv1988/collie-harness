@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 node --test tests/*.test.js
 
 # Run a single test file
-node --test tests/pre-tool-quota-guard.test.js
+node --test tests/stop-steps-counter.test.js
 
 # Run E2E smoke tests (4 scenarios)
 ./tests/e2e/smoke.sh
@@ -59,8 +59,6 @@ No build step — pure Node.js, zero external dependencies.
 | Hook file | Event | Purpose |
 |-----------|-------|---------|
 | `notification-escalate.js` | Notification | Routes to `escalate.sh` |
-| `pre-tool-quota-guard.js` | PreToolUse (all) | Blocks if rate-limited or budget >70% |
-| `post-tool-quota-tracker.js` | PostToolUse (all) | Accumulates token usage, detects rate-limit errors |
 | `post-writing-plans-reviewer.js` | PostToolUse Write/Edit + ExitPlanMode | Creates dual-reviewer state; **hard-blocks** (`decision:'block'`) ExitPlanMode if called before BOTH reviewers approve |
 | `post-approved-exitplan-hint.js` | PostToolUse Agent + PostToolUse Skill | Detects collie-harness:plan-doc-reviewer Approved OR collie-harness:review PASS; updates per-reviewer state; hints next step |
 | `post-exitplan-gated-hint.js` | PostToolUse ExitPlanMode | Reminds to call `collie-harness:gated-workflow` skill — **only when both reviewers approved**; silent otherwise |
@@ -72,8 +70,6 @@ All runtime state lives under `~/.collie-harness/`:
 
 ```
 ~/.collie-harness/
-  config/budget.json           # Token quota limits (daily/weekly caps)
-  state/quota.json             # Live token usage + rate-limit timestamps
   state/{sessionId}/
     last-plan.json             # Plan review status per session
     counter.json               # Step count + error hash tracking
@@ -86,7 +82,6 @@ All runtime state lives under `~/.collie-harness/`:
 
 - **Rubric red-lines** (BLOCK): 12 hard violations in `skills/review/references/rubric-red-lines.md` (single source of truth). Any single red-line = automatic BLOCK.
 - **Dual reviewer at plan stage**: `collie-harness:plan-doc-reviewer` (structural) AND `collie-harness:review` (Collie rubric) must both approve before ExitPlanMode. Enforced by `post-writing-plans-reviewer.js` + `post-approved-exitplan-hint.js`.
-- **Quota guard** blocks at 70% of `daily_token_cap` (reserves 30% buffer). Rate-limit cool-down = 1 hour.
 - **Loop trap**: 3 identical error hashes in a row → WARN escalation; 5 steps without file changes → WARN escalation.
 - **Task queue** (`collie-harness:queue`) runs at `concurrency=1` — never two collie sessions simultaneously.
 - **ELEPHANT check** in rubric reviewer: 8-point sycophancy self-check; must answer all 8 before issuing PASS.
@@ -98,16 +93,10 @@ All runtime state lives under `~/.collie-harness/`:
 # 1. Set acceptEdits mode in ~/.claude/settings.json
 #    "permissions": { "defaultMode": "acceptEdits" }
 
-# 2. Create budget config
-mkdir -p ~/.collie-harness/config
-cat > ~/.collie-harness/config/budget.json << 'EOF'
-{ "daily_token_cap": 1000000, "weekly_token_cap": 5000000, "confirm_before_autoloop": true }
-EOF
-
-# 3. (Optional) Custom escalation handler
+# 2. (Optional) Custom escalation handler
 export COLLIE_ESCALATE_CMD="your-notification-command"
 
-# 3b. (Optional) Override state directory location
+# 2b. (Optional) Override state directory location
 export COLLIE_HARNESS_HOME="~/.my-harness"  # defaults to ~/.collie-harness
 ```
 
