@@ -51,13 +51,19 @@ When starting, inject this as the working prompt (substitute $ARGUMENTS with the
 >   - Prefer adopting or wrapping a proven solution over writing net-new code
 >   - Document what you found (or ruled out) in one short paragraph before proceeding
 > Step 1: Call `superpowers:brainstorming` skill to complete design brainstorming
-> Step 2: Call `superpowers:writing-plans` skill to write implementation plan
+> Step 2: Call `superpowers:writing-plans` skill to write the implementation plan.
+>   - The plan MUST be written to the path specified in the planmode system prompt (Claude Code's official plan file). Do NOT write to a separate location like `docs/superpowers/plans/`.
+>   - After writing, **prepend the following metadata line as the very first line of the plan file** (using Bash `sed -i`, not Write/Edit, to avoid LLM rewriting the content):
+>     ```
+>     <!-- plan-source: /absolute/path/to/this/plan/file.md -->
+>     ```
+>   - Record this path as `$PLAN_PATH`.
 > Step 3: In parallel, dispatch BOTH reviewers:
 >   a) `Agent(subagent_type="collie-harness:plan-doc-reviewer", model="opus")` — structural plan validation
->   b) `Skill("collie-harness:review")` with `Mode=plan`, `Target=<path to the plan file just written>` — Collie-style rubric review
+>   b) `Skill("collie-harness:review")` with `Mode=plan`, `Target=$PLAN_PATH` — Collie-style rubric review
 >   **Both reviewers must return approval before step 4. Do not call ExitPlanMode until both approve.**
 > Step 4: ExitPlanMode
-> Step 5: Call `collie-harness:gated-workflow` skill to implement
+> Step 5: Call `collie-harness:gated-workflow` skill to implement.
 > Step 6: Call `Skill("collie-harness:review")` with `Mode=code`, `Target=<current worktree diff>`, `Context="Plan: <path to the plan doc archived in task0>"` for final review
 >
 > Only when collie-harness:review returns `**Status:** PASS`, output:

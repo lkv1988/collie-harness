@@ -59,11 +59,18 @@ description: Post-planmode implementation workflow with quality gates. Use immed
 
 ## Step 2：归档计划文档（task0）
 
-**按以下优先级确定权威来源**：
+**按以下优先级确定权威来源（计划文件路径）**：
 1. planmode system message 中明确指定的计划文件路径
-2. user message 中 inline 写入的计划内容
+2. 计划文件第一行的 `<!-- plan-source: /path/to/file.md -->` 元数据（由 `/collie-harness:auto` 在 planmode 期间写入）
+3. user message 中 inline 写入的计划内容
 
 **执行流程**：
+
+**优先尝试提取 plan-source 路径**：
+```bash
+head -1 "<plan文件>" | grep -o 'plan-source: [^>]*' | cut -d' ' -f2
+```
+若提取成功，以该路径作为 `$PLAN_SOURCE`。
 
 首先检查目标路径 `docs/plans/YYYY-MM-DD-<topic>-plan.md` 是否已存在：
 - **已存在且内容与当前计划一致** → 直接视为完成，跳过
@@ -72,14 +79,14 @@ description: Post-planmode implementation workflow with quality gates. Use immed
 
 **从权威来源写入**：
 
-若权威来源是文件（planmode 指定路径）：
+若权威来源是文件路径（优先级 1 或 2）：
 → ⛔ 必须用 Bash `cp` 命令，禁止用 Write/Edit 工具（避免 LLM 在写入时改写内容）：
 ```bash
-cp "<来源路径>" "docs/plans/YYYY-MM-DD-<topic>-plan.md"
+cp "$PLAN_SOURCE" "docs/plans/YYYY-MM-DD-<topic>-plan.md"
 ```
 注意：路径必须加双引号，防止空格导致命令错误。
 
-若权威来源是 user message inline 内容：
+若权威来源是 user message inline 内容（优先级 3）：
 → 主 session 直接用 Write 工具将内容原样写入目标路径。
 ⛔ 禁止 dispatch subagent 做此操作（主 session 已持有完整内容，subagent 有改写风险）。
 
