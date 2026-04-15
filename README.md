@@ -28,6 +28,7 @@ Collie 风格自主开发 agent harness — 作为 Claude Code plugin 分发。
 
 ```
 /auto "task"
+  → ⓪ Research & Reuse               ← 搜网、查 registry、查文档，优先复用
   → superpowers:brainstorming
   → superpowers:writing-plans         ← hook 标记 plan 待双审
   → PARALLEL:

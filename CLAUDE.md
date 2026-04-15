@@ -40,6 +40,7 @@ No build step — pure Node.js, zero external dependencies.
 
 ```
 /auto "task"
+  → ⓪ Research & Reuse         ← web search / registry / docs, prefer reuse over net-new
   → superpowers:brainstorming
   → superpowers:writing-plans   ← post-writing-plans-reviewer.js marks plan pending (both reviewers)
   → PARALLEL:
