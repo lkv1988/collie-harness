@@ -174,6 +174,9 @@ Your task: [task N] <一句话概要>
   Read(file=Plan archive, offset=X-1, limit=Y-X+1)
 读取本 task 对应的 plan 原文段落，以其中的 acceptance criteria 逐条生成 checklist 并验证。
 不得只验 prompt 里的任务概要描述。
+
+所有 git commit 的 message body 必须包含：
+  Refs: <$ARCHIVE_PATH 的相对路径，如 docs/plans/2026-04-16-my-feature-plan.md>
 ```
 
 ### CR subagent 的 prompt 模板
