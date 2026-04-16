@@ -128,6 +128,7 @@ When starting, inject this as the working prompt (substitute $ARGUMENTS with the
 >       ```
 >       `Key files` lists files each task creates or modifies. The gated-workflow plan-reader subagent depends on this table.
 >     - Do NOT call writing-plans separately — brainstorming triggers it at its final step.
+    - **Skip brainstorming human approval gates**: brainstorming's Step 5 ("User approves design?") and Step 8 ("User reviews written spec?") are skipped in collie-harness auto mode. Proceed directly: design → spec self-review → writing-plans. The collie dual-review in Step ③ is the approval gate.
 >     - **Skip writing-plans Plan Review Loop**: writing-plans' built-in plan-document-reviewer per-chunk review is skipped in collie-harness. collie-harness Step ③ has stricter dual-reviewer review — do not run both.
 >     - **Skip writing-plans Execution Handoff**: writing-plans' "Ready to execute?" prompt and skill recommendation are skipped in collie-harness. After the plan is written, return directly to auto.md Step ③ dual review.
 >     - **Design doc + Plan = single file**: brainstorming's design doc and writing-plans' implementation plan both go into the planmode plan file. Do NOT write them separately to `docs/superpowers/specs/` or `docs/superpowers/plans/`. File structure: design spec first, then `---`, then implementation plan.
