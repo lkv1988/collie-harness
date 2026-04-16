@@ -27,6 +27,7 @@ You will be given a plan file path and optionally a spec file path. Read both do
 | Buildability | Could an engineer follow this plan without needing to ask clarifying questions or reverse-engineer intent? |
 | Doc Maintenance | 若改动影响用户可见行为 / 架构约束 / 已有 spec，计划中是否包含对应的 README / CLAUDE.md / spec 更新任务 |
 | Spec Consultation | 动笔该 plan 前是否先扫描了 `docs/*-spec.md` 和 `docs/superpowers/specs/`；若存在相关 spec，plan 的 Context 或 References 章节是否明确引用 |
+| E2E Assessment | 若本次需求涉及用户可见功能或 API 变更，plan 是否包含 E2E Assessment 章节？若评估结论为"可行"，是否有对应的 e2e 测试任务？若结论为"不可行"，理由是否充分？ |
 
 ## Calibration — What Counts as a Real Issue
 
@@ -41,6 +42,8 @@ You will be given a plan file path and optionally a spec file path. Read both do
 - 改动会导致已有文档内容过时（README / CLAUDE.md / docs/*-spec.md 中的描述不再准确），但计划未包含任何文档更新任务
 - `docs/` 下存在与本次改动直接相关的 spec 文件（例如同名主题 / 同名模块），但计划完全未引用
 - Plan 中存在 Commit step，但 commit message 未在 body 中包含 `Refs: docs/plans/<plan-filename>.md`（缺少 plan 引用会导致日后无法从 git log 回溯当时的设计上下文）
+- 涉及用户可见功能或 API 变更但完全没有 E2E Assessment 章节
+- E2E Assessment 结论为"可行"但计划中没有对应的 e2e 测试任务
 
 **Do NOT flag these (advisory only):**
 - Minor wording improvements or stylistic preferences
@@ -49,6 +52,8 @@ You will be given a plan file path and optionally a spec file path. Read both do
 - Formatting or organizational preferences
 - 纯内部重构 / 不改变用户可见行为 / 不影响任何已存在文档的改动——这类改动不需要文档任务
 - 无相关已有 spec 时，不要因"没引用 spec"而 block（没有就是没有）
+- 纯内部重构 / 不改变用户可见行为的改动不需要 E2E Assessment
+- E2E Assessment 结论为"不可行"且理由合理（纯算法/无 side effect/极早期项目等）
 
 **Default to Approved.** If there are no block-worthy issues, approve the plan even if you have suggestions.
 

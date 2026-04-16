@@ -81,19 +81,19 @@ digraph collie_auto {
         style=dashed;
 
         GW_START [shape=box, label="Step 0: create worktree\n(using-git-worktrees)"];
-        GW1      [shape=box, label="Step 1: TaskCreate\nimpl TodoList"];
+        GW1      [shape=box, label="Step 1: TaskCreate\nimpl TodoList\n+ plan-todo 交叉核对\n(haiku subagent)"];
         GW2      [shape=box, label="Step 2: archive plan\n(cp → docs/plans/)"];
         GW3      [shape=box, label="Step 3: dispatch batch\n(parallel subagents)"];
         GW4      [shape=box, label="per task:\nTDD → VBC → CR subagent"];
         GW_MORE  [shape=diamond, label="more batches?"];
-        GW5      [shape=box, label="Step 5: simplify\n(if >100 lines changed)"];
-        GW6      [shape=box, label="Step 6: run tests\n(0 failures)"];
-        GW7      [shape=box, label="Step 7: finishing-branch\n(merge / PR / cleanup)"];
+        GW5      [shape=box, label="Step 5: run tests\n(unit 0 failures\n+ e2e if feasible)"];
+        GW55     [shape=box, label="Step 5.5: doc-refresh\n(README / CLAUDE.md / spec)"];
+        GW7      [shape=box, label="Step 6: finishing-branch\n(merge / PR / cleanup)"];
 
         GW_START -> GW1 -> GW2 -> GW3 -> GW4 -> GW_MORE;
         GW_MORE  -> GW3  [label="yes → next batch"];
         GW_MORE  -> GW5  [label="no → all done"];
-        GW5 -> GW6 -> GW7;
+        GW5 -> GW55 -> GW7;
     }
 
     GW7 -> "⑥ collie:review Mode=code\nTarget: worktree diff";

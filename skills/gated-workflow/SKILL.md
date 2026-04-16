@@ -49,6 +49,8 @@ task3: lines 159-201
 - 对计划中每个有代码改动的 task：
   - `[task N] <任务描述> [batch-X]`（有外部依赖时追加 `[blocked-by: task M]`）
   - `[task N-CR] code review for task N [batch-Y, blocked-by: task N]`
+- `[e2e-setup]` 建立 e2e 基建（条件：仅当 plan E2E Assessment 标注"需新建 e2e 基建"时创建）
+- `[e2e-verify]` 运行 e2e / 集成测试，验证 critical path（条件：仅当 plan E2E Assessment 结论为 `e2e_feasible: true` 时创建）
 - `[test-verify]` 运行单元测试，确保 0 失败
 - `[doc-refresh]` 对照实现结果核对 README / CLAUDE.md / spec，补更新遗漏
 - `[finish]` finishing-a-development-branch
@@ -62,12 +64,37 @@ task3: lines 159-201
 [task1-CR] code review task1 [batch-2, blocked-by: task1]
 [task2-CR] code review task2 [batch-2, blocked-by: task2]
 [task3-CR] code review task3 [batch-2, blocked-by: task3]
+[e2e-setup] 建立 e2e 基建（条件性）
+[e2e-verify] 运行 e2e / 集成测试（条件性）
 [test-verify] 运行单元测试
 [doc-refresh] 对照实现结果核对 README / CLAUDE.md / spec，补更新遗漏
 [finish] finishing-a-development-branch
 ```
 
 每完成一条立即标记，不得批量滞后更新。TodoList 是实施阶段的唯一进度看板。
+
+### Plan-Todo 交叉核对（建 list 后立即执行）
+
+⛔ **TodoList 建完后必须执行交叉核对，不得跳过。**
+
+Dispatch 一个 haiku subagent，prompt 自包含：
+
+````
+Plan archive: <$ARCHIVE_PATH>
+TodoList snapshot: <当前所有 TaskCreate 条目的 subject 列表>
+
+请逐条对比 plan 中的每个 task 与 TodoList 条目，输出差异报告：
+- 匹配：plan task X → [task Y]
+- 遗漏：plan task X → 无对应 TodoList 条目
+- 多余：[task Z] → plan 中无对应 task（可接受，如 [task0]、[test-verify] 等流程性任务）
+
+只报差异，无差异则输出"全部匹配"。
+````
+
+主 session 收到差异报告后：
+- 遗漏 → 立即用 TaskCreate 补上
+- 有意合并 → 必须给出具体解释（"plan task X 的工作已包含在 [task Y] 中，因为 …"），模糊解释不接受
+- 无差异 → 继续
 
 ---
 
@@ -176,7 +203,7 @@ subagent 调用 `superpowers:requesting-code-review`。
 ⛔ **进入收尾前的强制检查，不得跳过。**
 
 - 运行完整单元测试套件，确保 **0 失败**
-- 集成测试／E2E：除非用户明确要求，否则可跳过
+- 集成测试／E2E：按 plan E2E Assessment 的结论执行。plan 确认 `e2e_feasible: true` 的，必须运行且通过；plan 标注 `e2e_feasible: false` 且理由充分的，可跳过
 - 有失败用例 → 必须修复，不得注释掉或跳过
 
 ---

@@ -116,6 +116,13 @@ When starting, inject this as the working prompt (substitute $ARGUMENTS with the
 >       `plan-topic` = kebab-case slug of the feature name (e.g. `binary-safe-prompts`).
 >     - Record this path as `$PLAN_PATH`. These two lines are the only mechanism that survives the "clear context and execute" boundary — gated-workflow depends on them.
 >   - Do NOT call writing-plans separately — brainstorming triggers it at its final step.
+>     - **E2E Assessment（必做）**：brainstorming 的设计阶段必须包含 E2E 可行性评估，结论写入 plan 的 "E2E Assessment" 章节：
+>       1. **探测目标项目 e2e 基建**：
+>          - 已知 pattern 扫描（启发列表）：`playwright.config.*`、`cypress.config.*`、`cypress/`、`e2e/`、`tests/e2e/`、`__tests__/e2e/`、`*.spec.ts`、`pytest.ini` + `markers: e2e`、`conftest.py` e2e fixture、`*_integration_test.go`、`testcontainers`、CI 配置中的 e2e 步骤、`docker-compose.test.yml`
+>          - 开放探索：README/CONTRIBUTING 测试说明、`package.json`/`Makefile`/`Taskfile.yml` 中的 test 命令、其他可能的 e2e 基建
+>       2. **项目类型 → e2e 策略映射**：Web app → 浏览器 e2e（Playwright）；API → HTTP 级 e2e；CLI → 命令执行级 e2e；Library → 集成调用级 e2e；纯算法 → 通常不需要 e2e
+>       3. **Assessment 输出**：(a) 现有基建有/无及具体内容 (b) 若无 → 推荐建设方案，须问用户确认 (c) 本次需求的 e2e 策略：哪些 critical path 需覆盖 (d) 结论 `e2e_feasible: true/false`，false 须给出理由
+>       4. **E2E ≠ 浏览器测试**：e2e 是测试范围（完整用户路径），headless 是浏览器运行模式，两者不冲突。不是所有 e2e 都需要浏览器。
 >
 > <HARD-GATE>
 > Do NOT dispatch reviewers until brainstorming is fully complete and $PLAN_PATH is recorded.
