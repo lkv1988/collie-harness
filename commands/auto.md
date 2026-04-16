@@ -148,10 +148,12 @@ When starting, inject this as the working prompt (substitute $ARGUMENTS with the
 >   a) `Agent(subagent_type="collie-harness:plan-doc-reviewer", model="opus")` — structural plan validation
 >   b) `Skill("collie-harness:review")` with `Mode=plan`, `Target=$PLAN_PATH` — Collie-style rubric review
 >   - Both must return approval before calling ExitPlanMode.
->   - Mark [plan-review] and [collie-review] completed once both approve.
+>   - If either reviewer returns WARN or BLOCK: fix the plan, then re-dispatch **both** reviewers from scratch. Do NOT only re-run the one that failed — fixing one issue can affect what the other reviewer sees.
+>   - Repeat fix → re-dispatch both → check both until both return approval in the same round.
+>   - Mark [plan-review] and [collie-review] completed only once both approve.
 >
 > <HARD-GATE>
-> Do NOT call ExitPlanMode until BOTH reviewers return approval.
+> Do NOT call ExitPlanMode until BOTH reviewers return approval in the same review round.
 > </HARD-GATE>
 >
 > **ExitPlanMode** — after returning from planmode, use TaskUpdate to mark all planning tasks ([research], [plan-review], [collie-review], [exit]) as completed. brainstorming 的 9 条子任务由 brainstorming skill 自身负责标记完成，无需我们管理。This closes the planning TaskList before gated-workflow appends the implementation tasks.
