@@ -21,7 +21,7 @@ description: Post-planmode implementation workflow with quality gates. Use immed
 
 阅读计划文档，用 `TaskCreate` 建立整个实施阶段的 todo list。**List 不怕长，怕的是遗漏。**
 
-> 注：规划阶段（planmode 内）的 `[step1]` 到 `[step5]` 此时应已全部标记为 completed（由 auto Step 5 清理）。本步骤用 `TaskCreate` 在同一 TaskList 中追加实施阶段任务，不会也无需替换已完成的规划任务。
+> 注：规划阶段（planmode 内）的 `[research]`、`[plan-review]`、`[collie-review]`、`[exit]` 此时应已全部标记为 completed（由 auto ExitPlanMode 步骤清理）。本步骤用 `TaskCreate` 在同一 TaskList 中追加实施阶段任务，不会也无需替换已完成的规划任务。
 
 ### 行号记录（与建 list 同步完成）
 

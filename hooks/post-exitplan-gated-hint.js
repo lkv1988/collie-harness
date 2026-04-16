@@ -41,7 +41,7 @@ try {
 
 if (bothApproved) {
   process.stdout.write(JSON.stringify({
-    additionalContext: '✅ [collie-harness] ExitPlanMode done — before calling gated-workflow: use TaskUpdate to mark all planning-phase tasks ([step1]–[step5]) as completed, then call Skill(\'collie-harness:gated-workflow\'). Skipping either = red-line violation.',
+    additionalContext: '✅ [collie-harness] ExitPlanMode done — before calling gated-workflow: use TaskUpdate to mark all planning tasks ([research], [plan-review], [collie-review], [exit]) as completed (brainstorming 的 9 条子任务由 brainstorming skill 自身负责标记完成，无需管理), then call Skill(\'collie-harness:gated-workflow\'). Skipping either = red-line violation.',
   }));
 }
 
