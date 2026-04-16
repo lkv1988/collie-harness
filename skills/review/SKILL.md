@@ -60,6 +60,7 @@ Return the subagent's output verbatim. If the output doesn't contain the `## Col
 > **Step 2 — Scan 12 red lines.** Read `rubric-red-lines.md` in full. For each red line, check if the Target violates it. Plan mode emphasizes #1, #4, #5, #6, #9, #10. Code mode: all 12 apply.
 >
 > **Step 3 — Run the 10 review questions.** For each question, answer `PASS` / `FAIL` with `file:line` evidence. A conclusion without `file:line` is **invalid** and downgrades to Reflexion FAIL → BLOCK.
+> For every FAIL question, **enumerate ALL failing instances exhaustively** — do not stop after finding 2-3 examples. Partial enumeration causes fix loops: each round fixes a subset and re-triggers the same question next round.
 >
 > **Step 4 — ELEPHANT anti-sycophancy self-check.** Read `elephant-check.md`. Answer all 8 dimensions. Any single FAIL → rewrite the entire review.
 >
