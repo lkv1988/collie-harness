@@ -21,7 +21,7 @@ digraph collie_auto {
     "(brainstorming internals:\n9 sub-tasks, self-managed)"          [shape=box, style=dashed];
     "③ PARALLEL:\nAgent(plan-doc-reviewer)\nSkill(collie:review Mode=plan)" [shape=box];
     "④ ExitPlanMode\nTaskUpdate → mark all 4 done"                 [shape=box];
-    "⑤ collie-harness:gated-workflow\n(worktree→impl→tests→merge)" [shape=box];
+    // gated-workflow 节点已展开为 cluster，见下方 subgraph
     "⑥ collie:review Mode=code\nTarget: worktree diff"             [shape=box];
     "fix issues"                                                    [shape=box];
 
@@ -73,18 +73,37 @@ digraph collie_auto {
 
     // ── Post-planmode ─────────────────────────────────────────────
     "④ ExitPlanMode\nTaskUpdate → mark all 4 done"
-        -> "⑤ collie-harness:gated-workflow\n(worktree→impl→tests→merge)";
+        -> GW_START;
 
-    "⑤ collie-harness:gated-workflow\n(worktree→impl→tests→merge)"
-        -> "⑥ collie:review Mode=code\nTarget: worktree diff";
+    // ── ⑤ gated-workflow (substate machine) ──────────────────────
+    subgraph cluster_gw {
+        label="⑤ gated-workflow";
+        style=dashed;
+
+        GW_START [shape=box, label="Step 0: create worktree\n(using-git-worktrees)"];
+        GW1      [shape=box, label="Step 1: TaskCreate\nimpl TodoList"];
+        GW2      [shape=box, label="Step 2: archive plan\n(cp → docs/plans/)"];
+        GW3      [shape=box, label="Step 3: dispatch batch\n(parallel subagents)"];
+        GW4      [shape=box, label="per task:\nTDD → VBC → CR subagent"];
+        GW_MORE  [shape=diamond, label="more batches?"];
+        GW5      [shape=box, label="Step 5: simplify\n(if >100 lines changed)"];
+        GW6      [shape=box, label="Step 6: run tests\n(0 failures)"];
+        GW7      [shape=box, label="Step 7: finishing-branch\n(merge / PR / cleanup)"];
+
+        GW_START -> GW1 -> GW2 -> GW3 -> GW4 -> GW_MORE;
+        GW_MORE  -> GW3  [label="yes → next batch"];
+        GW_MORE  -> GW5  [label="no → all done"];
+        GW5 -> GW6 -> GW7;
+    }
+
+    GW7 -> "⑥ collie:review Mode=code\nTarget: worktree diff";
 
     "⑥ collie:review Mode=code\nTarget: worktree diff"
         -> "collie:review\nMode=code result?";
 
     "collie:review\nMode=code result?" -> "SHIP IT ✅" [label="PASS"];
     "collie:review\nMode=code result?" -> "fix issues"  [label="WARN/BLOCK"];
-    "fix issues"
-        -> "⑤ collie-harness:gated-workflow\n(worktree→impl→tests→merge)";
+    "fix issues" -> GW_START;
 
     // ── Stop hook side channel ────────────────────────────────────
     "stop hook\n(every Stop event)\n─────────────────\nsame error ×3\nno file changes ×5\nmax iterations"
