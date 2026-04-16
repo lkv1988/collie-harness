@@ -97,14 +97,16 @@ if (toolName === 'ExitPlanMode') {
         try {
           const planContent = fs.readFileSync(state.path, 'utf8');
           const lines = planContent.split('\n');
-          const hasPlanSource = (lines[0] || '').startsWith('<!-- plan-source:');
-          const hasPlanTopic  = (lines[1] || '').startsWith('<!-- plan-topic:');
-          if (!hasPlanSource || !hasPlanTopic) {
+          const hasPlanSource   = (lines[0] || '').startsWith('<!-- plan-source:');
+          const hasPlanTopic    = (lines[1] || '').startsWith('<!-- plan-topic:');
+          const hasPlanExecutor = (lines[2] || '').startsWith('<!-- plan-executor:');
+          if (!hasPlanSource || !hasPlanTopic || !hasPlanExecutor) {
             const metaMissing = [
-              !hasPlanSource && 'plan-source',
-              !hasPlanTopic  && 'plan-topic',
+              !hasPlanSource   && 'plan-source',
+              !hasPlanTopic    && 'plan-topic',
+              !hasPlanExecutor && 'plan-executor',
             ].filter(Boolean).join(' + ');
-            missing.push(`plan metadata missing (${metaMissing}) — add both lines at the top of the plan file per auto.md Step 2`);
+            missing.push(`plan metadata missing (${metaMissing}) — add all three lines at the top of the plan file per auto.md`);
           } else {
             needsWarn = false;
           }

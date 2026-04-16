@@ -108,14 +108,29 @@ When starting, inject this as the working prompt (substitute $ARGUMENTS with the
 >   - brainstorming 会自己在 TaskList 中追加 9 条自己的 checklist 任务，作为本阶段的进度看板；我们的列表中不单独持有 [brainstorm] 条目
 >   - Before calling: note these constraints for when brainstorming internally invokes writing-plans:
 >     - **Plan location**: write to the path specified in the planmode system prompt. Do NOT write to `docs/superpowers/plans/` or `docs/superpowers/specs/`.
->     - **The plan file MUST start with these two metadata lines** (before the `# [Feature Name] Implementation Plan` heading):
+>     - **The plan file MUST start with these three metadata lines** (before the `# [Feature Name] Implementation Plan` heading):
 >       ```
 >       <!-- plan-source: /absolute/path/to/this/plan/file.md -->
 >       <!-- plan-topic: my-feature-slug -->
+>       <!-- plan-executor: collie-harness:gated-workflow -->
 >       ```
 >       `plan-topic` = kebab-case slug of the feature name (e.g. `binary-safe-prompts`).
->     - Record this path as `$PLAN_PATH`. These two lines are the only mechanism that survives the "clear context and execute" boundary — gated-workflow depends on them.
->   - Do NOT call writing-plans separately — brainstorming triggers it at its final step.
+>     - Record this path as `$PLAN_PATH`. These three lines are the only mechanism that survives the "clear context and execute" boundary — gated-workflow depends on them.
+>     - **Plan header override**: Replace writing-plans' default "For agentic workers" line with:
+>       ```
+>       > **For agentic workers:** MUST invoke Skill('collie-harness:gated-workflow') to implement this plan.
+>       ```
+>     - **Task Execution DAG**: The plan's task list MUST be preceded by a DAG table:
+>       ```markdown
+>       ## Task Execution DAG
+>       | Task | Batch | Depends on | Key files |
+>       |------|-------|------------|-----------|
+>       ```
+>       `Key files` lists files each task creates or modifies. The gated-workflow plan-reader subagent depends on this table.
+>     - Do NOT call writing-plans separately — brainstorming triggers it at its final step.
+>     - **Skip writing-plans Plan Review Loop**: writing-plans' built-in plan-document-reviewer per-chunk review is skipped in collie-harness. collie-harness Step ③ has stricter dual-reviewer review — do not run both.
+>     - **Skip writing-plans Execution Handoff**: writing-plans' "Ready to execute?" prompt and skill recommendation are skipped in collie-harness. After the plan is written, return directly to auto.md Step ③ dual review.
+>     - **Design doc + Plan = single file**: brainstorming's design doc and writing-plans' implementation plan both go into the planmode plan file. Do NOT write them separately to `docs/superpowers/specs/` or `docs/superpowers/plans/`. File structure: design spec first, then `---`, then implementation plan.
 >     - **E2E Assessment（必做）**：brainstorming 的设计阶段必须包含 E2E 可行性评估，结论写入 plan 的 "E2E Assessment" 章节：
 >       1. **探测目标项目 e2e 基建**：
 >          - 已知 pattern 扫描（启发列表）：`playwright.config.*`、`cypress.config.*`、`cypress/`、`e2e/`、`tests/e2e/`、`__tests__/e2e/`、`*.spec.ts`、`pytest.ini` + `markers: e2e`、`conftest.py` e2e fixture、`*_integration_test.go`、`testcontainers`、CI 配置中的 e2e 步骤、`docker-compose.test.yml`

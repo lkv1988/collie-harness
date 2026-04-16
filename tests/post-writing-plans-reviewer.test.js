@@ -120,7 +120,7 @@ test('post-writing-plans-reviewer: ExitPlanMode with reviewed plan → stdout em
   // Pre-create a last-plan.json with both reviewers approved + actual plan file with metadata
   const planPath = path.join(tmpRoot, 'docs', 'plans', '2026-04-14-collie-harness-plan.md');
   fs.mkdirSync(path.dirname(planPath), { recursive: true });
-  fs.writeFileSync(planPath, `<!-- plan-source: ${planPath} -->\n<!-- plan-topic: collie-harness -->\n# Collie Harness Implementation Plan\n`, 'utf8');
+  fs.writeFileSync(planPath, `<!-- plan-source: ${planPath} -->\n<!-- plan-topic: collie-harness -->\n<!-- plan-executor: collie-harness:gated-workflow -->\n# Collie Harness Implementation Plan\n`, 'utf8');
   fs.mkdirSync(stateDir(), { recursive: true });
   fs.writeFileSync(lastPlanFile(), JSON.stringify({
     path: planPath,
@@ -211,7 +211,7 @@ test('post-writing-plans-reviewer: ExitPlanMode WARN when only collie-harness:re
 test('post-writing-plans-reviewer: ExitPlanMode silent when both reviewers approved', () => {
   const planPath = path.join(tmpRoot, 'docs', 'plans', 'foo-plan.md');
   fs.mkdirSync(path.dirname(planPath), { recursive: true });
-  fs.writeFileSync(planPath, `<!-- plan-source: ${planPath} -->\n<!-- plan-topic: foo -->\n# Foo Implementation Plan\n`, 'utf8');
+  fs.writeFileSync(planPath, `<!-- plan-source: ${planPath} -->\n<!-- plan-topic: foo -->\n<!-- plan-executor: collie-harness:gated-workflow -->\n# Foo Implementation Plan\n`, 'utf8');
   fs.mkdirSync(stateDir(), { recursive: true });
   fs.writeFileSync(lastPlanFile(), JSON.stringify({
     path: planPath,
@@ -222,4 +222,40 @@ test('post-writing-plans-reviewer: ExitPlanMode silent when both reviewers appro
   const result = runHook({ tool_name: 'ExitPlanMode', session_id: SESSION_ID });
   assert.strictEqual(result.status, 0);
   assert.strictEqual(result.stdout.trim(), '', 'stdout must be empty when both reviewers approved');
+});
+
+test('post-writing-plans-reviewer: ExitPlanMode BLOCK when plan-executor missing', () => {
+  const planPath = path.join(tmpRoot, 'docs', 'plans', 'no-executor-plan.md');
+  fs.mkdirSync(path.dirname(planPath), { recursive: true });
+  fs.writeFileSync(planPath,
+    `<!-- plan-source: ${planPath} -->\n<!-- plan-topic: no-executor -->\n# No Executor Plan\n`, 'utf8');
+  fs.mkdirSync(stateDir(), { recursive: true });
+  fs.writeFileSync(lastPlanFile(), JSON.stringify({
+    path: planPath,
+    written_at: new Date().toISOString(),
+    plan_doc_reviewer: { approved: true, approved_at: '2026-04-16T00:00:00Z' },
+    collie_reviewer:   { approved: true, approved_at: '2026-04-16T00:00:00Z' },
+  }), 'utf8');
+  const result = runHook({ tool_name: 'ExitPlanMode', session_id: SESSION_ID });
+  assert.strictEqual(result.status, 0);
+  const out = JSON.parse(result.stdout.trim());
+  assert.strictEqual(out.decision, 'block', 'should block when plan-executor missing');
+  assert.ok(out.reason.includes('plan-executor'), 'reason should mention plan-executor');
+});
+
+test('post-writing-plans-reviewer: ExitPlanMode passes with all three metadata lines', () => {
+  const planPath = path.join(tmpRoot, 'docs', 'plans', 'full-meta-plan.md');
+  fs.mkdirSync(path.dirname(planPath), { recursive: true });
+  fs.writeFileSync(planPath,
+    `<!-- plan-source: ${planPath} -->\n<!-- plan-topic: full-meta -->\n<!-- plan-executor: collie-harness:gated-workflow -->\n# Full Meta Plan\n`, 'utf8');
+  fs.mkdirSync(stateDir(), { recursive: true });
+  fs.writeFileSync(lastPlanFile(), JSON.stringify({
+    path: planPath,
+    written_at: new Date().toISOString(),
+    plan_doc_reviewer: { approved: true, approved_at: '2026-04-16T00:00:00Z' },
+    collie_reviewer:   { approved: true, approved_at: '2026-04-16T00:00:00Z' },
+  }), 'utf8');
+  const result = runHook({ tool_name: 'ExitPlanMode', session_id: SESSION_ID });
+  assert.strictEqual(result.status, 0);
+  assert.strictEqual(result.stdout.trim(), '', 'should pass silently with all 3 metadata');
 });
