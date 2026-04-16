@@ -81,10 +81,10 @@ digraph collie_auto {
         style=dashed;
 
         GW_START [shape=box, label="Step 0: create worktree\n(using-git-worktrees)"];
-        GW1      [shape=box, label="Step 1: TaskCreate\nimpl TodoList\n+ plan-todo 交叉核对\n(haiku subagent)"];
+        GW1      [shape=box, label="Step 1: plan-reader subagent\n(haiku: 提取 DAG + 行号 + 冲突)\n→ TaskCreate TodoList\n+ plan-todo 交叉核对\n(haiku subagent)"];
         GW2      [shape=box, label="Step 2: archive plan\n(cp → docs/plans/)"];
-        GW3      [shape=box, label="Step 3: dispatch batch\n(parallel subagents)"];
-        GW4      [shape=box, label="per task:\nTDD → VBC → CR subagent"];
+        GW3      [shape=box, label="Step 3: dispatch batch\n(≥2 → dispatching-parallel-agents\n=1 → direct Agent)"];
+        GW4      [shape=box, label="per task:\nTDD → VBC → CR subagent\n↳ fix issues: dispatch fix subagent\n→ re-CR，循环至通过"];
         GW_MORE  [shape=diamond, label="more batches?"];
         GW5      [shape=box, label="Step 5: run tests\n(unit 0 failures\n+ e2e if feasible)"];
         GW55     [shape=box, label="Step 5.5: doc-refresh\n(README / CLAUDE.md / spec)"];
