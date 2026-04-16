@@ -19,27 +19,40 @@ description: Post-planmode implementation workflow with quality gates. Use immed
 
 ## Step 1：建立完整 TodoList
 
-阅读计划文档，用 `TaskCreate` 建立整个实施阶段的 todo list。**List 不怕长，怕的是遗漏。**
+通过 plan-reader subagent 获取 plan 结构（见下方），然后用 `TaskCreate` 建立整个实施阶段的 todo list。**List 不怕长，怕的是遗漏。**
 
 > 注：规划阶段（planmode 内）的 `[research]`、`[plan-review]`、`[collie-review]`、`[exit]` 此时应已全部标记为 completed（由 auto ExitPlanMode 步骤清理）。本步骤用 `TaskCreate` 在同一 TaskList 中追加实施阶段任务，不会也无需替换已完成的规划任务。
 
-### 行号记录（与建 list 同步完成）
+### Plan-Reader Subagent（替代主 session 直接 Read）
 
-Read 工具的输出带行号。阅读 plan 时，对每个有代码改动的 task，直接记下其在 plan 文件里的行号范围（如 `lines 45-103`）。记录格式：
+从 session context 中提取 plan-source metadata → `$PLAN_SOURCE`。然后 dispatch 一个 haiku subagent（不在主 session 读 plan 文件）：
 
+**输入**：`$PLAN_SOURCE` 文件绝对路径
+**任务**：Read plan 文件全文，提取：
+1. Task Execution DAG 表（若存在）→ 直接用作 batch 分组和依赖基础
+2. 若 DAG 表缺失 → 从 task 描述中推断依赖，在 warnings 中标记
+3. 每个 task 的行号范围（`start`/`end` line numbers）
+4. 文件冲突检查：同 batch 内各 task 的 Key files，若有重叠 → 加入 conflicts
+
+**输出格式**（JSON）：
+```json
+{
+  "plan_source": "/path/to/plan.md",
+  "plan_topic": "my-feature",
+  "tasks": [
+    { "id": "task1", "subject": "...", "batch": 1, "depends_on": [], "key_files": ["src/foo.js"], "plan_lines": { "start": 45, "end": 103 } }
+  ],
+  "conflicts": [
+    { "batch": 1, "tasks": ["task1", "task3"], "shared_files": ["src/foo.js"] }
+  ],
+  "warnings": []
+}
 ```
-task1: lines 45-103
-task2: lines 104-158
-task3: lines 159-201
-```
 
-⚠️ 这些行号对应 `$PLAN_SOURCE`，`cp` 归档后 `$ARCHIVE_PATH` 内容完全一致，行号直接适用。Step 3 dispatch 时用于 subagent 精确读取，主 session 只需记几个数字，不需要重新提取内容。
-
-### 依赖分析（建 list 前必做）
-
-识别 task 间的依赖关系：
-- 有外部依赖的 task 标注 `[blocked-by: task X]`
-- **无 blocked-by 的 task 属于同一并行批次**，在 Step 3 一次性并发 dispatch
+主 session 拿到 JSON 后：
+1. 用 `tasks` 数组创建 TaskCreate（含 batch 和 blocked-by 信息）
+2. 若 `conflicts` 非空 → 评估：人工确认分 batch 或确认 task 不改同一区域
+3. 若 `warnings` 非空 → 记录，继续
 
 ### TodoList 结构模板
 
@@ -100,16 +113,17 @@ TodoList snapshot: <当前所有 TaskCreate 条目的 subject 列表>
 
 ## Step 2：归档计划文档（task0）
 
-执行阶段 session context 里带有 plan 内容，但 planmode 原始文件路径不会自动传递。plan 文件的前两行嵌有元数据（由 `/collie-harness:auto` Step 2 写入，hook 在 ExitPlanMode 前已验证存在）：
+执行阶段 session context 里带有 plan 内容，但 planmode 原始文件路径不会自动传递。plan 文件的前三行嵌有元数据（由 `/collie-harness:auto` Step 2 写入，hook 在 ExitPlanMode 前已验证存在）：
 
 ```
 <!-- plan-source: /absolute/path/to/plan/file.md -->
 <!-- plan-topic: my-feature-slug -->
+<!-- plan-executor: collie-harness:gated-workflow -->
 ```
 
 **归档流程**：
 
-1. 从 session context 的 plan 内容中提取前两行，读出 `$PLAN_SOURCE`（原始文件路径）和 `$PLAN_TOPIC`（feature slug）
+1. 从 session context 的 plan 内容中提取前三行，读出 `$PLAN_SOURCE`（原始文件路径）和 `$PLAN_TOPIC`（feature slug）（`$PLAN_EXECUTOR` 由 hook 验证，本 skill 无需读取）
 2. 构造目标路径：`docs/plans/YYYY-MM-DD-$PLAN_TOPIC-plan.md`（记为 `$ARCHIVE_PATH`）
 3. ⛔ 必须用 Bash `cp` 归档，禁止 Write/Edit（避免 LLM 改写内容）：
 
@@ -131,13 +145,13 @@ cp "$PLAN_SOURCE" "$ARCHIVE_PATH"
 
 ## Step 3：执行计划（GATE 4）
 
-⛔ **同一批次（相同 batch 编号）的所有 task 必须在一次 `dispatching-parallel-agents` 调用中并发 dispatch，不得退化为串行逐条执行。**
-
 ⛔ **所有实现工作必须卸载给 subagent，主 session 只做协调和审查，不在主 session 里写代码。**
 
 按批次逐批执行：
 1. 找出当前 batch 中所有 pending 且 `[blocked-by]` 已全部完成的 task
-2. 调用 `superpowers:dispatching-parallel-agents`，一次性 dispatch 整批
+2. 根据 batch 大小选择 dispatch 方式：
+   - **batch 内 task ≥ 2**：调用 `superpowers:dispatching-parallel-agents`，一次性并发 dispatch 整批
+   - **batch 内 task = 1**：直接 dispatch 单个 subagent（Agent tool），无需额外 skill
 3. 等本批全部完成后，进入下一批
 
 ⚠️ **强制注入到每个实现 subagent prompt 的三项参数**（缺一不可）：
@@ -195,6 +209,19 @@ subagent 内部按 TDD 流程执行，缺一不可：
 subagent 调用 `superpowers:requesting-code-review`。
 
 收到 CR 反馈后，主 session 遵循 `superpowers:receiving-code-review` — 技术验证，不盲目同意。
+
+**CR 发现需修复的问题时**（receiving-code-review 确认修复有效后）：
+
+⛔ **禁止主 session 直接写代码修复。** 即使只改一行——了解"如何改"本身需要读取源码文件，会污染主 session 上下文。
+
+必须 dispatch 新的修复 subagent，传入：
+- CR issue 清单（引用 CR 原文）
+- worktree 绝对路径
+- `$ARCHIVE_PATH`（plan 归档路径，按需参考）
+- 受影响的文件路径（CR 报告中通常已含）
+
+修复 subagent 完成后，dispatch 新的 CR subagent 验证修复结果。
+修复→验证循环直到 CR 通过或主 session 判断需要升级处理。
 
 ---
 
