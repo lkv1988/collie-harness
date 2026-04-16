@@ -149,9 +149,7 @@ cp "$PLAN_SOURCE" "$ARCHIVE_PATH"
 
 按批次逐批执行：
 1. 找出当前 batch 中所有 pending 且 `[blocked-by]` 已全部完成的 task
-2. 根据 batch 大小选择 dispatch 方式：
-   - **batch 内 task ≥ 2**：调用 `superpowers:dispatching-parallel-agents`，一次性并发 dispatch 整批
-   - **batch 内 task = 1**：直接 dispatch 单个 subagent（Agent tool），无需额外 skill
+2. 调用 `superpowers:dispatching-parallel-agents`，一次性 dispatch 整批
 3. 等本批全部完成后，进入下一批
 
 ⚠️ **强制注入到每个实现 subagent prompt 的三项参数**（缺一不可）：
