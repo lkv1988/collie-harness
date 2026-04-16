@@ -4,6 +4,26 @@ All notable changes to collie-harness are documented here.
 
 ---
 
+## [0.1.6] — 2026-04-16
+
+### Fixed
+
+- `commands/auto.md`: 跳过 brainstorming 的 human approval gates（Step 5 "User approves design?" 和 Step 8 "User reviews written spec?"）——在 auto 模式下这两步会阻塞未干预运行；collie 双 reviewer 已承担审批职责
+- `commands/auto.md`: 双 reviewer 任一返回 WARN/BLOCK 后，修复计划必须重跑**双方**（不得只重跑失败方）；HARD-GATE 增加"in the same review round"约束
+- `commands/auto.md`: 补上 Skip brainstorming 约束行缺失的 `>` blockquote 前缀（格式 bug）
+- `skills/gated-workflow/SKILL.md`: dispatch prompt 新增要求——所有 git commit 的 message body 必须包含 `Refs: <plan 归档相对路径>`，确保任意 commit 可回溯到对应 plan
+
+### Changed
+
+- `skills/gated-workflow/SKILL.md`: 移除条件分发逻辑（≥2 并行 / =1 直接），统一使用 `dispatching-parallel-agents`，减少认知分支
+
+### Docs
+
+- `CHANGELOG.md`: 补全 v0.1.1 / v0.1.4 / v0.1.5 历史版本记录
+- `.claude/skills/publish/SKILL.md`: 新增 Step 2.5，要求发布前更新 CHANGELOG
+
+---
+
 ## [0.1.5] — 2026-04-16
 
 ### Added — E2E Workflow Integration
