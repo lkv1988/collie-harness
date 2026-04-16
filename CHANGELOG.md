@@ -4,6 +4,14 @@ All notable changes to collie-harness are documented here.
 
 ---
 
+## [0.1.7] — 2026-04-16
+
+### Fixed
+
+- `skills/review/SKILL.md` Step 3: 新增要求——每个 FAIL 问题必须穷举所有违例实例，不得在发现 2-3 个后停止报告。根因：collie:review 是无状态的，每轮只报告部分问题，导致修复→重审→再发现→再修复的无限循环（实测 7 轮）。穷举报告使单次修复可以清除同一问题的所有实例，实现一轮收敛。
+
+---
+
 ## [0.1.6] — 2026-04-16
 
 ### Fixed
