@@ -38,7 +38,7 @@ Scan the Target item by item. Each question answered `PASS` / `FAIL` with `file:
 2. **Generalize the fix** — Did this fix handle all occurrences? Similar bugs elsewhere?
 3. **Worktree isolation** — Changes inside the right worktree/branch? No accidental master edits? *(skip in plan mode)*
 4. **Real verification** — Verified for real, not via mocked critical paths? *(skip in plan mode)*
-5. **Gate omissions** — subagent / tdd / parallel / todolist / collie-harness:plan-doc-reviewer — any gate skipped?
+5. **Gate omissions** — subagent / tdd / parallel / todolist / e2e (if plan confirmed feasible) / plan-todo alignment / collie-harness:plan-doc-reviewer — any gate skipped? Code mode 额外检查：(a) plan 中每个 task 是否在 TodoList 中有对应条目（或有记录在案的合理解释）；(b) plan E2E Assessment 若结论为 `e2e_feasible: true`，最终是否有 `[e2e-verify]` 任务且执行通过。
 6. **Subagent model selection** — opus for research? haiku for bulk? Did main session do subagent work?
 7. **Mock vs real call** — Any mocked path bypass what matters? *(skip in plan mode)*
 8. **Spec distillation** — Plan mode: plan includes doc update tasks (README / CLAUDE.md / spec) where applicable. Code mode: 枚举本次 diff 涉及的所有模块/文件，对每一项显式判断是否产生新认知或非显而易见的约束，并提供 `file:line` 证据：有新认知 → 引用写入 spec 的 `file:line`；无新认知 → 引用**已有 spec 中覆盖该行为的 `file:line`**（无法引用已有 spec = FAIL，必须写入 spec）。
