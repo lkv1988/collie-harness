@@ -4,37 +4,76 @@ All notable changes to collie-harness are documented here.
 
 ---
 
-## [Unreleased]
+## [0.1.5] — 2026-04-16
 
-### Removed
+### Added — E2E Workflow Integration
 
-- **Breaking**: 移除 `collie-harness:reviewer` agent（原为 thin shell，逻辑全部在 `collie-harness:review` skill）。
-  - **迁移方式**：原来写 `Agent(subagent_type="collie-harness:reviewer", model="opus")` 的地方改为 `Skill("collie-harness:review")` 并传 `Mode=code`、`Target=<worktree diff>`。Skill 内部已自动 dispatch `Agent(model="opus")` 做隔离，行为和输出契约（`**Status:** PASS` 等）完全保持一致。
-  - **动机**：消除 3 层调用间接、和 plan 阶段的直接 skill 调用对齐，降低 DRY 疑虑。
-  - `plugin.json` 的 `agents` 数组从 2 项减为 1 项（只剩 `plan-doc-reviewer.md`）。
+- `commands/auto.md`: brainstorming 约束新增强制 **E2E Assessment**（探测目标项目 e2e 基建、评估可行性、给出结论）
+- `skills/gated-workflow/SKILL.md`: Step 1 TodoList 新增条件性 `[e2e-setup]` / `[e2e-verify]` 任务槽位（根据 brainstorming Assessment 结论决定是否建立），并在建立 TodoList 后用 haiku subagent 交叉核对 plan-todo 对齐
+- `agents/plan-doc-reviewer.md`: 新增 **E2E Assessment** 检查行，要求 brainstorming 结论在 plan 中有明确记录
+- `skills/review/SKILL.md` Q5: 扩展覆盖 e2e 承诺兑现（code mode）和 plan-todo 对齐核对
+
+### Fixed — Workflow Execution Fixes
+
+规划→执行衔接处 7 个缺陷修复：
+
+- `commands/auto.md`: 新增 6 项 superpowers 覆写约束
+  - plan 文件须有三条 metadata（`plan-source` + `plan-topic` + `plan-executor: collie-harness:gated-workflow`）
+  - plan header "For agentic workers" 行覆写为正向指令，指向 `collie-harness:gated-workflow`
+  - plan 须包含 Task Execution DAG 表（供 plan-reader subagent 使用）
+  - 跳过 writing-plans 内置 Plan Review Loop（collie-harness Step ③ 双审已覆盖）
+  - 跳过 writing-plans Execution Handoff（由 auto.md → gated-workflow 控制）
+  - design doc + plan 合并写入 planmode plan file，不分别写入两个目录
+- `skills/gated-workflow/SKILL.md`:
+  - Step 1: 主 session 不再直接 Read plan 文件；改为 dispatch haiku plan-reader subagent（提取 DAG + 行号 + 文件冲突检查，输出 JSON）
+  - Step 2: metadata 引用从"前两行"改为"前三行"，示例块补入 `plan-executor` 行
+  - Step 3: 条件分发——batch ≥ 2 调用 `dispatching-parallel-agents`；batch = 1 直接 Agent tool dispatch
+  - Step 4: CR 后若需修复，⛔ 禁止主 session 直接写代码，必须 dispatch 修复 subagent → 再 dispatch CR subagent 验证，循环至通过
+- `hooks/post-writing-plans-reviewer.js`: ExitPlanMode handler 新增 `plan-executor` 第三行 metadata 校验；缺失时加入 missing 列表 → hard-block
+- `tests/post-writing-plans-reviewer.test.js`: 新增 2 个测试用例（executor 缺失 → block；三行全有 → 静默通过）；已有 2 个 mock plan 补入第三行 metadata（32/32 pass）
+
+### Docs
+
+- `docs/auto-state-machine-detailed.md`: GW1 节点补入 plan-reader subagent；GW3 节点标注条件分发逻辑；GW4 节点补入 fix subagent → re-CR 循环
+
+---
+
+## [0.1.4] — 2026-04-16
+
+### Breaking
+
+- **移除 `collie-harness:reviewer` agent**（原为 thin shell，逻辑全在 `collie-harness:review` skill）。
+  - 迁移：`Agent(subagent_type="collie-harness:reviewer")` → `Skill("collie-harness:review")` + `Mode=code`、`Target=<worktree diff>`
+  - `plugin.json` 的 `agents` 数组从 2 项减为 1 项
+
+### Added
+
+- `agents/plan-doc-reviewer.md`: 新增 **Doc Maintenance** 检查和 **Spec Consultation** 检查
+  - Doc Maintenance：plan 改动会导致 README / CLAUDE.md / docs/*-spec.md 过时时，必须包含对应文档更新任务，否则 block
+  - Spec Consultation：有明显相关 spec 但 plan 完全未引用时 block
+- `skills/gated-workflow/SKILL.md`: 新增 **Step 5.5 文档对齐（GATE 5.95）**，作为收尾前的文档核对安全网；TodoList 模板新增 `[doc-refresh]` 条目
+- `skills/gated-workflow/SKILL.md`: 实现 subagent 对照 plan 验收的**行号方案**——读取 plan 时记录每个 task 的行号范围，dispatch subagent 时传入，subagent 用 `Read(offset, limit)` 精确读取对应段落做 VBC
+- `agents/plan-doc-reviewer.md`: 新增 **commit Refs 检查**，验证 plan 中引用的 commit 是否实际存在
+- Planning TodoList 调整：规划阶段从 5 条简化为 4 条，移除冗余的 `[brainstorm]` 条目，新增 `TaskCreate TodoList` 步骤并在 ExitPlanMode 后显式清理
+- State machine docs: 拆分为 simple / detailed 两版，auto.md 内嵌简版流程图
 
 ### Changed
 
-- `agents/plan-doc-reviewer.md`: 增加 **Doc Maintenance** 检查（写侧）和 **Spec Consultation** 检查（读侧）
-  - Doc Maintenance：若改动会导致 README / CLAUDE.md / docs/*-spec.md 中的描述过时，plan 必须包含对应文档更新任务，否则 block
-  - Spec Consultation：`docs/*-spec.md` / `docs/superpowers/specs/` 下有明显相关 spec 但 plan 完全未引用，block
-  - 新增"判断标准边界"章节，明确 Doc Maintenance 触发条件（4 项）和 Spec Consultation 触发流程（5 步）
 - `skills/review/references/rubric-red-lines.md`:
-  - Red line #12 `Applies in` 从 `code` 扩展为 `plan + code`；Plan-mode focus 行补入 `#12`
-  - Red line #12 plan-mode 含义：plan 必须包含 README / CLAUDE.md / spec 更新任务（适用时）
-  - Red line #9 plan-mode 含义：动笔前必须扫描 `docs/*-spec.md` 和 `docs/superpowers/specs/`，相关 spec 必须在 Context / References 中引用
-  - Q8 **Spec distillation** 更新为双 mode 描述（plan: doc update tasks; code: write back to spec）
-  - Q9 **No reinventing** 扩展覆盖 spec 复用（不只代码），并加入 plan-mode spec 检索要求
-- `skills/gated-workflow/SKILL.md`:
-  - TodoList 结构模板和示例代码块新增 `[doc-refresh]`（在 `[test-verify]` 之后，`[finish]` 之前）
-  - 新增 **Step 5.5：文档对齐（GATE 5.95）**，插在 Step 5（代码质量洞察）和 Step 6（测试全通）之间，作为收尾前的文档核对安全网
-- `commands/auto.md`:
-  - Step ⓪ Mandatory Sequence 描述改为"check internal specs (`docs/*-spec.md`, `docs/superpowers/specs/`) first, then search externally"
-  - Task Prompt Step 0 列表将"**Internal specs first**"置顶，作为 Research & Reuse 的第一动作
-- `CLAUDE.md`:
-  - Key Design Constraints 新增 **Doc maintenance enforcement**：plan 若改动用户可见行为 / 架构约束 / 已有文档内容，必须包含显式文档更新任务，由 plan-doc-reviewer + Red line #12 + Q8 共同强制，gated-workflow Step 5.5 作为安全网
-  - Workflow Sequence 图注同步：`⓪ Research & Reuse` 改为"internal specs first"
-  - Release Checklist 新增"**文档同步审计**"小节，要求发布前手动对照 README / CLAUDE.md 的 Workflow Sequence 章节与实际代码
+  - Red line #12 `Applies in` 从 `code` 扩展为 `plan + code`
+  - Q8 **Spec distillation** 更新为双 mode 描述（plan: doc update tasks；code: write back to spec）
+  - Q9 **No reinventing** 扩展覆盖 spec 复用
+- `commands/auto.md`: Step ⓪ Research & Reuse 将"Internal specs first"置顶
+
+---
+
+## [0.1.1] — 2026-04-15
+
+### Fixed
+
+- plan 文件前两行写入 `plan-source` / `plan-topic` 元数据（由 writing-plans / auto.md 步骤注入）
+- `hooks/post-writing-plans-reviewer.js`: ExitPlanMode 时验证前两行 metadata 存在，缺失则 hard-block
+- `skills/gated-workflow/SKILL.md` Step 2: 从 plan 内容前两行提取 `$PLAN_SOURCE`，用 `cp` 归档（不再依赖外部路径传递）
 
 ---
 
@@ -57,17 +96,16 @@ Four-layer design enforcing the full Collie-style development workflow:
 
 | Entry point | Type | Purpose |
 |-------------|------|---------|
-| `/auto` | slash command | Full Collie workflow loop (brainstorm → plan → review → implement → rubric) |
-| `/queue` | slash command | Scan `~/.collie-harness/queue/*.md` and schedule pending tasks |
+| `/collie-harness:auto` | slash command | Full Collie workflow loop (brainstorm → plan → review → implement → rubric) |
+| `/collie-harness:queue` | slash command | Scan `~/.collie-harness/queue/*.md` and schedule pending tasks |
 | `collie-harness:review` | Skill | Collie rubric reviewer (12 red-lines + ELEPHANT check) |
 | `collie-harness:queue` | Skill | CronCreate-based task queue engine |
 | `collie-harness:gated-workflow` | Skill | Post-planmode implementation pipeline with quality gates |
-| `collie-harness:reviewer` | Agent | Thin shell delegating to `collie-harness:review` skill (code mode) |
 | `collie-harness:plan-doc-reviewer` | Agent | Structural plan document reviewer |
 
 ### Tests
 
-- 37 unit tests (Node.js built-in test runner, zero external dependencies)
+- Unit tests (Node.js built-in test runner, zero external dependencies)
 - E2E smoke tests (4 scenarios)
 
 ### Prerequisites
