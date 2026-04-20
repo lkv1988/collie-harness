@@ -1,6 +1,6 @@
 {
   "name": "collie-harness",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "Collie-style autonomous development agent harness: rubric review + budget guardrails + loop detection",
   "homepage": "https://github.com/lkv1988/collie-harness",
   "repository": "https://github.com/lkv1988/collie-harness",

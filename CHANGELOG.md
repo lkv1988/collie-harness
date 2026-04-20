@@ -4,6 +4,29 @@ All notable changes to collie-harness are documented here.
 
 ---
 
+## [0.1.9] — 2026-04-20
+
+### Added
+
+- `agents/plan-doc-reviewer.md`: 新增 **Impact Assessment** 强制检查 — What to Check 表格、Block-worthy issues、Do NOT flag 豁免、触发条件 + grep 反查校验流程。触发条件：跨 2+ 模块 / public API 变更 / 共享 utilities 修改；单文件 < 20 行 trivial 改动可豁免。
+- `skills/gated-workflow/SKILL.md`: TodoList 模板新增 `[collie-final-review]` 节点（`[doc-refresh]` 后、`[finish]` 前）；新增 **Step 5.7 最终 rubric 审查 GATE** — 定义调用方式、PASS/WARN/BLOCK 语义、就地修复循环（连续 3 轮 BLOCK → escalate）、与 per-task CR 的区别。`[finish]` 前置条件显式依赖 Step 5.7 PASS。
+- `skills/review/references/rubric-red-lines.md`: 新增 **Red line #13 Speculative scope** — 加任务未要求的 feature / flexibility / 抽象 / 顺手改无关代码 = BLOCK（引自 Karpathy CLAUDE.md Principle 2）。新增 **Q11 Surgical scope** — 每行 diff / plan 条目必须可追溯到任务目标（Karpathy Principle 3）。更新 Plan-mode focus（追加 #13）、Code-mode focus（all 13）。
+
+### Changed
+
+- `commands/auto.md`: 删除 Step ⑥（collie:review Mode=code 独立步骤）；Mandatory Sequence 从 ⑦ 步简化为 ⑥ 步；Completion Promise 改为"gated-workflow 返回成功"；Brainstorming 约束新增 Impact Assessment（必做）5 子项；Anti-Patterns 新增 2 条。
+- `skills/review/SKILL.md`: description 字段同步指向 `[collie-final-review] Step 5.7`；4 处计数 12→13 / 10→11；Review System Prompt 输出模板新增 Q11 行。
+- `skills/review/references/collie-voice.md`: 计数同步 12 red lines + 10 questions → 13 + 11。
+- `CLAUDE.md`: Workflow Sequence 代码块改为 gated-workflow 内含 `[collie-final-review]`；Layer 2 描述更新；Key Design Constraints 新增 3 条（Impact Assessment 强制 + Pre-merge rubric gate + Surgical scope red line）；2 处计数同步。
+- `README.md`: 工作流代码块同步；新增 Impact Assessment 强制说明段落；2 处计数同步。
+- `docs/auto-state-machine-detailed.md`: 状态机图插入 Step 5.7 `[collie-final-review]` 节点（在 Step 5.5 和 Step 6 之间），删除原 Step ⑥ 节点。
+
+### Fixed
+
+- **Worktree 清理时序 bug**：原 `auto.md` Step ⑥ 在 `[finish]`（`finishing-a-development-branch`）之后调用 `collie:review Mode=code`，但 `[finish]` 已执行 `git worktree remove`，导致 Target 不存在。新流程将 rubric review 前移至 `[collie-final-review]` Step 5.7，在 worktree 清理前完成。
+
+---
+
 ## [0.1.8] — 2026-04-19
 
 ### Changed
