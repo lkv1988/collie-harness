@@ -294,7 +294,7 @@ Skill("collie-harness:review")
 ### 与 `[task N-CR]` 的区别
 
 - `[task N-CR]`：per-task 粒度，使用 `superpowers:requesting-code-review`，关注**单个 task 的实现质量**
-- `[collie-final-review]`：整体 rubric 粒度，使用 `collie-harness:review` Mode=code，关注**所有改动聚合后的 13 红线 + 11 问题 + ELEPHANT**
+- `[collie-final-review]`：整体 rubric 粒度，使用 `collie-harness:review` Mode=code，关注**所有改动聚合后的 13 红线 + 6 问题 + ELEPHANT**
 
 两者互补，不重复。
 

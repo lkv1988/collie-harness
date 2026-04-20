@@ -1,13 +1,28 @@
 {
   "name": "collie-harness",
-  "version": "0.1.9",
+  "version": "0.2.0",
   "description": "Collie-style autonomous development agent harness: rubric review + budget guardrails + loop detection",
   "homepage": "https://github.com/lkv1988/collie-harness",
   "repository": "https://github.com/lkv1988/collie-harness",
-  "author": { "name": "lkv1988" },
-  "keywords": ["workflow", "rubric-review", "agent", "collie", "autonomous", "gated-workflow"],
+  "author": {
+    "name": "lkv1988"
+  },
+  "keywords": [
+    "workflow",
+    "rubric-review",
+    "agent",
+    "collie",
+    "autonomous",
+    "gated-workflow"
+  ],
   "license": "MIT",
-  "agents": ["./agents/plan-doc-reviewer.md"],
-  "commands": ["./commands/"],
-  "skills": ["./skills/"]
+  "agents": [
+    "./agents/plan-doc-reviewer.md"
+  ],
+  "commands": [
+    "./commands/"
+  ],
+  "skills": [
+    "./skills/"
+  ]
 }

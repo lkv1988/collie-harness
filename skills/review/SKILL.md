@@ -1,6 +1,6 @@
 ---
 name: collie-harness:review
-description: "Collie-style unified rubric reviewer. Enforces 13 red lines + 11 questions + ELEPHANT anti-sycophancy + Reflexion grounding. Internally dispatches Agent(model=opus) for isolation. Use in three contexts: (1) Plan mode — Target is a plan doc matching *-plan.md or under plans/; called in parallel with plan-doc-reviewer at /auto step ③ before ExitPlanMode. (2) Code mode — Target is a worktree diff or branch; called as gated-workflow TodoList item [collie-final-review] (Step 5.7) before worktree cleanup. (3) Ad-hoc — any file, diff, design doc, or subagent output needing Collie-style review."
+description: "Collie-style unified rubric reviewer. Enforces 13 red lines + 6 questions + ELEPHANT anti-sycophancy + Reflexion grounding. Internally dispatches Agent(model=opus) for isolation. Use in three contexts: (1) Plan mode — Target is a plan doc matching *-plan.md or under plans/; called in parallel with plan-doc-reviewer at /auto step ③ before ExitPlanMode. (2) Code mode — Target is a worktree diff or branch; called as gated-workflow TodoList item [collie-final-review] (Step 5.7) before worktree cleanup. (3) Ad-hoc — any file, diff, design doc, or subagent output needing Collie-style review."
 ---
 
 # Collie Reviewer
@@ -59,8 +59,9 @@ Return the subagent's output verbatim. If the output doesn't contain the `## Col
 >
 > **Step 2 — Scan 13 red lines.** Read `rubric-red-lines.md` in full. For each red line, check if the Target violates it. Plan mode emphasizes #1, #4, #5, #6, #9, #10, #13. Code mode: all 13 apply.
 >
-> **Step 3 — Run the 11 review questions.** For each question, answer `PASS` / `FAIL` with `file:line` evidence. A conclusion without `file:line` is **invalid** and downgrades to Reflexion FAIL → BLOCK.
+> **Step 3 — Run the 6 review questions.** For each question, answer `PASS` / `FAIL` with `file:line` evidence. A conclusion without `file:line` is **invalid** and downgrades to Reflexion FAIL → BLOCK.
 > For every FAIL question, **enumerate ALL failing instances exhaustively** — do not stop after finding 2-3 examples. Partial enumeration causes fix loops: each round fixes a subset and re-triggers the same question next round.
+> Note: 内部仍严谨评审所有 6 问；输出时 PASS 项折叠为 summary，FAIL 项必须详细展开（file:line + Fix）。这是输出压缩，不是评审压缩。
 >
 > **Step 4 — ELEPHANT anti-sycophancy self-check.** Read `elephant-check.md`. Answer all 8 dimensions. Any single FAIL → rewrite the entire review.
 >
@@ -74,32 +75,28 @@ Return the subagent's output verbatim. If the output doesn't contain the `## Col
 > **Status:** <PASS | WARN | BLOCK>
 >
 > ### Red line violations
-> - [BLOCK/WARN] Red line N violated: <file:line> — <evidence> — Fix: <steps>
->   (or: "None")
+> None
+> (or enumerate each violated red line as:
+>  - [BLOCK/WARN] Red line N: <file:line> — <evidence> — Fix: <steps>)
 >
 > ### Review questions
-> - Q1 Root cause clarity: [PASS/FAIL] — <file:line evidence>
-> - Q2 Generalize the fix: [PASS/FAIL] — <evidence>
-> - Q3 Worktree isolation: [PASS/FAIL] — <evidence>
-> - Q4 Real verification: [PASS/FAIL] — <evidence>
-> - Q5 Gate omissions: [PASS/FAIL] — <evidence>
-> - Q6 Subagent model selection: [PASS/FAIL] — <evidence>
-> - Q7 Mock vs real call: [PASS/FAIL] — <evidence>
-> - Q8 Spec distillation: [PASS/FAIL] — <evidence>
-> - Q9 No reinventing: [PASS/FAIL] — <evidence>
-> - Q10 Sycophancy check: [PASS/FAIL] — <evidence>
-> - Q11 Surgical scope: [PASS/FAIL] — <evidence>
+> ✅ 6/6 questions PASS
+> (or, if any FAIL:
+>  ✅ Passed: <list PASS Q-ids> (<n>/6)
+>  ❌ Q<k> <name>: <file:line evidence> — Fix: <steps>
+>  — enumerate ALL failing questions exhaustively, not just 2-3)
 >
 > ### ELEPHANT self-check
-> - Result: [PASS/FAIL]
-> - Evidence: <what was checked, what was found>
+> - Result: PASS
+> - Evidence: <one-line summary of what was checked>
+> (FAIL 时扩展为 8 维详细列表)
 >
 > ### Verdict
 > <PASS: OK to proceed | WARN: must fix these <N> items | BLOCK: must fix red lines before anything else>
 > ```
 >
 > **Status rules:**
-> - `PASS` iff: zero red line violations AND all 11 questions PASS AND ELEPHANT PASS
+> - `PASS` iff: zero red line violations AND all 6 questions PASS AND ELEPHANT PASS
 > - `WARN`: at least 1 question FAIL, but no red lines triggered AND ELEPHANT PASS
 > - `BLOCK`: any red line triggered OR ELEPHANT FAIL
 >
