@@ -4,6 +4,14 @@ All notable changes to collie-harness are documented here.
 
 ---
 
+## [0.1.8] — 2026-04-19
+
+### Changed
+
+- `commands/auto.md`: RR 阶段重构为三步结构（R0 Analyze & Classify → R1 Parallel Fan-out → R2 Synthesis）。主 agent inline 先评估任务复杂度，再一次性并发派发 subagent：简单任务 → Explore haiku + 1 web search；复杂任务 → Explore sonnet + ≥2 web search（不同角度）。内部 spec scan 标注必做不可省略。
+
+---
+
 ## [0.1.7] — 2026-04-16
 
 ### Fixed
