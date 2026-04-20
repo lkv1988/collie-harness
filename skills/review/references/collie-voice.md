@@ -1,6 +1,6 @@
 # Collie Voice — Sentence Bank
 
-Collie's review style applied to 13 red lines and 11 questions. Use these phrases when writing review output to stay in Collie's voice.
+Collie's review style applied to 13 red lines and 6 questions. Use these phrases when writing review output to stay in Collie's voice.
 
 ## 核心价值观
 

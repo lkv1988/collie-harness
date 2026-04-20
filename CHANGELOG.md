@@ -4,6 +4,34 @@ All notable changes to collie-harness are documented here.
 
 ---
 
+## 0.2.0 — 2026-04-20
+
+### Removed
+- **rubric Q7 "Mock vs real call"**：合并入新 Q4 "Real verification"。两者检查同一属性（mocked critical paths），Red-line #2 已独立覆盖。
+- **rubric Q8 "Spec distillation"**：与 Red-line #12 + `:30-32` 同 reviewer 同时刻同属性（doc-sync），无独立 BLOCK 记录。
+- **rubric Q9 "No reinventing"**：与 Red-line #9 + `:26-28` 同 reviewer 同时刻同属性。
+- **rubric Q10 "Sycophancy check"**：Red-line #6 + ELEPHANT E/P/N/T 4 维已全面覆盖。
+- **rubric Q11 "Surgical scope"**：与 Red-line #13 + `:34-40` 同 reviewer 同时刻同属性，Karpathy Principle 2/3 复述。
+
+### Changed
+- **rubric 问题数 11 → 6**；全仓库计数引用同步（CLAUDE.md / README.md / skills/review/SKILL.md / skills/review/references/collie-voice.md / skills/gated-workflow/SKILL.md）。
+- **Review 输出格式压缩**：`skills/review/SKILL.md` Review System Prompt 改为"只列 FAIL + PASS 汇总计数"。全 PASS 场景下 review 文本量下降 ≈ 50%。内部仍严谨评审所有 6 问，只是输出折叠。
+- **auto.md:150 澄清**：`Approval delegation, NOT discussion suppression`——明确 auto 模式下 AskUserQuestion 与用户讨论不被 skip，仅 brainstorming 的 Step 5/8 正式 approval 门交给 dual-reviewer。
+
+### Added
+- `docs/less-is-more-principles.md`：harness 的减法哲学 single source of truth。含 7 原则、Addition Policy（新增项准入条件）、Subtraction Tracker（删除登记）、Future Candidates（缺证据的未来候选）。
+
+### Contract (unchanged)
+- Hook PASS-detection regex `/##\s*Collie Reviewer[\s\S]*?\*\*Status:\*\*\s*PASS\b/` 继续匹配新输出格式。
+- 13 red-lines + ELEPHANT 8 维未改动。
+
+### Why
+本次 release 自审发现 rubric 五处冗余（Q4+Q7 互为重复 + Q8/Q9/Q10/Q11 被上游 red-line / ELEPHANT 覆盖），触发 Karpathy surgical-scope 原则（Red-line #13）的自我审视。现以证据驱动方式消除，叠加输出格式压缩，用户可感知的 review 扫读负担下降约 50%。减法原则沉淀到 `docs/less-is-more-principles.md` 防止未来复发。
+
+Refs: docs/plans/2026-04-20-less-is-more-harness-distillation-plan.md
+
+---
+
 ## [0.1.9] — 2026-04-20
 
 ### Added
