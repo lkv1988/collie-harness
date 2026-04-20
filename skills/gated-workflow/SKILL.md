@@ -66,6 +66,7 @@ description: Post-planmode implementation workflow with quality gates. Use immed
 - `[e2e-verify]` 运行 e2e / 集成测试，验证 critical path（条件：仅当 plan E2E Assessment 结论为 `e2e_feasible: true` 时创建）
 - `[test-verify]` 运行单元测试，确保 0 失败
 - `[doc-refresh]` 对照实现结果核对 README / CLAUDE.md / spec，补更新遗漏
+- `[collie-final-review]` 最终 rubric 审查（worktree 清理前的 pre-merge gate，调用 collie-harness:review Mode=code）
 - `[finish]` finishing-a-development-branch
 
 **示例**（3 个互相独立的 task）：
@@ -81,6 +82,7 @@ description: Post-planmode implementation workflow with quality gates. Use immed
 [e2e-verify] 运行 e2e / 集成测试（条件性）
 [test-verify] 运行单元测试
 [doc-refresh] 对照实现结果核对 README / CLAUDE.md / spec，补更新遗漏
+[collie-final-review] 最终 rubric 审查（collie-harness:review Mode=code）
 [finish] finishing-a-development-branch
 ```
 
@@ -254,6 +256,52 @@ subagent 调用 `superpowers:requesting-code-review`。
 
 ---
 
+## Step 5.7：最终 rubric 审查（GATE 5.7）
+
+⛔ **worktree 清理前最后一道 rubric gate，不得跳过。**
+
+### 调用方式
+
+```
+Skill("collie-harness:review")
+  Mode=code
+  Target=<当前 worktree 绝对路径 或 "worktree diff">
+  Context="Plan: $ARCHIVE_PATH（from task0）"
+```
+
+### Gate 语义
+
+- **PASS** → 进入 Step 6
+- **WARN** → 必须修复 WARN 项后重跑，不得跳过
+- **BLOCK** → 必须修复 BLOCK 项后重跑，不得跳过
+
+### WARN / BLOCK 处理
+
+⛔ **禁止主 session 直接写代码修复**，理由与 `[task N-CR]` 的 CR 处理一致（读源码会污染主 session 上下文）。
+
+修复流程：
+1. 从 rubric review 输出中提取所有 FAIL 问题（Red line 违规 + 逐条 question FAIL）
+2. Dispatch 修复 subagent，传入：
+   - FAIL 问题清单（引用 review 原文）
+   - worktree 绝对路径
+   - `$ARCHIVE_PATH`（plan 归档路径）
+3. 修复 subagent 完成后，dispatch 新的 `Skill("collie-harness:review")` with 同样 Mode/Target/Context
+4. 修复 → 重审循环直到 PASS
+5. 连续 3 轮仍 BLOCK → 升级（通过 `scripts/escalate.sh` 上报，等用户介入）
+
+⛔ **禁止退出 gated-workflow 返回 auto.md 层修复**——TodoList 状态会丢失，CR 历史链断裂。
+
+### 与 `[task N-CR]` 的区别
+
+- `[task N-CR]`：per-task 粒度，使用 `superpowers:requesting-code-review`，关注**单个 task 的实现质量**
+- `[collie-final-review]`：整体 rubric 粒度，使用 `collie-harness:review` Mode=code，关注**所有改动聚合后的 13 红线 + 11 问题 + ELEPHANT**
+
+两者互补，不重复。
+
+---
+
 ## Step 6：收尾（GATE 6）
+
+⛔ **仅在 Step 5.7（GATE 5.7）`[collie-final-review]` 返回 PASS 后进入。**
 
 调用 `superpowers:finishing-a-development-branch`（合并 / PR / 清理 worktree）。

@@ -1,6 +1,6 @@
 ---
 name: collie-harness:review
-description: "Collie-style unified rubric reviewer. Enforces 12 red lines + 10 questions + ELEPHANT anti-sycophancy + Reflexion grounding. Internally dispatches Agent(model=opus) for isolation. Use in three contexts: (1) Plan mode — Target is a plan doc matching *-plan.md or under plans/; called in parallel with plan-doc-reviewer at /auto step ③ before ExitPlanMode. (2) Code mode — Target is a worktree diff or branch; called directly at /auto step ⑥ after gated-workflow completes. (3) Ad-hoc — any file, diff, design doc, or subagent output needing Collie-style review."
+description: "Collie-style unified rubric reviewer. Enforces 13 red lines + 11 questions + ELEPHANT anti-sycophancy + Reflexion grounding. Internally dispatches Agent(model=opus) for isolation. Use in three contexts: (1) Plan mode — Target is a plan doc matching *-plan.md or under plans/; called in parallel with plan-doc-reviewer at /auto step ③ before ExitPlanMode. (2) Code mode — Target is a worktree diff or branch; called as gated-workflow TodoList item [collie-final-review] (Step 5.7) before worktree cleanup. (3) Ad-hoc — any file, diff, design doc, or subagent output needing Collie-style review."
 ---
 
 # Collie Reviewer
@@ -27,7 +27,7 @@ If `Mode` not provided:
 ### Step 2: Read rubric references
 
 Load all three:
-- `references/rubric-red-lines.md` — 12 red lines + mode-specific notes
+- `references/rubric-red-lines.md` — 13 red lines + mode-specific notes
 - `references/elephant-check.md` — 8-point anti-sycophancy self-check table
 - `references/collie-voice.md` — Collie's voice patterns and historical quote samples
 
@@ -57,9 +57,9 @@ Return the subagent's output verbatim. If the output doesn't contain the `## Col
 >
 > **Step 1 — Gather evidence.** For code mode: run `git status && git diff` in the worktree. For plan mode: `Read` the plan doc in full. For adhoc mode: `Read` / `Grep` / `Glob` the Target.
 >
-> **Step 2 — Scan 12 red lines.** Read `rubric-red-lines.md` in full. For each red line, check if the Target violates it. Plan mode emphasizes #1, #4, #5, #6, #9, #10. Code mode: all 12 apply.
+> **Step 2 — Scan 13 red lines.** Read `rubric-red-lines.md` in full. For each red line, check if the Target violates it. Plan mode emphasizes #1, #4, #5, #6, #9, #10, #13. Code mode: all 13 apply.
 >
-> **Step 3 — Run the 10 review questions.** For each question, answer `PASS` / `FAIL` with `file:line` evidence. A conclusion without `file:line` is **invalid** and downgrades to Reflexion FAIL → BLOCK.
+> **Step 3 — Run the 11 review questions.** For each question, answer `PASS` / `FAIL` with `file:line` evidence. A conclusion without `file:line` is **invalid** and downgrades to Reflexion FAIL → BLOCK.
 > For every FAIL question, **enumerate ALL failing instances exhaustively** — do not stop after finding 2-3 examples. Partial enumeration causes fix loops: each round fixes a subset and re-triggers the same question next round.
 >
 > **Step 4 — ELEPHANT anti-sycophancy self-check.** Read `elephant-check.md`. Answer all 8 dimensions. Any single FAIL → rewrite the entire review.
@@ -88,6 +88,7 @@ Return the subagent's output verbatim. If the output doesn't contain the `## Col
 > - Q8 Spec distillation: [PASS/FAIL] — <evidence>
 > - Q9 No reinventing: [PASS/FAIL] — <evidence>
 > - Q10 Sycophancy check: [PASS/FAIL] — <evidence>
+> - Q11 Surgical scope: [PASS/FAIL] — <evidence>
 >
 > ### ELEPHANT self-check
 > - Result: [PASS/FAIL]
@@ -98,7 +99,7 @@ Return the subagent's output verbatim. If the output doesn't contain the `## Col
 > ```
 >
 > **Status rules:**
-> - `PASS` iff: zero red line violations AND all 10 questions PASS AND ELEPHANT PASS
+> - `PASS` iff: zero red line violations AND all 11 questions PASS AND ELEPHANT PASS
 > - `WARN`: at least 1 question FAIL, but no red lines triggered AND ELEPHANT PASS
 > - `BLOCK`: any red line triggered OR ELEPHANT FAIL
 >

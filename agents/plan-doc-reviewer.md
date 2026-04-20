@@ -28,6 +28,7 @@ You will be given a plan file path and optionally a spec file path. Read both do
 | Doc Maintenance | 若改动影响用户可见行为 / 架构约束 / 已有 spec，计划中是否包含对应的 README / CLAUDE.md / spec 更新任务 |
 | Spec Consultation | 动笔该 plan 前是否先扫描了 `docs/*-spec.md` 和 `docs/superpowers/specs/`；若存在相关 spec，plan 的 Context 或 References 章节是否明确引用 |
 | E2E Assessment | 若本次需求涉及用户可见功能或 API 变更，plan 是否包含 E2E Assessment 章节？若评估结论为"可行"，是否有对应的 e2e 测试任务？若结论为"不可行"，理由是否充分？ |
+| Impact Assessment | 若改动跨 2+ 模块 / 修改已有 public API / 删除或重命名公开接口 / 修改共享 utilities，plan 是否包含 "Impact Assessment" 章节，列出 (a) Directly affected（直接修改的 module/file/API/CLI/hook/skill/agent）(b) Downstream consumers（调用方/依赖/单元测试/E2E/文档引用）(c) Reverse impact（非直接但受影响的点） |
 
 ## Calibration — What Counts as a Real Issue
 
@@ -44,6 +45,8 @@ You will be given a plan file path and optionally a spec file path. Read both do
 - Plan 中存在 Commit step，但 commit message 未在 body 中包含 `Refs: docs/plans/<plan-filename>.md`（缺少 plan 引用会导致日后无法从 git log 回溯当时的设计上下文）
 - 涉及用户可见功能或 API 变更但完全没有 E2E Assessment 章节
 - E2E Assessment 结论为"可行"但计划中没有对应的 e2e 测试任务
+- 涉及跨模块改动 / public API 变更 / 共享 utilities 修改但完全没有 Impact Assessment 章节
+- Impact Assessment 的 Downstream consumers 列表显而易见遗漏了已知调用方（例如改动某 hook 但未列出引用它的 skill / command）
 
 **Do NOT flag these (advisory only):**
 - Minor wording improvements or stylistic preferences
@@ -54,6 +57,7 @@ You will be given a plan file path and optionally a spec file path. Read both do
 - 无相关已有 spec 时，不要因"没引用 spec"而 block（没有就是没有）
 - 纯内部重构 / 不改变用户可见行为的改动不需要 E2E Assessment
 - E2E Assessment 结论为"不可行"且理由合理（纯算法/无 side effect/极早期项目等）
+- 单文件 < 20 行改动 / 纯文档 / 纯注释 / trivial bug 修复——这类改动 Impact Assessment 可标注 `None — trivial change, no cross-module impact`
 
 **Default to Approved.** If there are no block-worthy issues, approve the plan even if you have suggestions.
 
@@ -101,3 +105,24 @@ If there are no issues, write `None` under Issues. If there are no recommendatio
 3. 读取这些 spec 并对照 plan 是否引用 / 吸纳了其中的约束
 4. 若 plan 完全未提及但 spec 明显相关 → block 并指名具体 spec 文件
 5. 若确实无相关 spec → 不触发，不要强行找 spec
+
+### Impact Assessment 触发条件（满足任一即需 Impact Assessment 章节）
+
+- 改动跨 2+ 模块 / 目录
+- 修改已有 public API / CLI 命令 / hook / skill / agent 定义
+- 删除或重命名公开接口
+- 修改共享 utilities / 基础库 / 配置文件
+- 新增 / 删除 / 重命名用户可见命令或 slash command
+
+豁免（可直接标注 `None — trivial change, no cross-module impact`）：
+- 单文件 < 20 行的 trivial 改动
+- 纯文档 / 纯注释改动
+- 单行 bug 修复且无跨文件传导
+
+### Impact Assessment 校验流程（reviewer 实际执行）
+
+1. Read plan 的 "Impact Assessment" 章节（若不存在，先按触发条件判断是否需要）
+2. 对 "Directly affected" 列出的每个文件/模块，grep 反向引用：
+   - Bash: `grep -rn "<文件名 / 符号>" .` 检查是否有未列入 "Downstream consumers" 的引用点
+3. 若发现显著遗漏 → block 并指名具体遗漏文件
+4. 若 plan 作者已标注豁免 (`None — trivial change`)，验证改动确实 < 20 行 + 单文件 + 无跨文件传导，否则 block

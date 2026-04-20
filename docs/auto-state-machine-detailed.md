@@ -11,7 +11,6 @@ digraph collie_auto {
     "plan-doc-reviewer\napproved?"         [shape=diamond];
     "collie:review\nMode=plan PASS?"       [shape=diamond];
     "ExitPlanMode\nhook gate"              [shape=diamond];
-    "collie:review\nMode=code result?"     [shape=diamond];
     "stop hook\n(every Stop event)\n─────────────────\nsame error ×3\nno file changes ×5\nmax iterations" [shape=box, style=dotted];
 
     // ── Process nodes ────────────────────────────────────────────
@@ -22,7 +21,6 @@ digraph collie_auto {
     "③ PARALLEL:\nAgent(plan-doc-reviewer)\nSkill(collie:review Mode=plan)" [shape=box];
     "④ ExitPlanMode\nTaskUpdate → mark all 4 done"                 [shape=box];
     // gated-workflow 节点已展开为 cluster，见下方 subgraph
-    "⑥ collie:review Mode=code\nTarget: worktree diff"             [shape=box];
     "fix issues"                                                    [shape=box];
 
     // ── Main flow ────────────────────────────────────────────────
@@ -88,21 +86,19 @@ digraph collie_auto {
         GW_MORE  [shape=diamond, label="more batches?"];
         GW5      [shape=box, label="Step 5: run tests\n(unit 0 failures\n+ e2e if feasible)"];
         GW55     [shape=box, label="Step 5.5: doc-refresh\n(README / CLAUDE.md / spec)"];
+        GW57     [shape=box, label="Step 5.7: [collie-final-review]\n(collie:review Mode=code\nTarget: worktree diff)"];
+        GW57_gate [shape=diamond, label="collie:review\nMode=code result?"];
         GW7      [shape=box, label="Step 6: finishing-branch\n(merge / PR / cleanup)"];
 
         GW_START -> GW1 -> GW2 -> GW3 -> GW4 -> GW_MORE;
         GW_MORE  -> GW3  [label="yes → next batch"];
         GW_MORE  -> GW5  [label="no → all done"];
-        GW5 -> GW55 -> GW7;
+        GW5 -> GW55 -> GW57 -> GW57_gate;
+        GW57_gate -> GW7      [label="PASS"];
+        GW57_gate -> "fix issues" [label="WARN/BLOCK"];
     }
 
-    GW7 -> "⑥ collie:review Mode=code\nTarget: worktree diff";
-
-    "⑥ collie:review Mode=code\nTarget: worktree diff"
-        -> "collie:review\nMode=code result?";
-
-    "collie:review\nMode=code result?" -> "SHIP IT ✅" [label="PASS"];
-    "collie:review\nMode=code result?" -> "fix issues"  [label="WARN/BLOCK"];
+    GW7 -> "SHIP IT ✅";
     "fix issues" -> GW_START;
 
     // ── Stop hook side channel ────────────────────────────────────
