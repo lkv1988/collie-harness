@@ -12,7 +12,7 @@ Run the complete development workflow Collie-style in fully automated, unattende
 This command uses ralph-loop. Completion signal: `<promise>Collie: SHIP IT</promise>`
 
 **The completion signal can only be output when ALL of the following conditions are met:**
-1. collie-harness:review (Mode=code) returns `**Status:** PASS`
+1. collie-harness:gated-workflow returns successfully (含 [collie-final-review] 返回 `**Status:** PASS`)
 2. All code has been committed & pushed
 3. worktree has been cleaned up
 
@@ -29,6 +29,12 @@ R&R covers external search (GitHub, registries, docs, specs). Brainstorming cove
 **"The plan looks good enough — I'll skip one reviewer to save time"**
 The hook will block ExitPlanMode anyway. Both `collie-harness:plan-doc-reviewer` AND `collie-harness:review` (Mode=plan) must return approval. There are no shortcuts.
 
+**"只有大改动才需要 Impact Assessment"**
+任何 plan 都必须有 Impact Assessment 章节。小改动可标注 `None — trivial change, no cross-module impact`。完全缺失此章节 = plan-doc-reviewer BLOCK。
+
+**"gated-workflow 跑完直接 SHIP，rubric review 不必要"**
+gated-workflow 内部已含 `[collie-final-review]` pre-merge gate。试图省略 = Step 5.7 GATE 违规 = red line。
+
 ## Mandatory Sequence (no skipping allowed; skipping = red line)
 
 ```
@@ -39,8 +45,8 @@ The hook will block ExitPlanMode anyway. Both `collie-harness:plan-doc-reviewer`
    → both must approve before ④
 ④ ExitPlanMode → TaskUpdate all planning tasks completed, close planning TaskList
 ⑤ collie-harness:gated-workflow skill → complete implementation pipeline
-⑥ Skill(collie-harness:review Mode=code) → final review
-⑦ PASS → output completion signal / WARN/BLOCK → fix and return to ⑤
+   （内含 [collie-final-review] = Skill(collie-harness:review Mode=code)，作为 [finish] 前的 pre-merge gate）
+⑥ gated-workflow 返回成功 → output completion signal
 ```
 
 ```dot
@@ -54,8 +60,7 @@ digraph collie_auto {
     BRAIN  [shape=box, label="② brainstorming\n(→ writing-plans)"];
     REVIEW [shape=box, label="③ plan-doc-reviewer\n+ collie:review Mode=plan\n(parallel)"];
     EXIT   [shape=box, label="④ ExitPlanMode\nmark 4 tasks done"];
-    IMPL   [shape=box, label="⑤ gated-workflow"];
-    CR     [shape=box, label="⑥ collie:review Mode=code"];
+    IMPL   [shape=box, label="⑤ gated-workflow\n(含 [collie-final-review])"];
 
     MONITOR [shape=box, style=dotted,
              label="stop hook  —  fires on every Stop event\n─────────────────────────────────\nsame error repeated ×3\nno file changes for ×5 steps\nmax iterations reached"];
@@ -67,9 +72,8 @@ digraph collie_auto {
     REVIEW -> EXIT   [label="both approved\n(hook gate)"];
     REVIEW -> REVIEW [label="rejected → fix + retry"];
     EXIT   -> IMPL;
-    IMPL   -> CR;
-    CR     -> SHIP   [label="PASS"];
-    CR     -> IMPL   [label="WARN/BLOCK → fix"];
+    IMPL   -> SHIP   [label="PASS (含 [collie-final-review])"];
+    IMPL   -> IMPL   [label="WARN/BLOCK → 就地修复", style=dashed];
 
     MONITOR -> ESC [label="any condition met", style=dashed];
 
@@ -147,6 +151,12 @@ When starting, inject this as the working prompt (substitute $ARGUMENTS with the
 >     - **Skip writing-plans Plan Review Loop**: writing-plans' built-in plan-document-reviewer per-chunk review is skipped in collie-harness. collie-harness Step ③ has stricter dual-reviewer review — do not run both.
 >     - **Skip writing-plans Execution Handoff**: writing-plans' "Ready to execute?" prompt and skill recommendation are skipped in collie-harness. After the plan is written, return directly to auto.md Step ③ dual review.
 >     - **Design doc + Plan = single file**: brainstorming's design doc and writing-plans' implementation plan both go into the planmode plan file. Do NOT write them separately to `docs/superpowers/specs/` or `docs/superpowers/plans/`. File structure: design spec first, then `---`, then implementation plan.
+>     - **Impact Assessment（必做）**：brainstorming 的设计阶段必须包含影响面评估，结论写入 plan 的 "Impact Assessment" 章节：
+>       1. **Directly affected**：本次直接修改的 module / file / public API / CLI / hook / skill / agent（精确到文件路径）
+>       2. **Downstream consumers**：调用方 / 依赖 / 单元测试 / E2E 脚本 / 文档引用（枚举已知点，grep / rg 反查）
+>       3. **Reverse impact**：非直接但受影响的点（缓存、持久状态、历史数据、跨 session 状态）
+>       4. **触发条件**：满足任一即需完整 Impact Assessment — 改动跨 2+ 模块、修改已有 public API / CLI / hook / skill / agent、删除或重命名公开接口、修改共享 utilities
+>       5. **豁免**：单文件 < 20 行改动 / 纯文档 / 纯注释 / trivial bug 修复 → 可标注 `None — trivial change, no cross-module impact`
 >     - **E2E Assessment（必做）**：brainstorming 的设计阶段必须包含 E2E 可行性评估，结论写入 plan 的 "E2E Assessment" 章节：
 >       1. **探测目标项目 e2e 基建**：
 >          - 已知 pattern 扫描（启发列表）：`playwright.config.*`、`cypress.config.*`、`cypress/`、`e2e/`、`tests/e2e/`、`__tests__/e2e/`、`*.spec.ts`、`pytest.ini` + `markers: e2e`、`conftest.py` e2e fixture、`*_integration_test.go`、`testcontainers`、CI 配置中的 e2e 步骤、`docker-compose.test.yml`
@@ -175,12 +185,10 @@ When starting, inject this as the working prompt (substitute $ARGUMENTS with the
 >
 > **Implementation** — call `collie-harness:gated-workflow` skill.
 >
-> **Final review** — call `Skill("collie-harness:review")` with `Mode=code`, `Target=<current worktree diff>`, `Context="Plan: $ARCHIVE_PATH (from gated-workflow [task0])"`.
->
-> Only when collie-harness:review returns `**Status:** PASS`, output:
+> **Completion** — 当 `collie-harness:gated-workflow` 返回成功（内部 `[collie-final-review]` 返回 `**Status:** PASS`），output:
 > `<promise>Collie: SHIP IT</promise>`
 >
-> If collie-harness:review returns WARN or BLOCK, fix the issues and repeat from **Implementation**, until PASS is achieved.
+> 若 gated-workflow 内部出现无法自愈的 WARN / BLOCK（连续 3 轮修复失败），通过 `scripts/escalate.sh` 升级。
 
 ## Intelligent Exit Policy
 
