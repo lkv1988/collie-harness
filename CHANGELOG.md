@@ -4,6 +4,13 @@ All notable changes to collie-harness are documented here.
 
 ---
 
+## 0.2.1 — 2026-04-20
+
+### Removed
+- **Notification hook**：删除 `hooks/notification-escalate.js`、其测试文件，以及 `hooks.json` 中的 `Notification` hook block。macOS 桌面弹窗（`terminal-notifier` / `osascript`）同步从 `scripts/escalate.sh` 移除。escalation 日志写入和 `COLLIE_ESCALATE_CMD` 自定义 handler 保留不变。
+
+---
+
 ## 0.2.0 — 2026-04-20
 
 ### Removed

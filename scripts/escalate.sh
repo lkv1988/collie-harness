@@ -33,15 +33,5 @@ if [[ -n "${COLLIE_ESCALATE_CMD:-}" && -x "${COLLIE_ESCALATE_CMD}" ]]; then
   "${COLLIE_ESCALATE_CMD}" "${LEVEL}" "${MSG}" "${CONTEXT}" || true
 fi
 
-# Desktop notification fallback (macOS terminal-notifier or osascript)
-NOTIFY_TITLE="collie-harness [${LEVEL}]"
-NOTIFY_BODY="${MSG}"
-
-if command -v terminal-notifier >/dev/null 2>&1; then
-  terminal-notifier -title "${NOTIFY_TITLE}" -message "${NOTIFY_BODY}" >/dev/null 2>&1 || true
-elif command -v osascript >/dev/null 2>&1; then
-  osascript -e "display notification \"${NOTIFY_BODY}\" with title \"${NOTIFY_TITLE}\"" >/dev/null 2>&1 || true
-fi
-
 # Always exit 0 — escalation must never block the hook chain
 exit 0
