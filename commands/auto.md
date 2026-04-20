@@ -91,14 +91,29 @@ When starting, inject this as the working prompt (substitute $ARGUMENTS with the
 > - [collie-review] Collie rubric review (collie-harness:review Mode=plan)
 > - [exit] ExitPlanMode + close planning tasks
 >
-> **Research & Reuse** — before designing anything, check existing work in this order:
->   - **Internal specs first**: scan `docs/*-spec.md` and `docs/superpowers/specs/` for relevant existing specs; read them in full if found and cite them in the plan
->   - Web search (Google / Exa / GitHub) for how others have solved the same problem
->   - Check package registries (npm / PyPI / crates.io / etc.) for battle-tested libraries
->   - Use Context7 MCP to look up current docs for any relevant library or framework
->   - Prefer adopting or wrapping a proven solution over writing net-new code
->   - Document what you found (or ruled out) in one short paragraph **in the plan** before proceeding
->   - Mark [research] completed.
+> **Research & Reuse** — before designing anything, execute three inline steps:
+>
+> **R0 — Analyze & Classify（主 agent inline，不派 subagent）**
+>   Read the task in full, then produce a research plan with three sections:
+>   - **Internal specs to scan** (**必做，不可省略**): list concrete spec files / directories (e.g. `docs/*-spec.md`, `docs/superpowers/specs/`, `CLAUDE.md`, relevant `skills/*/SKILL.md`). Even trivial tasks must run this scan.
+>   - **External queries**: distinct web / GitHub search queries, each covering a different angle (patterns vs libraries vs prior art).
+>   - **Libraries**: specific package names or frameworks worth checking against registries (npm / PyPI / crates.io) + Context7.
+>
+>   Then **classify complexity** — this drives dispatch in R1:
+>   - **Simple** (well-known domain, small localized change, obvious solution) → 1× Explore `haiku` for internal scan + 1× web search is sufficient.
+>   - **Complex** (novel pattern, cross-cutting change, unclear prior art, architectural impact) → Explore **at least `sonnet`** for internal scan + **≥2 web searches with genuinely different angles** (never the same query reworded).
+>
+> **R1 — Parallel Fan-out（一次性并发派发，单条消息多个 Agent 调用，禁止分轮）**
+>   Dispatch the full research plan from R0 in a **single batched message**:
+>   - `Agent(subagent_type="Explore", model=<haiku if Simple | sonnet+ if Complex>)` — scan & read every internal spec identified in R0 **in full**. This call is mandatory regardless of complexity.
+>   - Web / GitHub search agents: **Simple → 1×** `Agent(general-purpose, model="sonnet")`; **Complex → ≥2×** `Agent(general-purpose, model="sonnet")`, each bound to a **distinct angle** from R0.
+>   - If R0 identified libraries: add `Agent(general-purpose, model="haiku")` for registry + Context7 lookup (same batch).
+>
+>   Each subagent prompt must be self-contained (they cannot ask follow-up questions) and specify the expected return format.
+>
+> **R2 — Synthesis（主 agent inline）**
+>   After all subagents return, inline-summarize findings into the plan: what exists internally (cite exact spec paths), what prior art / libraries were found or ruled out externally, and the chosen reuse strategy. Prefer adopting / porting / wrapping a proven solution over writing net-new code.
+>   Mark [research] completed.
 >
 > <HARD-GATE>
 > Do NOT call superpowers:brainstorming until Research & Reuse is complete with findings documented.
