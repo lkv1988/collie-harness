@@ -33,7 +33,7 @@ No build step — pure Node.js, zero external dependencies.
 |-------|-------------|
 | **0** | `acceptEdits` mode + escalation channel (`scripts/escalate.sh`) |
 | **1** | Chain-link hooks enforcing dual-reviewer handshake (collie-harness:plan-doc-reviewer + collie-harness:review) before ExitPlanMode |
-| **2** | `skills/review/` — single source of truth for Collie's 13 red-lines + 11 questions + Reflexion + ELEPHANT. Called directly at both plan stage (parallel with `plan-doc-reviewer`) and code stage (`/collie-harness:auto` step ⑥). |
+| **2** | `skills/review/` — single source of truth for Collie's 13 red-lines + 11 questions + Reflexion + ELEPHANT. Called directly at both plan stage (parallel with `plan-doc-reviewer`) and code stage (gated-workflow [collie-final-review] Step 5.7). |
 | **3** | Self-driven harness (`commands/auto.md` + `skills/queue/`) with CronCreate task queue |
 
 ## Workflow Sequence (enforced by hooks)
