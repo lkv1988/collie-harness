@@ -33,7 +33,7 @@ No build step — pure Node.js, zero external dependencies.
 |-------|-------------|
 | **0** | `acceptEdits` mode + escalation channel (`scripts/escalate.sh`) |
 | **1** | Chain-link hooks enforcing dual-reviewer handshake (collie-harness:plan-doc-reviewer + collie-harness:review) before ExitPlanMode |
-| **2** | `skills/review/` — single source of truth for Collie's 12 red-lines + 10 questions + Reflexion + ELEPHANT. Called directly at both plan stage (parallel with `plan-doc-reviewer`) and code stage (`/collie-harness:auto` step ⑥). |
+| **2** | `skills/review/` — single source of truth for Collie's 13 red-lines + 11 questions + Reflexion + ELEPHANT. Called directly at both plan stage (parallel with `plan-doc-reviewer`) and code stage (`/collie-harness:auto` step ⑥). |
 | **3** | Self-driven harness (`commands/auto.md` + `skills/queue/`) with CronCreate task queue |
 
 ## Workflow Sequence (enforced by hooks)
@@ -48,10 +48,7 @@ No build step — pure Node.js, zero external dependencies.
       collie-harness:review (Collie rubric) ← post-approved-exitplan-hint.js marks collie_reviewer.approved
   → (only when BOTH approved)
   → ExitPlanMode                ← post-exitplan-gated-hint.js reminds gated-workflow
-  → collie-harness:gated-workflow skill
-  → collie-harness:review skill (Mode=code, Target=worktree diff)
-  → PASS → <promise>Collie: SHIP IT</promise>
-     WARN/BLOCK → fix loop
+  → collie-harness:gated-workflow skill（内含 [collie-final-review] pre-merge gate） → <promise>Collie: SHIP IT</promise>
 ```
 
 ## Hooks and Their Triggers
@@ -80,13 +77,16 @@ All runtime state lives under `~/.collie-harness/`:
 
 ## Key Design Constraints
 
-- **Rubric red-lines** (BLOCK): 12 hard violations in `skills/review/references/rubric-red-lines.md` (single source of truth). Any single red-line = automatic BLOCK.
+- **Rubric red-lines** (BLOCK): 13 hard violations in `skills/review/references/rubric-red-lines.md` (single source of truth). Any single red-line = automatic BLOCK.
 - **Dual reviewer at plan stage**: `collie-harness:plan-doc-reviewer` (structural) AND `collie-harness:review` (Collie rubric) must both approve before ExitPlanMode. Enforced by `post-writing-plans-reviewer.js` + `post-approved-exitplan-hint.js`.
 - **Loop trap**: 3 identical error hashes in a row → WARN escalation; 5 steps without file changes → WARN escalation.
 - **Task queue** (`collie-harness:queue`) runs at `concurrency=1` — never two collie sessions simultaneously.
 - **ELEPHANT check** in rubric reviewer: 8-point sycophancy self-check; must answer all 8 before issuing PASS.
 - **Doc maintenance enforcement**：任何 plan 若改动用户可见行为 / 架构约束 / 已有文档内容，必须包含显式的文档更新任务（README / CLAUDE.md / docs/*-spec.md）。由 `collie-harness:plan-doc-reviewer` 的 Doc Maintenance 检查 + `collie-harness:review` 的 Red line #12 + Q8（文档同步检查）共同强制。`gated-workflow` Step 5.5 作为安全网。
 - **E2E enforcement**：brainstorming 阶段必须完成 E2E Assessment（探测基建 + 可行性结论）；gated-workflow TodoList 根据 Assessment 结论创建条件性 `[e2e-setup]` / `[e2e-verify]` 任务；Step 1 建 list 后 haiku subagent 交叉核对 plan-todo 对齐；`collie-harness:review` Q5 + `plan-doc-reviewer` E2E Assessment 行共同强制。
+- **Impact Assessment 强制**：所有 plan 必须包含 Impact Assessment 章节（Directly affected + Downstream consumers + Reverse impact）。由 `collie-harness:plan-doc-reviewer` 的 Impact Assessment 检查强制。豁免：单文件 < 20 行 trivial 改动。
+- **Pre-merge rubric gate**：`collie-harness:review` Mode=code 作为 `[collie-final-review]` 节点嵌入 `gated-workflow` TodoList 中 `[doc-refresh]` 之后、`[finish]` 之前（Step 5.7）。worktree 清理前必须通过 rubric gate，auto.md 无独立 Step ⑥。
+- **Surgical scope red line**：Red line #13（Speculative scope）+ Q11（Surgical scope）吸收 Karpathy CLAUDE.md Principle 2/3。加任务未要求的 feature / flexibility / 抽象 / 顺手改无关代码 = BLOCK；每行 diff 必须可追溯到任务目标。
 
 ## Required First-Time Setup
 
