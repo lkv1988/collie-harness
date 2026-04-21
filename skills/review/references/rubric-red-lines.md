@@ -17,7 +17,7 @@ Any single red line → **BLOCK**. Do not downgrade to WARN.
 | 9 | Reinvent the wheel | "直接改原来的 skill 不行吗？为啥要创建新的？" | plan + code |
 | 10 | Implement before alignment | "别着急实施。确定没问题的话，再派 agent 出去" | plan |
 | 11 | Wrong response language — Chinese required for descriptive content | "simple chinese response plz" | plan + code |
-| 12 | New pitfall not distilled into spec | "把这个认知更新到 spec 中去，以后避免！！！" | plan + code |
+| 12 | New pitfall not distilled into spec **or project-level skill** | "把这个认知更新到 spec 中去，以后避免！！！" | plan + code |
 | 13 | Speculative scope — 加任务未要求的 feature / flexibility / 抽象 / 顺手改无关代码 | "问啥做啥，多一行都是债" | plan + code |
 
 **Plan-mode focus**: #1, #4, #5, #6, #9, #10, #12, #13 are the most common plan-stage traps.
@@ -30,6 +30,19 @@ Any single red line → **BLOCK**. Do not downgrade to WARN.
 ### Red line #12 — 补充说明
 
 **Plan mode 额外含义**：计划中必须包含对 README / CLAUDE.md / spec 的更新任务，如果改动会影响用户可见行为、架构约束或已有 spec。Code mode 含义保持不变：实现过程中发现的新认知必须回写到 `docs/*-spec.md`。
+
+**Spec vs 项目级 Skill 分界**（两者都是项目专属；都要走"参考 + 提炼 + 更新"纪律）：
+
+| | Spec（`docs/*-spec.md`） | 项目级 Skill（`.claude/skills/*/SKILL.md`） |
+|---|---|---|
+| 性质 | 声明式：项目**契约 / 不变式**（is） | 过程式：项目**SOP / 操作清单**（how） |
+| 例 | rate-limit 基线值、auth claim 结构 | 本项目 migration 步骤、release 触发流程 |
+
+**判断启发**：skill body 能否在另一项目直接跑通？
+- 能 → 用户级 skill（`~/.claude/skills/`），**本 harness 不涉及**
+- 不能 → 项目级 skill，Red line #12 一并审视
+
+新建或更新项目级 skill 必须走 `Skill('skill-creator')`（详见 `skills/gated-workflow/SKILL.md` Step 5.5）。
 
 ### Red line #13 — 补充说明
 
