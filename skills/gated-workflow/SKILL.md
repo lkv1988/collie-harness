@@ -250,7 +250,7 @@ subagent 调用 `superpowers:requesting-code-review`。
 4. **docs/plans/** — 本次计划文档已在 Step 2 归档，无需重复
 5. **`.claude/skills/*/SKILL.md`** — 如果本次改动新增或更新了项目级 skill，必须同步更新对应 SKILL.md
 
-**新增或更新项目级 skill 时的硬约束**：必须调用 `Skill('skill-creator')`（meta-skill 位于 `~/.claude/skills/skill-creator/`）生成或更新 `.claude/skills/<slug>/SKILL.md`。**禁止 free-form prose 写入**——这保证产出的 skill 遵守 frontmatter / Concise is Key / references 规范，能被其他 Claude session 正确发现和加载。
+**新增或更新项目级 skill 时的硬约束**：必须调用 `Skill('skill-creator')`（由 superpowers plugin 提供）生成或更新 `.claude/skills/<slug>/SKILL.md`。**禁止 free-form prose 写入**——这保证产出的 skill 遵守 frontmatter / Concise is Key / references 规范，能被其他 Claude session 正确发现和加载。
 
 判断"是否需要新增/更新 skill"的启发见 `skills/review/references/rubric-red-lines.md` Red line #12 补充说明。
 
