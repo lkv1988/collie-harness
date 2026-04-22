@@ -4,6 +4,21 @@ All notable changes to collie-harness are documented here.
 
 ---
 
+## 0.2.2 — 2026-04-21
+
+### Changed
+- **Red line #12** 扩到覆盖"未沉淀到项目级 skill"；`rubric-red-lines.md` 新增 spec vs 项目级 skill 分界说明（声明式契约 vs 过程式 SOP）及判断启发
+- **Step 5.5 `[doc-refresh]`** 审视范围包含 `.claude/skills/*/SKILL.md`；新增/更新项目级 skill 强制走 `Skill('skill-creator')`，禁止 free-form prose 写入
+- **R&R R0/R1** 扫描范围同时覆盖 `docs/*-spec.md` + `.claude/skills/*/SKILL.md`（单 Explore agent，无额外成本）
+- **plan-doc-reviewer Doc Maintenance** 检查同时覆盖项目级 skill 更新任务；SOP 标准化类 plan 未含 skill 创建任务 = BLOCK
+- **CLAUDE.md + README.md** 同步更新 Doc Maintenance 覆盖范围（Step 5.5 安全网捕获）
+
+### Excluded (explicit non-scope)
+- 用户级 skill（`~/.claude/skills/`）本 harness 不干预
+- 自进化 / 记忆 / evolution-log / promote 自动化 —— 留待真实失败证据推动
+
+---
+
 ## 0.2.1 — 2026-04-20
 
 ### Removed
