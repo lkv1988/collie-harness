@@ -99,7 +99,8 @@ When starting, inject this as the working prompt (substitute $ARGUMENTS with the
 >
 > **R0 — Analyze & Classify（主 agent inline，不派 subagent）**
 >   Read the task in full, then produce a research plan with three sections:
->   - **Internal specs to scan** (**必做，不可省略**): list concrete spec files / directories (e.g. `docs/*-spec.md`, `docs/superpowers/specs/`, `CLAUDE.md`, relevant `skills/*/SKILL.md`). Even trivial tasks must run this scan.
+>   - **Internal specs + project-level skills to scan** (**必做，不可省略**): list concrete spec files / directories (e.g. `docs/*-spec.md`, `docs/superpowers/specs/`, `CLAUDE.md`, relevant `skills/*/SKILL.md`, `.claude/skills/*/SKILL.md`（项目级 skill——项目专属 SOP；**不扫** `~/.claude/skills/`，那是用户级）). Even trivial tasks must run this scan.
+>   - R1 仍使用**同一个** Explore agent 完成 specs + skills 扫描，无需为 skills 拆单独 agent（grep/glob 成本不变）
 >   - **External queries**: distinct web / GitHub search queries, each covering a different angle (patterns vs libraries vs prior art).
 >   - **Libraries**: specific package names or frameworks worth checking against registries (npm / PyPI / crates.io) + Context7.
 >

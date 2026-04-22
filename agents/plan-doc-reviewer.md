@@ -25,7 +25,7 @@ You will be given a plan file path and optionally a spec file path. Read both do
 | Spec Alignment | Plan covers all spec requirements, no major scope gaps, no unexplained scope creep |
 | Task Decomposition | Tasks have clear start/end boundaries, steps are concrete and actionable, dependencies are identified |
 | Buildability | Could an engineer follow this plan without needing to ask clarifying questions or reverse-engineer intent? |
-| Doc Maintenance | 若改动影响用户可见行为 / 架构约束 / 已有 spec，计划中是否包含对应的 README / CLAUDE.md / spec 更新任务 |
+| Doc Maintenance | 若改动影响用户可见行为 / 架构约束 / 已有 spec，计划中是否包含对应的 README / CLAUDE.md / spec 更新任务；若改动性质属于本项目 SOP/操作流程的标准化，计划中是否包含项目级 `.claude/skills/*/SKILL.md` 的新建/更新任务且该任务明示调用 `Skill('skill-creator')` |
 | Spec Consultation | 动笔该 plan 前是否先扫描了 `docs/*-spec.md` 和 `docs/superpowers/specs/`；若存在相关 spec，plan 的 Context 或 References 章节是否明确引用 |
 | E2E Assessment | 若本次需求涉及用户可见功能或 API 变更，plan 是否包含 E2E Assessment 章节？若评估结论为"可行"，是否有对应的 e2e 测试任务？若结论为"不可行"，理由是否充分？ |
 | Impact Assessment | 若改动跨 2+ 模块 / 修改已有 public API / 删除或重命名公开接口 / 修改共享 utilities，plan 是否包含 "Impact Assessment" 章节，列出 (a) Directly affected（直接修改的 module/file/API/CLI/hook/skill/agent）(b) Downstream consumers（调用方/依赖/单元测试/E2E/文档引用）(c) Reverse impact（非直接但受影响的点） |
@@ -41,6 +41,7 @@ You will be given a plan file path and optionally a spec file path. Read both do
 - Tasks are so vague that an engineer cannot act on them without guessing
 - Critical dependencies between tasks are missing or misordered
 - 改动会导致已有文档内容过时（README / CLAUDE.md / docs/*-spec.md 中的描述不再准确），但计划未包含任何文档更新任务
+- 改动性质属于本项目 SOP/操作流程的标准化（新增标准步骤清单、发现重复性操作可模板化），但计划未包含项目级 `.claude/skills/*/SKILL.md` 新建/更新任务，或该任务未明示调用 `Skill('skill-creator')`
 - `docs/` 下存在与本次改动直接相关的 spec 文件（例如同名主题 / 同名模块），但计划完全未引用
 - Plan 中存在 Commit step，但 commit message 未在 body 中包含 `Refs: docs/plans/<plan-filename>.md`（缺少 plan 引用会导致日后无法从 git log 回溯当时的设计上下文）
 - 涉及用户可见功能或 API 变更但完全没有 E2E Assessment 章节
@@ -95,6 +96,7 @@ If there are no issues, write `None` under Issues. If there are no recommendatio
 - 改动修改了 CLAUDE.md 里已描述过的约束、hook、state 文件、红线
 - 改动与已有 `docs/*-spec.md` 的内容产生偏差（即代码为准 vs spec 为准的分歧）
 - 改动引入了新的用户可见特性（新 command / slash / skill / agent）
+- 改动性质属于本项目 SOP/操作流程的标准化：新增标准步骤清单、发现重复性操作可模板化 → 必须包含项目级 `.claude/skills/*/SKILL.md` 的新建/更新任务，且该任务必须明示调用 `Skill('skill-creator')`。判断启发同 Red line #12 补充说明（`skills/review/references/rubric-red-lines.md`）。
 
 豁免：纯内部重构、变量改名、测试补充、不影响任何已存在文档的 bug 修复、文档本身的改动。
 

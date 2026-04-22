@@ -85,7 +85,7 @@ hook 的 warn 不是报错，是护栏：跳过任意一步都会被拦截提示
 
 任何 plan 必须包含 Impact Assessment 章节，列明直接影响模块（Directly affected）、下游调用方 / 依赖 / 测试（Downstream consumers）、反向影响（Reverse impact）。由 `collie-harness:plan-doc-reviewer` 强制。豁免：单文件 < 20 行的 trivial 改动可标注 `None — trivial change, no cross-module impact`。
 
-任何 plan 若改动用户可见行为 / 架构约束 / 已有文档内容，必须包含显式的文档更新任务（README / CLAUDE.md / docs/\*-spec.md）。由 `collie-harness:plan-doc-reviewer` 的 Doc Maintenance 检查、`collie-harness:review` Red line #12，以及 `gated-workflow` Step 5.5 共同强制。
+任何 plan 若改动用户可见行为 / 架构约束 / 已有文档内容，必须包含显式的文档更新任务（README / CLAUDE.md / docs/\*-spec.md / `.claude/skills/*/SKILL.md`（若改动涉及项目级 SOP/操作清单））。由 `collie-harness:plan-doc-reviewer` 的 Doc Maintenance 检查、`collie-harness:review` Red line #12，以及 `gated-workflow` Step 5.5 共同强制。
 
 brainstorming 阶段强制完成 E2E Assessment：探测目标项目 e2e 基建，评估可行性，若无基建则推荐建设方案。gated-workflow 根据 Assessment 结论条件性创建 `[e2e-setup]` / `[e2e-verify]` 任务，并通过 haiku subagent 交叉核对 plan-todo 对齐。`collie-harness:review` Q5 在 code mode 时验证 e2e 承诺兑现。
 
