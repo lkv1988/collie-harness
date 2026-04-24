@@ -15,7 +15,7 @@ node --test tests/*.test.js
 # Run a single test file
 node --test tests/stop-steps-counter.test.js
 
-# Run E2E smoke tests (5 scenarios)
+# Run E2E smoke tests (4 scenarios)
 ./tests/e2e/smoke.sh
 
 # Load as a development plugin (session-only)
