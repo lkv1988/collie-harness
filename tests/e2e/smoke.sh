@@ -98,6 +98,62 @@ EOF
 }
 
 # ---------------------------------------------------------------------------
+# Scenario 4: Scenario 4 placeholder (reserved for future hook test)
+# (intentionally absent — numbering jumps to 5 for loop-shim)
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Scenario 5: loop-shim — static artifact verification (no live claude)
+# ---------------------------------------------------------------------------
+scenario5() {
+  local result="pass"
+
+  # Check 1: commands/loop.md exists
+  if [[ ! -f "${PLUGIN_ROOT}/commands/loop.md" ]]; then
+    echo "  [e2e-05] MISS: commands/loop.md not found" >&2
+    result="fail"
+  fi
+
+  # Check 2: commands/loop.md has valid frontmatter (--- delimiters + description: field)
+  if ! grep -q '^---' "${PLUGIN_ROOT}/commands/loop.md" 2>/dev/null \
+     || ! grep -q '^description:' "${PLUGIN_ROOT}/commands/loop.md" 2>/dev/null; then
+    echo "  [e2e-05] MISS: commands/loop.md missing valid frontmatter" >&2
+    result="fail"
+  fi
+
+  # Check 3: skills/loop/SKILL.md exists
+  if [[ ! -f "${PLUGIN_ROOT}/skills/loop/SKILL.md" ]]; then
+    echo "  [e2e-05] MISS: skills/loop/SKILL.md not found" >&2
+    result="fail"
+  fi
+
+  # Check 4: skills/loop-prepare/SKILL.md exists and has valid frontmatter (--- + name: field)
+  if [[ ! -f "${PLUGIN_ROOT}/skills/loop-prepare/SKILL.md" ]]; then
+    echo "  [e2e-05] MISS: skills/loop-prepare/SKILL.md not found" >&2
+    result="fail"
+  elif ! grep -q '^---' "${PLUGIN_ROOT}/skills/loop-prepare/SKILL.md" 2>/dev/null \
+       || ! grep -q '^name:' "${PLUGIN_ROOT}/skills/loop-prepare/SKILL.md" 2>/dev/null; then
+    echo "  [e2e-05] MISS: skills/loop-prepare/SKILL.md missing valid frontmatter (name: field)" >&2
+    result="fail"
+  fi
+
+  # Check 5: _state.loopDir returns a path containing the project-id fragment
+  local loopdir_output
+  loopdir_output=$(node -e "
+    const s = require('${PLUGIN_ROOT}/hooks/_state.js');
+    const pid = 'Users-kevin-git-collie-harness';
+    const result = s.loopDir(pid, 'smoke-test');
+    if (!result.includes(pid)) process.exit(1);
+    console.log('loopDir ok:', result);
+  " 2>&1) || {
+    echo "  [e2e-05] FAIL: _state.loopDir did not return expected path fragment. Output: ${loopdir_output}" >&2
+    result="fail"
+  }
+
+  run_scenario "e2e-05-loop-shim" "${result}"
+}
+
+# ---------------------------------------------------------------------------
 # Run all scenarios
 # ---------------------------------------------------------------------------
 echo "Running collie-harness E2E smoke tests..."
@@ -106,6 +162,7 @@ echo ""
 scenario1
 scenario2
 scenario3
+scenario5
 
 echo ""
 echo "Results: ${PASS} passed, ${FAIL} failed"
