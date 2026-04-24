@@ -423,15 +423,16 @@ uncertainty_tag: triage_unclear | none
 ### G7 check FIRST (before filling template)
 
 ```javascript
-const { computeSimilarity } = require('./skills/loop/lib/jaccard.js');
-// currentTasks: FIX description strings from current iter FIX-*.md files
-// prevTasks: task description strings from iter-(N-1)/fix-plan.md (empty if iter=1)
-const bucket = computeSimilarity(currentTasks, prevTasks); // returns 1-5
+const { jaccard, bucketize } = require('./skills/loop/lib/jaccard.js');
+// currentTasksText: concatenated task subject strings from current iter FIX-*.md files
+// prevTasksText: concatenated task subject strings from iter-(N-1)/fix-plan.md (empty string if iter=1)
+const ratio = jaccard(currentTasksText, prevTasksText); // returns [0.0, 1.0]
+const bucket = bucketize(ratio);                        // returns 1-5
 ```
 
 See `skills/loop/references/overfit-guards.md §G7` for bucket thresholds.
 
-If `bucket ≥ 4` AND scalar was 0-delta for 2 consecutive completed iters:
+If `bucket >= 4` AND `consecutiveDelta0 >= 2`:
 1. Append to `iter-N/summary.md`: Jaccard ratio + bucket
 2. Write `state.json.status = "escalated"`
 3. `scripts/escalate.sh "loop_no_progress" "$RUN_ID"`
@@ -528,6 +529,8 @@ Update `state.json`: `{ "last_scalar": <new_scalar>, "status": "iter_done" }`
 ## Stage 6 — Rollback & Stop Check
 
 ### Rollback decision
+
+**MUST consult `skills/loop/references/stop-criterion.md` for the authoritative rollback matrix before executing any revert.** The inline table below is a quick-reference summary only; the reference document governs all edge cases.
 
 Full matrix in `skills/loop/references/stop-criterion.md`. Summary:
 
