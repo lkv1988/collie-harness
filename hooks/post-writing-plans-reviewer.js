@@ -104,7 +104,7 @@ if (toolName === 'ExitPlanMode') {
 
         if (planKind === 'loop-stage0') {
           // Validate 3 required metadata lines
-          const hasPlanSource   = first5Lines.some(l => l.startsWith('<!-- plan-source:'));
+          const hasPlanSource   = first5Lines.some(l => /<!--\s*plan-source:/.test(l));
           const hasPlanKind     = first5Lines.some(l => /<!--\s*plan-kind:\s*loop-stage0\s*-->/.test(l));
           const hasPlanExecutor = first5Lines.some(l => /<!--\s*plan-executor:\s*collie-harness:loop\s*-->/.test(l));
           const metaMissing = [
@@ -122,8 +122,8 @@ if (toolName === 'ExitPlanMode') {
           // Assert 4 key enum fields present in plan content
           const enumFields = [
             { name: 'primary_goal',            pattern: /primary_goal/ },
-            { name: 'trigger.kind',             pattern: /trigger[^\n]*kind:|kind:\s*\S/ },
-            { name: 'success_criterion.type',   pattern: /success_criterion[^\n]*type:|type:\s*\S/ },
+            { name: 'trigger.kind',             pattern: /trigger[^\n]*kind:/ },
+            { name: 'success_criterion.type',   pattern: /success_criterion[^\n]*type:/ },
             { name: 'iter_rollback_policy',     pattern: /iter_rollback_policy/ },
           ];
           const enumMissing = enumFields.filter(f => !f.pattern.test(planContent)).map(f => f.name);
