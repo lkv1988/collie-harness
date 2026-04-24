@@ -16,7 +16,7 @@ function projectId(cwd) {
 }
 
 function loopDir(projId, runId) {
-  return path.join(STATE_HOME, 'loop', projId, runId) + path.sep;
+  return path.join(STATE_HOME, 'loop', projId, runId, '');
 }
 
 function currentRunFile(projId) {
@@ -24,7 +24,7 @@ function currentRunFile(projId) {
 }
 
 function iterDir(projId, runId, n) {
-  return path.join(loopDir(projId, runId), `iter-${n}`) + path.sep;
+  return path.join(loopDir(projId, runId), `iter-${n}`, '');
 }
 
 module.exports = {
