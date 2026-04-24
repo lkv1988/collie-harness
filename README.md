@@ -153,6 +153,7 @@ collie-harness/
 │   └── plan-doc-reviewer.md          # 结构审查 agent（collie-harness:plan-doc-reviewer）
 ├── commands/
 │   ├── auto.md                       # /collie-harness:auto slash command
+│   ├── loop.md                       # /collie-harness:loop slash command
 │   └── queue.md                      # /collie-harness:queue slash command
 ├── skills/
 │   ├── gated-workflow/SKILL.md       # 实施阶段门禁流程
