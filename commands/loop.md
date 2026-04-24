@@ -16,6 +16,16 @@ This command uses ralph-loop. Completion signal: `<promise>Collie: LOOP DONE</pr
 
 **Absolutely no false completion reporting allowed** (ralph-loop note: ONLY when statement is TRUE - do not lie to exit!)
 
+## Intelligent Exit Policy
+
+The following conditions automatically trigger escalation (detected by stop-steps-counter hook):
+
+- Same error appears consecutively 3 times → escalate WARN "loop_on_same_error"
+- 5 consecutive steps with no file changes → escalate WARN "no_progress"
+- Reaches `--max-iterations` (default 5) → escalate WARN "max_iterations"
+
+These are automatically detected by the `stop-steps-counter.js` hook with no manual handling needed.
+
 ## Arguments
 
 - `<task>` — required; the task description / goal for the iterative loop
