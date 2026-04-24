@@ -18,13 +18,16 @@ This command uses ralph-loop. Completion signal: `<promise>Collie: LOOP DONE</pr
 
 ## Intelligent Exit Policy
 
-The following conditions automatically trigger escalation (detected by stop-steps-counter hook):
+**`stop-steps-counter.js` hook** (fires on every Stop event) detects:
 
 - Same error appears consecutively 3 times → escalate WARN "loop_on_same_error"
 - 5 consecutive steps with no file changes → escalate WARN "no_progress"
-- Reaches `--max-iterations` (default 5) → escalate WARN "max_iterations"
 
-These are automatically detected by the `stop-steps-counter.js` hook with no manual handling needed.
+**Skill Stage 6 stop conditions** (evaluated after each iteration) detect:
+
+- `--max-iterations` cap reached (SC1)
+- Quality threshold met or convergence reached (SC2/SC3)
+- Token budget exhausted (SC4)
 
 ## Arguments
 
