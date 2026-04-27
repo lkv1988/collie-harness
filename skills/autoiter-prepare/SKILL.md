@@ -1,9 +1,9 @@
 ---
 name: collie-harness:autoiter-prepare
-description: "Pre-flight environment check SKILL for the collie-harness loop command. Called by the main autoiter SKILL (collie-harness:autoiter) in the §3.5 post-ExitPlanMode recovery path, after worktree creation, before Stage 1 iteration begins. Runs 5 checks: (1) trigger dry-run, (2) scalar extraction validation, (3) observability validation (Monitor/Read-tail + kill signal), (4) persistent directory writability. Outputs prepare-report.md with PASS/FAIL evidence. Returns failure signal to caller on any FAIL — does NOT fix issues. Supports skip_prepare bypass and is idempotent (skips all checks if prepare-report.md already exists). Do NOT invoke directly from user prompts; this is an internal skill invoked exclusively by collie-harness:autoiter."
+description: "Pre-flight environment check SKILL for the collie-harness autoiter command. Called by the main autoiter SKILL (collie-harness:autoiter) in the §3.5 post-ExitPlanMode recovery path, after worktree creation, before Stage 1 iteration begins. Runs 5 checks: (1) trigger dry-run, (2) scalar extraction validation, (3) observability validation (Monitor/Read-tail + kill signal), (4) persistent directory writability. Outputs prepare-report.md with PASS/FAIL evidence. Returns failure signal to caller on any FAIL — does NOT fix issues. Supports skip_prepare bypass and is idempotent (skips all checks if prepare-report.md already exists). Do NOT invoke directly from user prompts; this is an internal skill invoked exclusively by collie-harness:autoiter."
 ---
 
-# loop-prepare — Pre-flight Environment Check
+# autoiter-prepare — Pre-flight Environment Check
 
 Called exclusively by `collie-harness:autoiter` at Stage 0.5. Never invoked directly by the user.
 
@@ -21,7 +21,7 @@ Called exclusively by `collie-harness:autoiter` at Stage 0.5. Never invoked dire
 | `report_path` | Absolute path to `~/.collie-harness/autoiter/{project-id}/{runId}/prepare-report.md` (output) |
 | `project_id` | From `_state.projectId()` |
 | `run_id` | Current runId |
-| `worktree_path` | Absolute path to the loop worktree (trigger dry-run executes here) |
+| `worktree_path` | Absolute path to the autoiter worktree (trigger dry-run executes here) |
 
 ## Skip Path
 

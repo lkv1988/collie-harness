@@ -77,7 +77,7 @@ SCALAR=$(cat /tmp/autoiter-prepare-dryrun.stdout | <scalar_extraction_cmd> 2>/de
 
 ## §3a Check 3a — Monitor Tool Detection
 
-**Goal**: Determine whether the built-in `Monitor` tool is available in this Claude Code session. Affects how the main loop observes subprocess output.
+**Goal**: Determine whether the built-in `Monitor` tool is available in this Claude Code session. Affects how the main autoiter SKILL observes subprocess output.
 
 **Method**:
 ```
@@ -90,13 +90,13 @@ ToolSearch select:Monitor
 
 **Evidence to capture**:
 - Monitor available: `"Monitor tool found — streaming mode available"`
-- Monitor unavailable: `"Monitor tool not found — loop will use Read-tail fallback (ScheduleWakeup polling every 60s)"`
+- Monitor unavailable: `"Monitor tool not found — autoiter will use Read-tail fallback (ScheduleWakeup polling every 60s)"`
 
 ---
 
 ## §3b Check 3b — Subprocess Kill Signal
 
-**Goal**: Verify that background subprocesses can be terminated (SIGTERM/SIGKILL). Required for timeout enforcement and graceful abort in the main loop.
+**Goal**: Verify that background subprocesses can be terminated (SIGTERM/SIGKILL). Required for timeout enforcement and graceful abort in the main autoiter SKILL.
 
 **Method**:
 1. Start a background Bash process: `Bash(command="sleep 30", run_in_background=true)` — capture the background task ID or PID from the response.

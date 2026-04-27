@@ -99,9 +99,9 @@ coverage-threshold gates — as long as every test file is executed.
 - "better", "improved", "looks good", "faster", "cleaner", "more stable"
 - Any non-numeric threshold (e.g., `threshold: high`)
 
-**Loop-prepare enforcement**: Stage 0.5 executes `scalar_extraction` against
+**autoiter-prepare enforcement**: Stage 0.5 executes `scalar_extraction` against
 the dry-run output; if it returns a non-numeric value or exits non-zero,
-prepare FAIL → loop does not start.
+prepare FAIL → autoiter does not start.
 
 ---
 

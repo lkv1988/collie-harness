@@ -20,7 +20,7 @@ Drives the iterative improvement pipeline: run trigger → observe → triage �
 ## Flowchart
 
 ```dot
-digraph loop {
+digraph autoiter {
   rankdir=TB;
   node [shape=box, style=rounded];
   entry [label="SKILL entry\n§3.5 state machine"];
@@ -164,7 +164,7 @@ CURRENT_RUN_FILE=$(node -e "const s=require('./hooks/_state.js'); console.log(s.
 
 ### Nested-call check
 
-If `COLLIE_AUTOITER_ACTIVE` environment variable is set → this is a nested call from inside another `/auto` or `/loop` session.
+If `COLLIE_AUTOITER_ACTIVE` environment variable is set → this is a nested call from inside another `/auto` or `/autoiter` session.
 
 Action: call `scripts/escalate.sh "nested_loop_call" "$PROJECT_ID"` then **stop immediately**. Do NOT rm current-run (the outer run owns it).
 
@@ -225,7 +225,7 @@ Read `state.json`:
 |--------|--------|
 | `"running"` | Re-enter Stage 1 kickoff (idempotent: skip write if kickoff.md already exists) |
 | `"iter_done"` | Proceed to Stage 6 stop check |
-| `"converged"` / `"budget_exhausted"` / `"escalated"` | **Terminal**: rm current-run → print `[loop {runId}] All done — status={status}` → emit `<promise>Collie: AUTOITER DONE</promise>` → stop |
+| `"converged"` / `"budget_exhausted"` / `"escalated"` | **Terminal**: rm current-run → print `[autoiter {runId}] All done — status={status}` → emit `<promise>Collie: AUTOITER DONE</promise>` → stop |
 | missing | Treat same as Branch B (run-spec.md missing path) |
 
 ---
@@ -332,7 +332,7 @@ timestamp: <ISO-8601>
 **Observability**:
 - Overwrite `status.md`: `iter N/M · Stage 1 · Kickoff · preparing trigger`
 - Append `user-log.md`: `## iter-N · <ts>\nKickoff. HEAD: <sha>. Baseline scalar: <val>.`
-- Stdout: `[loop {runId}] iter-N Stage 1 → Kickoff`
+- Stdout: `[autoiter {runId}] iter-N Stage 1 → Kickoff`
 
 ---
 
@@ -369,7 +369,7 @@ ToolSearch query="select:Monitor"
 
 **Observability**:
 - Overwrite `status.md`: `iter N/M · Stage 2 · Running trigger · <elapsed>s elapsed`
-- Stdout: `[loop {runId}] iter-N Stage 2 → trigger running (timeout: {timeout_min}min)`
+- Stdout: `[autoiter {runId}] iter-N Stage 2 → trigger running (timeout: {timeout_min}min)`
 
 ---
 
@@ -423,7 +423,7 @@ kill -TERM <pid>; sleep 5; kill -KILL <pid> 2>/dev/null || true
 
 **Observability**:
 - Overwrite `status.md`: `iter N/M · Stage 3 · Observing · {n} issues found`
-- Stdout: `[loop {runId}] iter-N Stage 3 → {n} issues recorded, {m} blocking`
+- Stdout: `[autoiter {runId}] iter-N Stage 3 → {n} issues recorded, {m} blocking`
 
 ---
 
@@ -456,7 +456,7 @@ rationale: <adversarial reasoning>
 
 **Observability**:
 - Overwrite `status.md`: `iter N/M · Stage 4a · Triage · {n_real} Real, {n_deferred} DEFERRED`
-- Stdout: `[loop {runId}] iter-N Stage 4a → triage complete ({n} → {m} to Deep Verify)`
+- Stdout: `[autoiter {runId}] iter-N Stage 4a → triage complete ({n} → {m} to Deep Verify)`
 
 ---
 
@@ -495,7 +495,7 @@ uncertainty_tag: triage_unclear | none
 
 **Observability**:
 - Overwrite `status.md`: `iter N/M · Stage 4b · Deep Verify · {n} FIX in verification`
-- Stdout: `[loop {runId}] iter-N Stage 4b → {n} issues in parallel Deep Verify`
+- Stdout: `[autoiter {runId}] iter-N Stage 4b → {n} issues in parallel Deep Verify`
 
 ---
 
@@ -541,7 +541,7 @@ Write `iter-N/fix-plan.md` using `skills/autoiter/references/fix-plan-template.m
 
 **Observability**:
 - Overwrite `status.md`: `iter N/M · Stage 5.0 · Building fix-plan · {n} FIX eligible`
-- Stdout: `[loop {runId}] iter-N Stage 5.0 → fix-plan.md built ({n} FIX)`
+- Stdout: `[autoiter {runId}] iter-N Stage 5.0 → fix-plan.md built ({n} FIX)`
 
 ---
 
@@ -578,7 +578,7 @@ If audit passes → proceed to Stage 5.3.
 See `skills/autoiter/references/overfit-guards.md §G6` for full audit rules.
 
 **Observability**:
-- Stdout: `[loop {runId}] iter-N Stage 5.2 → G6 diff audit PASS` (or `FAIL`)
+- Stdout: `[autoiter {runId}] iter-N Stage 5.2 → G6 diff audit PASS` (or `FAIL`)
 
 ---
 
@@ -609,7 +609,7 @@ Update `state.json`: `{ "last_scalar": <new_scalar>, "status": "iter_done" }`
 **Observability**:
 - Overwrite `status.md`: `iter N/M · Stage 5.3 · Rerun done · scalar={new} (was {old}, Δ={delta})`
 - Append `user-log.md`: narrative of this iter's outcome
-- Stdout: `[loop {runId}] iter-N Stage 5.3 → rerun done, scalar={new}`
+- Stdout: `[autoiter {runId}] iter-N Stage 5.3 → rerun done, scalar={new}`
 
 ---
 
@@ -660,12 +660,12 @@ Full spec in `skills/autoiter/references/stop-criterion.md`.
 4. If `$COLLIE_AUTOITER_NOTIFY_CMD` set: `bash -c "$COLLIE_AUTOITER_NOTIFY_CMD"` with `COLLIE_AUTOITER_EVENT=autoiter_done` (or `escalated`/`budget_exhausted`)
 5. Write `state.json.status = <terminal status>`
 6. **RETURN** — do NOT emit sentinel inline. Preserve worktree. §3.5 terminal branch handles `rm current-run` + sentinel on next ralph-loop restart.
-7. Stdout: `[loop {runId}] Stage 6 → STOP ({reason})`
+7. Stdout: `[autoiter {runId}] Stage 6 → STOP ({reason})`
 
 **If continue**:
 1. Increment iter: `state.json.iter = N+1, status = "running"`
 2. Proceed to Stage 1
-3. Stdout: `[loop {runId}] Stage 6 → continue to iter-{N+1}`
+3. Stdout: `[autoiter {runId}] Stage 6 → continue to iter-{N+1}`
 
 ---
 
@@ -675,7 +675,7 @@ At every stage transition and iter boundary, update ALL of:
 
 1. **`status.md`** (overwrite): `iter N/M · Stage X · <description> · scalar=<val>`
 2. **`user-log.md`** (append): human-readable narrative
-3. **stdout tick**: `[loop {runId}] iter-N Stage X → ...`
+3. **stdout tick**: `[autoiter {runId}] iter-N Stage X → ...`
 4. **External notify** (terminal events only): if `$COLLIE_AUTOITER_NOTIFY_CMD` set:
    ```bash
    COLLIE_AUTOITER_EVENT=<event> \
@@ -694,8 +694,8 @@ At every stage transition and iter boundary, update ALL of:
 3. **current-run cleared before sentinel**: `rm current-run` THEN emit sentinel (crash-safe ordering).
 4. **Worktree preserved**: On sentinel, worktree is NOT merged or removed. User reviews and decides.
 5. **G1 invariant**: No test file modified unless FIX is `kind=correctness` with explicit `reproduction_test` new-file addition. See `overfit-guards.md §G1`.
-6. **loop-prepare idempotency**: If `prepare-report.md` already exists, skip prepare entirely.
-7. **Nested calls rejected**: `COLLIE_AUTOITER_ACTIVE` check prevents `/loop` inside `/auto` or another `/loop`.
+6. **autoiter-prepare idempotency**: If `prepare-report.md` already exists, skip prepare entirely.
+7. **Nested calls rejected**: `COLLIE_AUTOITER_ACTIVE` check prevents `/autoiter` inside `/auto` or another `/autoiter`.
 
 ## Reference Files
 
