@@ -1,5 +1,5 @@
 ---
-name: collie-harness:loop-prepare
+name: collie-harness:autoiter-prepare
 description: "Pre-flight environment check SKILL for the collie-harness loop command. Called by the main loop SKILL (collie-harness:loop) in the §3.5 post-ExitPlanMode recovery path, after worktree creation, before Stage 1 iteration begins. Runs 5 checks: (1) trigger dry-run, (2) scalar extraction validation, (3) observability validation (Monitor/Read-tail + kill signal), (4) persistent directory writability. Outputs prepare-report.md with PASS/FAIL evidence. Returns failure signal to caller on any FAIL — does NOT fix issues. Supports skip_prepare bypass and is idempotent (skips all checks if prepare-report.md already exists). Do NOT invoke directly from user prompts; this is an internal skill invoked exclusively by collie-harness:loop."
 ---
 

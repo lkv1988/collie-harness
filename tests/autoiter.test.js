@@ -9,9 +9,9 @@ const { spawnSync } = require('node:child_process');
 
 // --- Module under test (path helpers, jaccard) ---
 const STATE_JS = path.resolve(__dirname, '../hooks/_state.js');
-const JACCARD_JS = path.resolve(__dirname, '../skills/loop/lib/jaccard.js');
+const JACCARD_JS = path.resolve(__dirname, '../skills/autoiter/lib/jaccard.js');
 const HOOK = path.resolve(__dirname, '../hooks/post-writing-plans-reviewer.js');
-const FIX_PLAN_TEMPLATE = path.resolve(__dirname, '../skills/loop/references/fix-plan-template.md');
+const FIX_PLAN_TEMPLATE = path.resolve(__dirname, '../skills/autoiter/references/fix-plan-template.md');
 const SESSION_ID = 'test-loop-session-456';
 
 // jaccard.js has no env dependency — require once

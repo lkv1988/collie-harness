@@ -1,5 +1,5 @@
 ---
-name: collie-harness:loop
+name: collie-harness:autoiter
 description: "Main loop orchestrator for collie-harness. Drives the 'run → observe → triage → deep-verify → fix → rerun' self-iteration pipeline. Called by commands/loop.md on every ralph-loop session restart. Implements a persistent state machine (§3.5) across ralph-loop session restarts: fresh-start → Stage 0 (Discovery planmode) → Stage 1 (kickoff) → Stage 2 (run trigger) → Stage 3 (observe + auto-recovery) → Stage 4a (Triage) → Stage 4b (Deep Verify) → Stage 5.0 (fix-plan) → Stage 5.1 (gated-workflow) → Stage 5.2 (G6 diff audit + rerun) → Stage 6 (rollback + stop check). Completion signal: <promise>Collie: LOOP DONE</promise> (emitted ONLY by the §3.5 terminal branch after ralph-loop restart, NEVER inline)."
 dependencies:
   - collie-harness:gated-workflow
