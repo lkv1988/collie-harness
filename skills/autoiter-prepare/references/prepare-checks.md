@@ -21,7 +21,7 @@ Reference for `collie-harness:autoiter-prepare`. Each section defines exact comm
 **Execution**: Run inside `worktree_path` as the working directory:
 ```bash
 cd <worktree_path>
-timeout 300 bash -c '<dry_run_invocation>' > /tmp/loop-prepare-dryrun.stdout 2> /tmp/loop-prepare-dryrun.stderr
+timeout 300 bash -c '<dry_run_invocation>' > /tmp/autoiter-prepare-dryrun.stdout 2> /tmp/autoiter-prepare-dryrun.stderr
 EXIT_CODE=$?
 ```
 
@@ -44,7 +44,7 @@ EXIT_CODE=$?
 
 **Goal**: Confirm the `scalar_extraction` expression can extract a usable value from the trigger's stdout before starting iterations.
 
-**Input**: stdout captured in `/tmp/loop-prepare-dryrun.stdout` from Check 1.
+**Input**: stdout captured in `/tmp/autoiter-prepare-dryrun.stdout` from Check 1.
 
 **Prerequisite**: If Check 1 FAILED, Check 2 is marked SKIP (cannot extract from empty/error output). Record evidence: "skipped — dry-run output unavailable".
 
@@ -60,13 +60,13 @@ EXIT_CODE=$?
 **Execution**:
 ```bash
 # For grep-style scalar_extraction:
-SCALAR=$(cat /tmp/loop-prepare-dryrun.stdout | grep -E '<scalar_extraction_pattern>' | tail -1)
+SCALAR=$(cat /tmp/autoiter-prepare-dryrun.stdout | grep -E '<scalar_extraction_pattern>' | tail -1)
 
 # For jq-style:
-SCALAR=$(cat /tmp/loop-prepare-dryrun.stdout | jq '<scalar_extraction_expr>' 2>/dev/null)
+SCALAR=$(cat /tmp/autoiter-prepare-dryrun.stdout | jq '<scalar_extraction_expr>' 2>/dev/null)
 
 # For shell command:
-SCALAR=$(cat /tmp/loop-prepare-dryrun.stdout | <scalar_extraction_cmd> 2>/dev/null)
+SCALAR=$(cat /tmp/autoiter-prepare-dryrun.stdout | <scalar_extraction_cmd> 2>/dev/null)
 ```
 
 **Evidence to capture**:
@@ -86,7 +86,7 @@ ToolSearch select:Monitor
 
 **Pass criteria**: ToolSearch returns a schema/definition for `Monitor` (tool is available and callable).
 
-**Fallback (not a FAIL)**: If Monitor is NOT found, this sub-check is still PASS — but record `mode: fallback` in the report. The main loop SKILL will use `Read`-tail polling instead. FAIL only if both Monitor is unavailable AND the `raw.log` write path is also unreachable (see §3c).
+**Fallback (not a FAIL)**: If Monitor is NOT found, this sub-check is still PASS — but record `mode: fallback` in the report. The main autoiter SKILL will use `Read`-tail polling instead. FAIL only if both Monitor is unavailable AND the `raw.log` write path is also unreachable (see §3c).
 
 **Evidence to capture**:
 - Monitor available: `"Monitor tool found — streaming mode available"`
@@ -123,8 +123,8 @@ ToolSearch select:Monitor
 
 **Method**:
 ```bash
-touch ~/.collie-harness/loop/<project_id>/<run_id>/iter-0/raw.log.probe && \
-rm ~/.collie-harness/loop/<project_id>/<run_id>/iter-0/raw.log.probe && \
+touch ~/.collie-harness/autoiter/<project_id>/<run_id>/iter-0/raw.log.probe && \
+rm ~/.collie-harness/autoiter/<project_id>/<run_id>/iter-0/raw.log.probe && \
 echo "writable"
 ```
 
@@ -144,9 +144,9 @@ echo "writable"
 
 **Method**:
 ```bash
-mkdir -p ~/.collie-harness/loop/<project_id>/<run_id>/iter-0/ && \
-touch ~/.collie-harness/loop/<project_id>/<run_id>/iter-0/.probe && \
-rm ~/.collie-harness/loop/<project_id>/<run_id>/iter-0/.probe && \
+mkdir -p ~/.collie-harness/autoiter/<project_id>/<run_id>/iter-0/ && \
+touch ~/.collie-harness/autoiter/<project_id>/<run_id>/iter-0/.probe && \
+rm ~/.collie-harness/autoiter/<project_id>/<run_id>/iter-0/.probe && \
 echo "ok"
 ```
 

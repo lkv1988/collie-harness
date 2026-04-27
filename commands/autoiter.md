@@ -3,7 +3,7 @@ description: "驱动跑长测试 → 观察 → 修复 → 重跑的自迭代闭
 argument-hint: "<task> [--max-iterations N] [--budget-tokens M] [--mode interactive|queued]"
 ---
 
-# Collie Loop
+# Collie Autoiter
 
 Run an iterative test → observe → fix → re-run loop in Collie-style.
 

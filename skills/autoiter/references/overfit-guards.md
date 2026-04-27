@@ -2,7 +2,7 @@
 
 > Reference for `collie-harness:autoiter`. These 8 guards are enforced jointly by
 > `collie-harness:plan-doc-reviewer` (structural) and `collie-harness:review`
-> (Collie rubric) at every fix-plan review point, and by the loop SKILL's inline
+> (Collie rubric) at every fix-plan review point, and by the autoiter SKILL's inline
 > diff-audit (G6) after `gated-workflow` returns.
 
 ---
@@ -108,7 +108,7 @@ prepare FAIL → loop does not start.
 ## G6 — Per-iteration diff audit
 
 **Rule**: After `collie-harness:gated-workflow` returns (Stage 5.1), and
-before Stage 5.2 rerun, the loop SKILL performs an **inline diff audit**:
+before Stage 5.2 rerun, the autoiter SKILL performs an **inline diff audit**:
 
 For every line in `git diff HEAD~1..HEAD`, the SKILL verifies that the changed
 file + change rationale is traceable to at least one entry in the current

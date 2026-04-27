@@ -17,8 +17,8 @@ Called exclusively by `collie-harness:autoiter` at Stage 0.5. Never invoked dire
 
 | Parameter | Description |
 |-----------|-------------|
-| `run_spec_path` | Absolute path to `~/.collie-harness/loop/{project-id}/{runId}/run-spec.md` |
-| `report_path` | Absolute path to `~/.collie-harness/loop/{project-id}/{runId}/prepare-report.md` (output) |
+| `run_spec_path` | Absolute path to `~/.collie-harness/autoiter/{project-id}/{runId}/run-spec.md` |
+| `report_path` | Absolute path to `~/.collie-harness/autoiter/{project-id}/{runId}/prepare-report.md` (output) |
 | `project_id` | From `_state.projectId()` |
 | `run_id` | Current runId |
 | `worktree_path` | Absolute path to the loop worktree (trigger dry-run executes here) |
@@ -73,7 +73,7 @@ PASS if extraction succeeds and returns expected type. FAIL with evidence showin
 
 Three sub-checks, all must pass:
 
-**3a. Monitor tool detection**: Run `ToolSearch select:Monitor`. If schema is returned → Monitor available. If not found → fallback mode; confirm Read-tail path is viable (the `raw.log` write path under `~/.collie-harness/loop/{project_id}/{run_id}/iter-0/` is reachable).
+**3a. Monitor tool detection**: Run `ToolSearch select:Monitor`. If schema is returned → Monitor available. If not found → fallback mode; confirm Read-tail path is viable (the `raw.log` write path under `~/.collie-harness/autoiter/{project_id}/{run_id}/iter-0/` is reachable).
 
 **3b. Subprocess kill signal**: Start a background process (`Bash sleep 2 run_in_background=true`), capture its PID, then `kill <PID>` within 3 seconds. Confirm kill succeeds (exit 0 or process no longer exists).
 
@@ -84,8 +84,8 @@ PASS if all three sub-checks pass. FAIL with which sub-check failed + evidence.
 ### Check 4 — Persistent Directory Writable
 
 ```bash
-mkdir -p ~/.collie-harness/loop/{project_id}/{run_id}/iter-0/
-touch ~/.collie-harness/loop/{project_id}/{run_id}/iter-0/.probe && rm ~/.collie-harness/loop/{project_id}/{run_id}/iter-0/.probe
+mkdir -p ~/.collie-harness/autoiter/{project_id}/{run_id}/iter-0/
+touch ~/.collie-harness/autoiter/{project_id}/{run_id}/iter-0/.probe && rm ~/.collie-harness/autoiter/{project_id}/{run_id}/iter-0/.probe
 ```
 
 PASS if both commands succeed. FAIL with error output.
