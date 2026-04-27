@@ -4,6 +4,32 @@ All notable changes to collie-harness are documented here.
 
 ---
 
+## 0.2.3 — 2026-04-26
+
+### Added
+- **`/collie-harness:loop` slash command**：自迭代闭环（run → observe → triage → fix → rerun），对标 Karpathy autoresearch。复用 ralph-loop 作为外层循环驱动（与 `/auto` 一致），不新建 Stop hook。
+- **`skills/loop/SKILL.md`** 主 orchestrator（§3.5 跨 session 状态机 + Stage 0-6 完整编排 + dot 状态机图）。Completion signal `<promise>Collie: LOOP DONE</promise>`（迭代结束 + worktree 保留，与 `/auto` 的 `Collie: SHIP IT` 区分）。
+- **`skills/loop-prepare/SKILL.md`** 独立前置体检 SKILL（trigger dry-run / scalar extraction / observability / 持久化目录验证）。
+- **`skills/loop/lib/jaccard.js`** G7 重复任务检测 helper（token-set Jaccard，零依赖纯 Node.js）。
+- **5 份 references**：`overfit-guards.md`（G1-G8 防过拟合硬约束）、`stop-criterion.md`（5 停止条件 + rollback 矩阵）、`discovery-prompt.md`、`iter-prompt.md`、`fix-plan-template.md`。
+- **`hooks/_state.js`** 新增 `projectId / loopDir / iterDir / currentRunFile` helpers（project-scoped 路径推导）。
+- **`hooks/post-writing-plans-reviewer.js`** 新增 `plan-kind: loop-stage0` 旁路：跳过 auto 双 reviewer 门禁，只校验 3 条 metadata + 4 enum 字段（auto 路径零回归）。
+- **`skills/queue/SKILL.md`** task schema 扩展 `command` 字段，支持 `/collie-harness:loop` 与 `/collie-harness:auto` 分派。
+- **Overfit Guards G1-G8**：硬性约束防 patch overfitting；G8 = Triage（confidence≤2 → DEFERRED）+ Deep Verify（fix_confidence≤2 → DEFERRED）双层 confidence gate。
+- **可选环境变量 `COLLIE_LOOP_NOTIFY_CMD`**：终态事件外部通知（macOS 通知 / Slack / 邮件 / 自定义 shell）。
+- **31 个新单测**（`tests/loop.test.js`）+ **`e2e-05-loop-shim`** smoke 场景。
+
+### Changed
+- **CLAUDE.md / README.md** 同步：新增 Loop Workflow 章节（与 Workflow Sequence 平行独立、不嵌套）+ Loop state files subtree + Key Design Constraints 追加 G1-G8 / ralph-loop 复用 / sentinel 语义 / 嵌套禁止 / Stage 3 auto-recovery 硬原则。
+- **`.claude-plugin/plugin.json`**：依赖清单显式列出 `ralph-loop` + `superpowers`。
+
+### Why
+长跑工程质量打磨场景（"跑长测试 → 观察 → 校验 → 批量修复 → 重跑"）不适合 `/auto` 的一次性线性闭环。新增 `/loop` 提供多轮迭代收敛能力，硬性防过拟合（来自 APR 文献：自验证退化、patch overfitting、测试改写作弊），且跨 session 状态机保证 ralph-loop 重启后能精确恢复。
+
+Refs: docs/plans/2026-04-24-loop-command-plan.md
+
+---
+
 ## 0.2.2 — 2026-04-21
 
 ### Changed
