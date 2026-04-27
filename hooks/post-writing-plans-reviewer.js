@@ -90,6 +90,61 @@ if (toolName === 'ExitPlanMode') {
 
     try {
       const state = JSON.parse(fs.readFileSync(lastPlanFile, 'utf8'));
+
+      // --- loop-stage0 bypass ---
+      // If plan-kind == "loop-stage0", skip dual-reviewer and validate schema fields only.
+      try {
+        const planContent = fs.readFileSync(state.path, 'utf8');
+        const first5Lines = planContent.split('\n').slice(0, 5);
+        let planKind = null;
+        for (const line of first5Lines) {
+          const m = line.match(/<!--\s*plan-kind:\s*(\S+)\s*-->/);
+          if (m) { planKind = m[1]; break; }
+        }
+
+        if (planKind === 'loop-stage0') {
+          // Validate 3 required metadata lines
+          const hasPlanSource   = first5Lines.some(l => /<!--\s*plan-source:/.test(l));
+          const hasPlanKind     = first5Lines.some(l => /<!--\s*plan-kind:\s*loop-stage0\s*-->/.test(l));
+          const hasPlanExecutor = first5Lines.some(l => /<!--\s*plan-executor:\s*collie-harness:loop\s*-->/.test(l));
+          const metaMissing = [
+            !hasPlanSource   && 'plan-source',
+            !hasPlanKind     && 'plan-kind',
+            !hasPlanExecutor && 'plan-executor: collie-harness:loop',
+          ].filter(Boolean);
+
+          if (metaMissing.length > 0) {
+            const output = { decision: 'block', reason: `loop-stage0 plan missing required metadata: ${metaMissing.join(', ')}` };
+            process.stdout.write(JSON.stringify(output) + '\n');
+            process.exit(0);
+          }
+
+          // Assert 4 key enum fields present in plan content
+          const enumFields = [
+            { name: 'primary_goal',            pattern: /primary_goal/ },
+            { name: 'trigger.kind',             pattern: /trigger[^\n]*kind:/ },
+            { name: 'success_criterion.type',   pattern: /success_criterion[^\n]*type:/ },
+            { name: 'iter_rollback_policy',     pattern: /iter_rollback_policy/ },
+          ];
+          const enumMissing = enumFields.filter(f => !f.pattern.test(planContent)).map(f => f.name);
+
+          if (enumMissing.length > 0) {
+            const output = { decision: 'block', reason: `loop-stage0 plan missing required field: ${enumMissing.join(', ')}` };
+            process.stdout.write(JSON.stringify(output) + '\n');
+            process.exit(0);
+          }
+
+          // All checks passed — approve
+          const output = { decision: 'approve', reason: 'loop-stage0 plan validated' };
+          process.stdout.write(JSON.stringify(output) + '\n');
+          process.exit(0);
+        }
+        // planKind is not "loop-stage0" → fall through to existing dual-reviewer logic
+      } catch (e) {
+        // If plan file is unreadable here, fall through; the existing logic will surface the error
+      }
+      // --- end loop-stage0 bypass ---
+
       const planDocOk = state.plan_doc_reviewer && state.plan_doc_reviewer.approved === true;
       const collieOk  = state.collie_reviewer  && state.collie_reviewer.approved === true;
       if (planDocOk && collieOk) {

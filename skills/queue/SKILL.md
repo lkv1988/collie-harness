@@ -25,10 +25,32 @@ scheduled_at: "2026-04-14T03:00:00+08:00"
 status: pending
 worktree: .worktrees/task-001
 project_dir: /path/to/project-a
+command: /collie-harness:auto   # optional; default: /collie-harness:auto; valid: /collie-harness:auto | /collie-harness:loop
 ---
 
 # Optional: additional context
 Any additional context for the task goes here.
+```
+
+**Examples — both command variants:**
+
+```yaml
+# auto task (default, command field omitted):
+---
+id: task-001
+prompt: "add dark mode toggle"
+project_dir: /Users/me/myapp
+status: pending
+---
+
+# loop task:
+---
+id: task-002
+prompt: "get all unit tests passing"
+command: /collie-harness:loop
+project_dir: /Users/me/myapp
+status: pending
+---
 ```
 
 ### Status Field
@@ -99,10 +121,15 @@ Actual prompt content injected into `<<autonomous-loop>>`:
 > Task file: {task_file_path}
 > Prompt: {task.prompt}
 > Target directory: {task.project_dir}
+> Command: {task.command || "/collie-harness:auto"}
 >
 > Execution steps:
 > 1. cd to {task.project_dir}
-> 2. Run /auto "{task.prompt}" --max-iterations {task.max_iterations}
+> 2. Dispatch based on task.command (default: /collie-harness:auto):
+>    - If task.command == "/collie-harness:loop":
+>        Run /collie-harness:loop "{task.prompt}" --mode queued
+>    - Otherwise (default):
+>        Run /collie-harness:auto "{task.prompt}" --max-iterations {task.max_iterations}
 > 3. After completion, update task file status to "done"
 > 4. Delete ~/.collie-harness/state/scheduled_tasks.lock
 
@@ -114,6 +141,7 @@ Actual prompt content injected into `<<autonomous-loop>>`:
 - **Allowlist**: Only execute `project_dir` listed in `~/.collie-harness/queue/allowlist.txt`
   - If allowlist.txt does not exist: prompt user to create allowlist before execution
   - allowlist.txt format: one absolute path per line
+  - Note: allowlist controls which **project directories** are permitted to run; it is NOT a command allowlist — both `/collie-harness:auto` and `/collie-harness:loop` are always permitted for any allowlisted project_dir
 - **Budget Protection**: daily tokens > 70% → stop (reserves buffer for daily interaction)
 - **Lock Timeout**: zombie locks (>2h) auto-cleared
 

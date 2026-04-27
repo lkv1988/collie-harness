@@ -51,11 +51,32 @@ No build step — pure Node.js, zero external dependencies.
   → collie-harness:gated-workflow skill（内含 [collie-final-review] pre-merge gate） → <promise>Collie: SHIP IT</promise>
 ```
 
+## Loop Workflow（`/collie-harness:loop`，与 Workflow Sequence 平行独立，不嵌套）
+
+```
+/collie-harness:loop "task"
+  → Stage 0: Discovery + Lock（planmode；plan-kind: loop-stage0 旁路双 reviewer 门禁）
+  → Stage 0.5: loop-prepare 体检（trigger dry-run / scalar extract / observability）
+  → 迭代 1..N:
+      Stage 1: kickoff（git HEAD + baseline）
+      Stage 2: Run trigger（subprocess background + Monitor/tail 观察）
+      Stage 3: Observe（ISSUE 收集 + auto-recovery 阶梯）
+      Stage 4a: Triage（opus, reverse suspicion）
+      Stage 4b: Deep Verify（opus, adversarial, per-issue）
+      Stage 5.0: Consolidated fix plan → fix-plan.md
+      Stage 5.1: collie-harness:gated-workflow（完整 TDD→review→simplify→regression→[collie-final-review]）
+      Stage 5.2: G6 diff audit（inline）
+      Stage 5.3: Rerun + scalar
+      Stage 6: Rollback + 停止判断
+  → <promise>Collie: LOOP DONE</promise>（worktree 保留，不自动 merge）
+```
+
 ## Hooks and Their Triggers
 
 | Hook file | Event | Purpose |
 |-----------|-------|---------|
 | `post-writing-plans-reviewer.js` | PostToolUse Write/Edit + ExitPlanMode | Creates dual-reviewer state; validates plan metadata (plan-source + plan-topic + plan-executor); **hard-blocks** (`decision:'block'`) ExitPlanMode if metadata missing or BOTH reviewers haven't approved |
+| `post-writing-plans-reviewer.js` | `plan-kind: loop-stage0` 旁路 | 跳过 auto 双 reviewer 门禁，只校验 3 条 metadata + 4 enum 字段；`plan-kind` 为其他值时走既有路径 |
 | `post-approved-exitplan-hint.js` | PostToolUse Agent + PostToolUse Skill | Detects collie-harness:plan-doc-reviewer Approved OR collie-harness:review PASS; updates per-reviewer state; hints next step |
 | `post-exitplan-gated-hint.js` | PostToolUse ExitPlanMode | Reminds to call `collie-harness:gated-workflow` skill — **only when both reviewers approved**; silent otherwise |
 | `stop-steps-counter.js` | Stop | Blocks on same error ×3 or 5+ steps without file changes; **resets counters after block** to prevent permanent lockout |
@@ -72,6 +93,11 @@ All runtime state lives under `~/.collie-harness/`:
   state/scheduled_tasks.lock   # Concurrency lock for collie-harness:queue
   escalations.log              # All escalation events
   queue/*.md                   # Unattended tasks for collie-harness:queue skill
+  loop/{project-id}/current-run     # runId 指针（project-scoped，EnterPlanMode 前写入）
+  loop/{project-id}/{runId}/
+    run-spec.md / prepare-report.md / state.json
+    status.md（overwrite）/ user-log.md（append）/ progress.md
+    worktree-path / iter-N/
 ```
 
 ## Key Design Constraints
@@ -86,6 +112,11 @@ All runtime state lives under `~/.collie-harness/`:
 - **Impact Assessment 强制**：所有 plan 必须包含 Impact Assessment 章节（Directly affected + Downstream consumers + Reverse impact）。由 `collie-harness:plan-doc-reviewer` 的 Impact Assessment 检查强制。豁免：单文件 < 20 行 trivial 改动。
 - **Pre-merge rubric gate**：`collie-harness:review` Mode=code 作为 `[collie-final-review]` 节点嵌入 `gated-workflow` TodoList 中 `[doc-refresh]` 之后、`[finish]` 之前（Step 5.7）。worktree 清理前必须通过 rubric gate，auto.md 无独立 Step ⑥。
 - **Surgical scope red line**：Red line #13（Speculative scope）吸收 Karpathy CLAUDE.md Principle 2/3。加任务未要求的 feature / flexibility / 抽象 / 顺手改无关代码 = BLOCK；每行 diff 必须可追溯到任务目标。
+- **Overfit Guards (G1-G8)**：硬性约束防过拟合；G8 = Triage（confidence≤2 → DEFERRED）+ Deep Verify（fix_confidence≤2 → DEFERRED）双层 confidence gate
+- **ralph-loop 复用**：`/loop` 使用 ralph-loop 作为外层循环驱动（与 `/auto` 一致），不新建 Stop hook
+- **Loop vs. /auto sentinel 语义**：`Collie: LOOP DONE` = 迭代结束 + worktree 保留（不自动 merge）；`Collie: SHIP IT` = merge 完成
+- **嵌套禁止**：`/loop` 与 `/auto` 不得互相嵌套调用（COLLIE_LOOP_ACTIVE 环境变量防守）
+- **Stage 3 auto-recovery 硬原则**：blocker 处理不等用户介入；能自愈则自愈（haiku→sonnet→opus 阶梯），不能则体面退场 + escalate
 
 ## Required First-Time Setup
 
@@ -98,6 +129,10 @@ export COLLIE_ESCALATE_CMD="your-notification-command"
 
 # 2b. (Optional) Override state directory location
 export COLLIE_HARNESS_HOME="~/.my-harness"  # defaults to ~/.collie-harness
+
+# 3. (Optional) Loop terminal-event notification
+export COLLIE_LOOP_NOTIFY_CMD="osascript -e 'display notification ...'"  # or Slack/email/etc.
+# Payload env vars: COLLIE_LOOP_EVENT, COLLIE_LOOP_RUN_ID, COLLIE_LOOP_STATUS_FILE
 ```
 
 ## Release Checklist

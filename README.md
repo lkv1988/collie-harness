@@ -51,6 +51,18 @@ export COLLIE_ESCALATE_CMD=~/bin/my-escalate.sh
 
 Plugin 内置 stub，只写日志到 `~/.collie-harness/escalations.log`。
 
+### Loop 终态通知（可选）
+
+```bash
+export COLLIE_LOOP_NOTIFY_CMD="osascript -e 'display notification ...'"
+# 或 Slack webhook、email 等
+# Payload 通过以下环境变量传入：
+#   COLLIE_LOOP_EVENT        # 事件类型（loop-done / loop-escalate / etc.）
+#   COLLIE_LOOP_RUN_ID       # 当前 runId
+#   COLLIE_LOOP_STATUS_FILE  # status.md 文件路径
+# 未设则仅 stdout 输出，无外推
+```
+
 ## 使用
 
 ```bash
@@ -82,6 +94,29 @@ Plugin 内置 stub，只写日志到 `~/.collie-harness/escalations.log`。
 ```
 
 hook 的 warn 不是报错，是护栏：跳过任意一步都会被拦截提示。
+
+### Loop 循环 (`/collie-harness:loop`)
+
+**定位**：长时运行 × 指标驱动 × 强防过拟合的自迭代修复闭环。
+
+**用法**：
+```
+/collie-harness:loop "<task>" [--max-iterations N] [--budget-tokens M] [--mode interactive|queued]
+```
+
+**与 `/auto` 的差异**：
+
+| 维度 | `/auto` | `/loop` |
+|------|---------|---------|
+| 触发 | 用户输入任务 | 用户输入任务 + Discovery 探测 trigger |
+| 循环结构 | 单次线性 | N 轮迭代（默认 5）|
+| 停止条件 | SHIP IT | 质量阈值 / iteration cap / 收敛 / budget / escalate |
+| 典型场景 | 新功能开发 | 长期测试打磨、指标优化、批量 bug 修复 |
+| worktree 清理 | 自动 merge + 清理 | 保留（用户自行决定 merge）|
+
+**两条 workflow 是平行独立关系，不嵌套。**
+
+**Completion signal**：`<promise>Collie: LOOP DONE</promise>`（迭代结束但不自动 merge，worktree 保留等用户审阅）
 
 任何 plan 必须包含 Impact Assessment 章节，列明直接影响模块（Directly affected）、下游调用方 / 依赖 / 测试（Downstream consumers）、反向影响（Reverse impact）。由 `collie-harness:plan-doc-reviewer` 强制。豁免：单文件 < 20 行的 trivial 改动可标注 `None — trivial change, no cross-module impact`。
 
@@ -118,6 +153,7 @@ collie-harness/
 │   └── plan-doc-reviewer.md          # 结构审查 agent（collie-harness:plan-doc-reviewer）
 ├── commands/
 │   ├── auto.md                       # /collie-harness:auto slash command
+│   ├── loop.md                       # /collie-harness:loop slash command
 │   └── queue.md                      # /collie-harness:queue slash command
 ├── skills/
 │   ├── gated-workflow/SKILL.md       # 实施阶段门禁流程
@@ -147,6 +183,14 @@ collie-harness/
   state/scheduled_tasks.lock   # collie-harness:queue 并发锁
   escalations.log              # 所有 escalation 事件
   queue/*.md                   # 待执行的无人值守任务
+  loop/{project-id}/current-run   # 活跃 runId 指针（project-scoped）
+  loop/{project-id}/{runId}/
+    run-spec.md       # Stage 0 锁定的契约
+    state.json        # 跨 iter 机器可读状态
+    status.md         # 当前状态一句话（overwrite）
+    user-log.md       # 叙事时间线（append-only）
+    prepare-report.md # Stage 0.5 体检结果
+    iter-N/           # 每轮迭代产物
 ```
 
 ## 验证
