@@ -43,7 +43,7 @@ project_dir: /Users/me/myapp
 status: pending
 ---
 
-# loop task:
+# autoiter task:
 ---
 id: task-002
 prompt: "get all unit tests passing"

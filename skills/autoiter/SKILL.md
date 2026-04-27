@@ -33,7 +33,7 @@ digraph autoiter {
   run_spec_missing [label="run-spec.md missing?", shape=diamond];
   recovery [label="Recovery chain:\nlast-plan.json→plan file\n→plan-source→cp run-spec.md"];
   recovery_fail [label="Recovery failed\nrm current-run", shape=ellipse];
-  worktree_prepare [label="Create worktree\nloop-prepare (if needed)\ninit state.json(iter=1)"];
+  worktree_prepare [label="Create worktree\nautoiter-prepare (if needed)\ninit state.json(iter=1)"];
   read_state [label="Read state.json"];
   terminal [label="status=terminal:\nrm current-run\nemit sentinel", shape=ellipse];
   stage1 [label="Stage 1 Kickoff"];
