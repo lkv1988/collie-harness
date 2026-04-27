@@ -51,7 +51,7 @@ export COLLIE_ESCALATE_CMD=~/bin/my-escalate.sh
 
 Plugin 内置 stub，只写日志到 `~/.collie-harness/escalations.log`。
 
-### Loop 终态通知（可选）
+### Autoiter 终态通知（可选）
 
 ```bash
 export COLLIE_AUTOITER_NOTIFY_CMD="osascript -e 'display notification ...'"

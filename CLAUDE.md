@@ -56,7 +56,7 @@ No build step — pure Node.js, zero external dependencies.
 ```
 /collie-harness:autoiter "task"
   → Stage 0: Discovery + Lock（planmode；plan-kind: autoiter-stage0 旁路双 reviewer 门禁）
-  → Stage 0.5: loop-prepare 体检（trigger dry-run / scalar extract / observability）
+  → Stage 0.5: autoiter-prepare 体检（trigger dry-run / scalar extract / observability）
   → 迭代 1..N:
       Stage 1: kickoff（git HEAD + baseline）
       Stage 2: Run trigger（subprocess background + Monitor/tail 观察）
@@ -130,7 +130,7 @@ export COLLIE_ESCALATE_CMD="your-notification-command"
 # 2b. (Optional) Override state directory location
 export COLLIE_HARNESS_HOME="~/.my-harness"  # defaults to ~/.collie-harness
 
-# 3. (Optional) Loop terminal-event notification
+# 3. (Optional) Autoiter terminal-event notification
 export COLLIE_AUTOITER_NOTIFY_CMD="osascript -e 'display notification ...'"  # or Slack/email/etc.
 # Payload env vars: COLLIE_AUTOITER_EVENT, COLLIE_AUTOITER_RUN_ID, COLLIE_AUTOITER_STATUS_FILE
 ```
