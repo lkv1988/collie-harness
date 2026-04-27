@@ -38,15 +38,16 @@ gated-workflow 内部已含 `[collie-final-review]` pre-merge gate。试图省�
 ## Mandatory Sequence (no skipping allowed; skipping = red line)
 
 ```
-⓪ Create planning TaskList via TaskCreate (4 items: [research], [plan-review], [collie-review], [exit])
-① Research & Reuse → internal specs first, then external (GitHub, docs, registries)
-② superpowers:brainstorming → design alignment + writing-plans (triggered by brainstorming)
-③ PARALLEL: Agent(collie-harness:plan-doc-reviewer) AND Skill(collie-harness:review Mode=plan)
-   → both must approve before ④
-④ ExitPlanMode → TaskUpdate all planning tasks completed, close planning TaskList
-⑤ collie-harness:gated-workflow skill → complete implementation pipeline
+⓪ EnterPlanMode → 显式进入 plan mode（auto 全程依赖 planmode plan file 与 ExitPlanMode 门禁）
+① Create planning TaskList via TaskCreate (4 items: [research], [plan-review], [collie-review], [exit])
+② Research & Reuse → internal specs first, then external (GitHub, docs, registries)
+③ superpowers:brainstorming → design alignment + writing-plans (triggered by brainstorming)
+④ PARALLEL: Agent(collie-harness:plan-doc-reviewer) AND Skill(collie-harness:review Mode=plan)
+   → both must approve before ⑤
+⑤ ExitPlanMode → TaskUpdate all planning tasks completed, close planning TaskList
+⑥ collie-harness:gated-workflow skill → complete implementation pipeline
    （内含 [collie-final-review] = Skill(collie-harness:review Mode=code)，作为 [finish] 前的 pre-merge gate）
-⑥ gated-workflow 返回成功 → output completion signal
+⑦ gated-workflow 返回成功 → output completion signal
 ```
 
 ```dot
@@ -55,17 +56,19 @@ digraph collie_auto {
     SHIP  [shape=doublecircle, label="SHIP IT ✅"];
     ESC   [shape=doublecircle, label="blocked\nawait user ⚠️"];
 
-    TASK   [shape=box, label="⓪ TaskCreate\n4 planning tasks"];
-    RR     [shape=box, label="① Research & Reuse"];
-    BRAIN  [shape=box, label="② brainstorming\n(→ writing-plans)"];
-    REVIEW [shape=box, label="③ plan-doc-reviewer\n+ collie:review Mode=plan\n(parallel)"];
-    EXIT   [shape=box, label="④ ExitPlanMode\nmark 4 tasks done"];
-    IMPL   [shape=box, label="⑤ gated-workflow\n(含 [collie-final-review])"];
+    ENTER  [shape=box, label="⓪ EnterPlanMode"];
+    TASK   [shape=box, label="① TaskCreate\n4 planning tasks"];
+    RR     [shape=box, label="② Research & Reuse"];
+    BRAIN  [shape=box, label="③ brainstorming\n(→ writing-plans)"];
+    REVIEW [shape=box, label="④ plan-doc-reviewer\n+ collie:review Mode=plan\n(parallel)"];
+    EXIT   [shape=box, label="⑤ ExitPlanMode\nmark 4 tasks done"];
+    IMPL   [shape=box, label="⑥ gated-workflow\n(含 [collie-final-review])"];
 
     MONITOR [shape=box, style=dotted,
              label="stop hook  —  fires on every Stop event\n─────────────────────────────────\nsame error repeated ×3\nno file changes for ×5 steps\nmax iterations reached"];
 
-    START  -> TASK;
+    START  -> ENTER;
+    ENTER  -> TASK;
     TASK   -> RR;
     RR     -> BRAIN  [label="findings documented"];
     BRAIN  -> REVIEW [label="plan written"];
@@ -89,7 +92,14 @@ When starting, inject this as the working prompt (substitute $ARGUMENTS with the
 >
 > Execute in the following order. Skipping any step = BLOCK red line.
 >
-> **Before anything else:** Use TaskCreate to create these 4 planning tasks (use TaskUpdate to mark each completed as you finish it):
+> **Step ⓪ — EnterPlanMode（必须最先执行，无任何前置动作）**：
+> 直接调用 `EnterPlanMode` 工具进入 plan mode。auto 全程依赖 planmode plan file（writing-plans 写入路径）与 ExitPlanMode hook 门禁，必须显式进入。已经在 plan mode 时跳过此步即可。
+>
+> <HARD-GATE>
+> 在 EnterPlanMode 完成（或确认已在 plan mode）之前，禁止执行 TaskCreate / Research / brainstorming 等任何后续步骤。
+> </HARD-GATE>
+>
+> **Step ① — Planning TaskList**：Use TaskCreate to create these 4 planning tasks (use TaskUpdate to mark each completed as you finish it):
 > - [research] Research & Reuse (findings cited in plan)
 > - [plan-review] Structural plan review (collie-harness:plan-doc-reviewer)
 > - [collie-review] Collie rubric review (collie-harness:review Mode=plan)
