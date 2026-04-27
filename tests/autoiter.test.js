@@ -35,16 +35,16 @@ describe('_state.js path helpers', () => {
     });
   }
 
-  test('projectId: real repo cwd encodes to Users-kevin-git-collie-harness-worktrees-loop-command', () => {
+  test('projectId: real repo cwd encodes to a slug containing collie-harness', () => {
     // Use the real repo cwd — git rev-parse is real
     const { projectId } = require(STATE_JS);
     const id = projectId(path.resolve(__dirname, '..'));
-    // The worktree root is /Users/kevin/git/collie-harness/.worktrees/loop-command
-    // After slug: Users-kevin-git-collie-harness-.worktrees-loop-command
+    // The worktree root is under /Users/kevin/git/collie-harness/
+    // After slug: contains collie-harness fragment
     assert.ok(typeof id === 'string', 'projectId should return a string');
     assert.ok(id.length > 0, 'projectId should not be empty');
     // Must contain known path fragments
-    assert.ok(id.includes('collie-harness') || id.includes('loop-command'),
+    assert.ok(id.includes('collie-harness'),
       `projectId should contain repo name fragment, got: ${id}`);
     // Must not start with a dash
     assert.ok(!id.startsWith('-'), `projectId must not start with dash, got: ${id}`);

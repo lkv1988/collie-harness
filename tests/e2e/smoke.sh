@@ -108,32 +108,32 @@ EOF
 scenario5() {
   local result="pass"
 
-  # Check 1: commands/loop.md exists
-  if [[ ! -f "${PLUGIN_ROOT}/commands/loop.md" ]]; then
-    echo "  [e2e-05] MISS: commands/loop.md not found" >&2
+  # Check 1: commands/autoiter.md exists
+  if [[ ! -f "${PLUGIN_ROOT}/commands/autoiter.md" ]]; then
+    echo "  [e2e-05] MISS: commands/autoiter.md not found" >&2
     result="fail"
   fi
 
-  # Check 2: commands/loop.md has valid frontmatter (--- delimiters + description: field)
-  if ! grep -q '^---' "${PLUGIN_ROOT}/commands/loop.md" 2>/dev/null \
-     || ! grep -q '^description:' "${PLUGIN_ROOT}/commands/loop.md" 2>/dev/null; then
-    echo "  [e2e-05] MISS: commands/loop.md missing valid frontmatter" >&2
+  # Check 2: commands/autoiter.md has valid frontmatter (--- delimiters + description: field)
+  if ! grep -q '^---' "${PLUGIN_ROOT}/commands/autoiter.md" 2>/dev/null \
+     || ! grep -q '^description:' "${PLUGIN_ROOT}/commands/autoiter.md" 2>/dev/null; then
+    echo "  [e2e-05] MISS: commands/autoiter.md missing valid frontmatter" >&2
     result="fail"
   fi
 
-  # Check 3: skills/loop/SKILL.md exists
-  if [[ ! -f "${PLUGIN_ROOT}/skills/loop/SKILL.md" ]]; then
-    echo "  [e2e-05] MISS: skills/loop/SKILL.md not found" >&2
+  # Check 3: skills/autoiter/SKILL.md exists
+  if [[ ! -f "${PLUGIN_ROOT}/skills/autoiter/SKILL.md" ]]; then
+    echo "  [e2e-05] MISS: skills/autoiter/SKILL.md not found" >&2
     result="fail"
   fi
 
-  # Check 4: skills/loop-prepare/SKILL.md exists and has valid frontmatter (--- + name: field)
-  if [[ ! -f "${PLUGIN_ROOT}/skills/loop-prepare/SKILL.md" ]]; then
-    echo "  [e2e-05] MISS: skills/loop-prepare/SKILL.md not found" >&2
+  # Check 4: skills/autoiter-prepare/SKILL.md exists and has valid frontmatter (--- + name: field)
+  if [[ ! -f "${PLUGIN_ROOT}/skills/autoiter-prepare/SKILL.md" ]]; then
+    echo "  [e2e-05] MISS: skills/autoiter-prepare/SKILL.md not found" >&2
     result="fail"
-  elif ! grep -q '^---' "${PLUGIN_ROOT}/skills/loop-prepare/SKILL.md" 2>/dev/null \
-       || ! grep -q '^name:' "${PLUGIN_ROOT}/skills/loop-prepare/SKILL.md" 2>/dev/null; then
-    echo "  [e2e-05] MISS: skills/loop-prepare/SKILL.md missing valid frontmatter (name: field)" >&2
+  elif ! grep -q '^---' "${PLUGIN_ROOT}/skills/autoiter-prepare/SKILL.md" 2>/dev/null \
+       || ! grep -q '^name:' "${PLUGIN_ROOT}/skills/autoiter-prepare/SKILL.md" 2>/dev/null; then
+    echo "  [e2e-05] MISS: skills/autoiter-prepare/SKILL.md missing valid frontmatter (name: field)" >&2
     result="fail"
   fi
 
@@ -150,7 +150,7 @@ scenario5() {
     result="fail"
   }
 
-  run_scenario "e2e-05-loop-shim" "${result}"
+  run_scenario "e2e-05-autoiter-shim" "${result}"
 }
 
 # ---------------------------------------------------------------------------

@@ -531,7 +531,7 @@ Write `iter-N/fix-plan.md` using `skills/autoiter/references/fix-plan-template.m
 1. **3 metadata lines** (top):
    ```
    <!-- plan-source: <absolute path to iter-N/fix-plan.md> -->
-   <!-- plan-topic: loop-iter-N-fixes -->
+   <!-- plan-topic: autoiter-iter-N-fixes -->
    <!-- plan-executor: collie-harness:gated-workflow -->
    ```
 2. **Task Execution DAG** (from FIX `dependencies` fields; independent FIX = same batch)
