@@ -51,11 +51,11 @@ No build step — pure Node.js, zero external dependencies.
   → collie-harness:gated-workflow skill（内含 [collie-final-review] pre-merge gate） → <promise>Collie: SHIP IT</promise>
 ```
 
-## Loop Workflow（`/collie-harness:loop`，与 Workflow Sequence 平行独立，不嵌套）
+## Autoiter Workflow（`/collie-harness:autoiter`，与 Workflow Sequence 平行独立，不嵌套）
 
 ```
-/collie-harness:loop "task"
-  → Stage 0: Discovery + Lock（planmode；plan-kind: loop-stage0 旁路双 reviewer 门禁）
+/collie-harness:autoiter "task"
+  → Stage 0: Discovery + Lock（planmode；plan-kind: autoiter-stage0 旁路双 reviewer 门禁）
   → Stage 0.5: loop-prepare 体检（trigger dry-run / scalar extract / observability）
   → 迭代 1..N:
       Stage 1: kickoff（git HEAD + baseline）
@@ -68,7 +68,7 @@ No build step — pure Node.js, zero external dependencies.
       Stage 5.2: G6 diff audit（inline）
       Stage 5.3: Rerun + scalar
       Stage 6: Rollback + 停止判断
-  → <promise>Collie: LOOP DONE</promise>（worktree 保留，不自动 merge）
+  → <promise>Collie: AUTOITER DONE</promise>（worktree 保留，不自动 merge）
 ```
 
 ## Hooks and Their Triggers
@@ -76,7 +76,7 @@ No build step — pure Node.js, zero external dependencies.
 | Hook file | Event | Purpose |
 |-----------|-------|---------|
 | `post-writing-plans-reviewer.js` | PostToolUse Write/Edit + ExitPlanMode | Creates dual-reviewer state; validates plan metadata (plan-source + plan-topic + plan-executor); **hard-blocks** (`decision:'block'`) ExitPlanMode if metadata missing or BOTH reviewers haven't approved |
-| `post-writing-plans-reviewer.js` | `plan-kind: loop-stage0` 旁路 | 跳过 auto 双 reviewer 门禁，只校验 3 条 metadata + 4 enum 字段；`plan-kind` 为其他值时走既有路径 |
+| `post-writing-plans-reviewer.js` | `plan-kind: autoiter-stage0` 旁路 | 跳过 auto 双 reviewer 门禁，只校验 3 条 metadata + 4 enum 字段；`plan-kind` 为其他值时走既有路径 |
 | `post-approved-exitplan-hint.js` | PostToolUse Agent + PostToolUse Skill | Detects collie-harness:plan-doc-reviewer Approved OR collie-harness:review PASS; updates per-reviewer state; hints next step |
 | `post-exitplan-gated-hint.js` | PostToolUse ExitPlanMode | Reminds to call `collie-harness:gated-workflow` skill — **only when both reviewers approved**; silent otherwise |
 | `stop-steps-counter.js` | Stop | Blocks on same error ×3 or 5+ steps without file changes; **resets counters after block** to prevent permanent lockout |
@@ -93,8 +93,8 @@ All runtime state lives under `~/.collie-harness/`:
   state/scheduled_tasks.lock   # Concurrency lock for collie-harness:queue
   escalations.log              # All escalation events
   queue/*.md                   # Unattended tasks for collie-harness:queue skill
-  loop/{project-id}/current-run     # runId 指针（project-scoped，EnterPlanMode 前写入）
-  loop/{project-id}/{runId}/
+  autoiter/{project-id}/current-run     # runId 指针（project-scoped，EnterPlanMode 前写入）
+  autoiter/{project-id}/{runId}/
     run-spec.md / prepare-report.md / state.json
     status.md（overwrite）/ user-log.md（append）/ progress.md
     worktree-path / iter-N/
@@ -113,9 +113,9 @@ All runtime state lives under `~/.collie-harness/`:
 - **Pre-merge rubric gate**：`collie-harness:review` Mode=code 作为 `[collie-final-review]` 节点嵌入 `gated-workflow` TodoList 中 `[doc-refresh]` 之后、`[finish]` 之前（Step 5.7）。worktree 清理前必须通过 rubric gate，auto.md 无独立 Step ⑥。
 - **Surgical scope red line**：Red line #13（Speculative scope）吸收 Karpathy CLAUDE.md Principle 2/3。加任务未要求的 feature / flexibility / 抽象 / 顺手改无关代码 = BLOCK；每行 diff 必须可追溯到任务目标。
 - **Overfit Guards (G1-G8)**：硬性约束防过拟合；G8 = Triage（confidence≤2 → DEFERRED）+ Deep Verify（fix_confidence≤2 → DEFERRED）双层 confidence gate
-- **ralph-loop 复用**：`/loop` 使用 ralph-loop 作为外层循环驱动（与 `/auto` 一致），不新建 Stop hook
-- **Loop vs. /auto sentinel 语义**：`Collie: LOOP DONE` = 迭代结束 + worktree 保留（不自动 merge）；`Collie: SHIP IT` = merge 完成
-- **嵌套禁止**：`/loop` 与 `/auto` 不得互相嵌套调用（COLLIE_LOOP_ACTIVE 环境变量防守）
+- **ralph-loop 复用**：`/autoiter` 使用 ralph-loop 作为外层循环驱动（与 `/auto` 一致），不新建 Stop hook
+- **Autoiter vs. /auto sentinel 语义**：`Collie: AUTOITER DONE` = 迭代结束 + worktree 保留（不自动 merge）；`Collie: SHIP IT` = merge 完成
+- **嵌套禁止**：`/autoiter` 与 `/auto` 不得互相嵌套调用（COLLIE_AUTOITER_ACTIVE 环境变量防守）
 - **Stage 3 auto-recovery 硬原则**：blocker 处理不等用户介入；能自愈则自愈（haiku→sonnet→opus 阶梯），不能则体面退场 + escalate
 
 ## Required First-Time Setup
@@ -131,8 +131,8 @@ export COLLIE_ESCALATE_CMD="your-notification-command"
 export COLLIE_HARNESS_HOME="~/.my-harness"  # defaults to ~/.collie-harness
 
 # 3. (Optional) Loop terminal-event notification
-export COLLIE_LOOP_NOTIFY_CMD="osascript -e 'display notification ...'"  # or Slack/email/etc.
-# Payload env vars: COLLIE_LOOP_EVENT, COLLIE_LOOP_RUN_ID, COLLIE_LOOP_STATUS_FILE
+export COLLIE_AUTOITER_NOTIFY_CMD="osascript -e 'display notification ...'"  # or Slack/email/etc.
+# Payload env vars: COLLIE_AUTOITER_EVENT, COLLIE_AUTOITER_RUN_ID, COLLIE_AUTOITER_STATUS_FILE
 ```
 
 ## Release Checklist
