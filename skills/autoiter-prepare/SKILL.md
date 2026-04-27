@@ -1,11 +1,11 @@
 ---
-name: collie-harness:loop-prepare
-description: "Pre-flight environment check SKILL for the collie-harness loop command. Called by the main loop SKILL (collie-harness:loop) in the §3.5 post-ExitPlanMode recovery path, after worktree creation, before Stage 1 iteration begins. Runs 5 checks: (1) trigger dry-run, (2) scalar extraction validation, (3) observability validation (Monitor/Read-tail + kill signal), (4) persistent directory writability. Outputs prepare-report.md with PASS/FAIL evidence. Returns failure signal to caller on any FAIL — does NOT fix issues. Supports skip_prepare bypass and is idempotent (skips all checks if prepare-report.md already exists). Do NOT invoke directly from user prompts; this is an internal skill invoked exclusively by collie-harness:loop."
+name: collie-harness:autoiter-prepare
+description: "Pre-flight environment check SKILL for the collie-harness autoiter command. Called by the main autoiter SKILL (collie-harness:autoiter) in the §3.5 post-ExitPlanMode recovery path, after worktree creation, before Stage 1 iteration begins. Runs 5 checks: (1) trigger dry-run, (2) scalar extraction validation, (3) observability validation (Monitor/Read-tail + kill signal), (4) persistent directory writability. Outputs prepare-report.md with PASS/FAIL evidence. Returns failure signal to caller on any FAIL — does NOT fix issues. Supports skip_prepare bypass and is idempotent (skips all checks if prepare-report.md already exists). Do NOT invoke directly from user prompts; this is an internal skill invoked exclusively by collie-harness:autoiter."
 ---
 
-# loop-prepare — Pre-flight Environment Check
+# autoiter-prepare — Pre-flight Environment Check
 
-Called exclusively by `collie-harness:loop` at Stage 0.5. Never invoked directly by the user.
+Called exclusively by `collie-harness:autoiter` at Stage 0.5. Never invoked directly by the user.
 
 **Hard scope limits** (do not exceed):
 - Does NOT fix trigger issues (those are user material problems)
@@ -17,11 +17,11 @@ Called exclusively by `collie-harness:loop` at Stage 0.5. Never invoked directly
 
 | Parameter | Description |
 |-----------|-------------|
-| `run_spec_path` | Absolute path to `~/.collie-harness/loop/{project-id}/{runId}/run-spec.md` |
-| `report_path` | Absolute path to `~/.collie-harness/loop/{project-id}/{runId}/prepare-report.md` (output) |
+| `run_spec_path` | Absolute path to `~/.collie-harness/autoiter/{project-id}/{runId}/run-spec.md` |
+| `report_path` | Absolute path to `~/.collie-harness/autoiter/{project-id}/{runId}/prepare-report.md` (output) |
 | `project_id` | From `_state.projectId()` |
 | `run_id` | Current runId |
-| `worktree_path` | Absolute path to the loop worktree (trigger dry-run executes here) |
+| `worktree_path` | Absolute path to the autoiter worktree (trigger dry-run executes here) |
 
 ## Skip Path
 
@@ -47,7 +47,7 @@ Before running any check: if `report_path` already exists (session restart safet
 Collect all results. Write `prepare-report.md` after all checks complete (one atomic write at the end, not incremental).
 
 For detailed commands, timeouts, and pass/fail criteria for each check, read:
-`skills/loop-prepare/references/prepare-checks.md`
+`skills/autoiter-prepare/references/prepare-checks.md`
 
 ### Check 1 — Trigger Dry-Run
 
@@ -73,7 +73,7 @@ PASS if extraction succeeds and returns expected type. FAIL with evidence showin
 
 Three sub-checks, all must pass:
 
-**3a. Monitor tool detection**: Run `ToolSearch select:Monitor`. If schema is returned → Monitor available. If not found → fallback mode; confirm Read-tail path is viable (the `raw.log` write path under `~/.collie-harness/loop/{project_id}/{run_id}/iter-0/` is reachable).
+**3a. Monitor tool detection**: Run `ToolSearch select:Monitor`. If schema is returned → Monitor available. If not found → fallback mode; confirm Read-tail path is viable (the `raw.log` write path under `~/.collie-harness/autoiter/{project_id}/{run_id}/iter-0/` is reachable).
 
 **3b. Subprocess kill signal**: Start a background process (`Bash sleep 2 run_in_background=true`), capture its PID, then `kill <PID>` within 3 seconds. Confirm kill succeeds (exit 0 or process no longer exists).
 
@@ -84,8 +84,8 @@ PASS if all three sub-checks pass. FAIL with which sub-check failed + evidence.
 ### Check 4 — Persistent Directory Writable
 
 ```bash
-mkdir -p ~/.collie-harness/loop/{project_id}/{run_id}/iter-0/
-touch ~/.collie-harness/loop/{project_id}/{run_id}/iter-0/.probe && rm ~/.collie-harness/loop/{project_id}/{run_id}/iter-0/.probe
+mkdir -p ~/.collie-harness/autoiter/{project_id}/{run_id}/iter-0/
+touch ~/.collie-harness/autoiter/{project_id}/{run_id}/iter-0/.probe && rm ~/.collie-harness/autoiter/{project_id}/{run_id}/iter-0/.probe
 ```
 
 PASS if both commands succeed. FAIL with error output.
@@ -124,6 +124,6 @@ After writing `prepare-report.md`, return to the calling SKILL:
 - All checks passed: `{ status: "pass" }`
 - Any check failed: `{ status: "fail", failed_checks: ["check1", "check3b"], report_path: "<path>" }`
 
-**Do not attempt to fix failures.** The caller (main loop SKILL) decides:
+**Do not attempt to fix failures.** The caller (main autoiter SKILL) decides:
 - Interactive mode: `AskUserQuestion("Prepare failed on [X]. Fix your material and retry, or abort?")`
 - Queued mode: `scripts/escalate.sh` + `state.json.status = "escalated"` → return

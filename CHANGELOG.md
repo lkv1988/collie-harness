@@ -4,6 +4,15 @@ All notable changes to collie-harness are documented here.
 
 ---
 
+## 0.3.0 — 2026-04-27
+
+- **rename**：`/collie-harness:loop` → `/collie-harness:autoiter`；同步改 SKILL/状态目录/env var/hook plan-kind/queue enum。原因：与 Claude Code 内置全局 `loop` skill 命名冲突。
+- **新增 Section 0 Orchestrator Contract**：约束 autoiter SKILL 主 session 行为（禁止读源码 / 写实现代码 / 解析长日志），引入主 agent 自主裁定基准（参考 user CLAUDE.md "Subagent 派发策略"）。
+- **新增 Stage TaskList 锚定**：每 iter 起始 TaskCreate 6 条 stage anchor，长 dispatch 返回时 self-anchor 防遗忘。
+- 新增 `tests/autoiter-orchestrator-contract.test.js` grep-based 强制（5 项核心断言）。
+
+---
+
 ## 0.2.4 — 2026-04-27
 
 ### Fixed

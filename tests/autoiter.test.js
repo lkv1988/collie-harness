@@ -9,9 +9,9 @@ const { spawnSync } = require('node:child_process');
 
 // --- Module under test (path helpers, jaccard) ---
 const STATE_JS = path.resolve(__dirname, '../hooks/_state.js');
-const JACCARD_JS = path.resolve(__dirname, '../skills/loop/lib/jaccard.js');
+const JACCARD_JS = path.resolve(__dirname, '../skills/autoiter/lib/jaccard.js');
 const HOOK = path.resolve(__dirname, '../hooks/post-writing-plans-reviewer.js');
-const FIX_PLAN_TEMPLATE = path.resolve(__dirname, '../skills/loop/references/fix-plan-template.md');
+const FIX_PLAN_TEMPLATE = path.resolve(__dirname, '../skills/autoiter/references/fix-plan-template.md');
 const SESSION_ID = 'test-loop-session-456';
 
 // jaccard.js has no env dependency — require once
@@ -35,16 +35,16 @@ describe('_state.js path helpers', () => {
     });
   }
 
-  test('projectId: real repo cwd encodes to Users-kevin-git-collie-harness-worktrees-loop-command', () => {
+  test('projectId: real repo cwd encodes to a slug containing collie-harness', () => {
     // Use the real repo cwd — git rev-parse is real
     const { projectId } = require(STATE_JS);
     const id = projectId(path.resolve(__dirname, '..'));
-    // The worktree root is /Users/kevin/git/collie-harness/.worktrees/loop-command
-    // After slug: Users-kevin-git-collie-harness-.worktrees-loop-command
+    // The worktree root is under /Users/kevin/git/collie-harness/
+    // After slug: contains collie-harness fragment
     assert.ok(typeof id === 'string', 'projectId should return a string');
     assert.ok(id.length > 0, 'projectId should not be empty');
     // Must contain known path fragments
-    assert.ok(id.includes('collie-harness') || id.includes('loop-command'),
+    assert.ok(id.includes('collie-harness'),
       `projectId should contain repo name fragment, got: ${id}`);
     // Must not start with a dash
     assert.ok(!id.startsWith('-'), `projectId must not start with dash, got: ${id}`);
@@ -58,22 +58,22 @@ describe('_state.js path helpers', () => {
     assert.ok(!id.includes('/'), 'projectId must not contain slashes');
   });
 
-  test('loopDir default (no COLLIE_HARNESS_HOME): path contains ~/.collie-harness/loop/myproject/run1', () => {
+  test('loopDir default (no COLLIE_HARNESS_HOME): path contains ~/.collie-harness/autoiter/myproject/run1', () => {
     const result = evalState(s => s.loopDir('myproject', 'run1'));
     assert.strictEqual(result.status, 0, result.stderr);
     const { value } = JSON.parse(result.stdout);
     // path.join normalizes trailing '': no trailing separator guaranteed
-    const expected = path.join(os.homedir(), '.collie-harness', 'loop', 'myproject', 'run1');
+    const expected = path.join(os.homedir(), '.collie-harness', 'autoiter', 'myproject', 'run1');
     assert.ok(value.startsWith(expected), `loopDir should start with ${expected}, got: ${value}`);
-    assert.ok(value.includes(path.join('loop', 'myproject', 'run1')),
-      `loopDir should include loop/myproject/run1, got: ${value}`);
+    assert.ok(value.includes(path.join('autoiter', 'myproject', 'run1')),
+      `loopDir should include autoiter/myproject/run1, got: ${value}`);
   });
 
-  test('loopDir with COLLIE_HARNESS_HOME=/tmp/x: path starts with /tmp/x/loop/', () => {
+  test('loopDir with COLLIE_HARNESS_HOME=/tmp/x: path starts with /tmp/x/autoiter/', () => {
     const result = evalState(s => s.loopDir('myproject', 'run1'), { COLLIE_HARNESS_HOME: '/tmp/x' });
     assert.strictEqual(result.status, 0, result.stderr);
     const { value } = JSON.parse(result.stdout);
-    assert.ok(value.startsWith('/tmp/x/loop/'), `loopDir should start with /tmp/x/loop/, got: ${value}`);
+    assert.ok(value.startsWith('/tmp/x/autoiter/'), `loopDir should start with /tmp/x/autoiter/, got: ${value}`);
     assert.ok(value.includes('myproject'), `loopDir should include projectId, got: ${value}`);
     assert.ok(value.includes('run1'), `loopDir should include runId, got: ${value}`);
   });
@@ -225,10 +225,10 @@ describe('fix-plan-template.md structure', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Group 4: hook loop-stage0 bypass (via spawnSync)
+// Group 4: hook autoiter-stage0 bypass (via spawnSync)
 // ---------------------------------------------------------------------------
 
-describe('hook: loop-stage0 bypass in post-writing-plans-reviewer', () => {
+describe('hook: autoiter-stage0 bypass in post-writing-plans-reviewer', () => {
   let tmpHome;
   let tmpRoot;
 
@@ -271,15 +271,15 @@ describe('hook: loop-stage0 bypass in post-writing-plans-reviewer', () => {
   }
 
   /**
-   * Create a valid loop-stage0 plan file at planPath with all required fields.
+   * Create a valid autoiter-stage0 plan file at planPath with all required fields.
    * The hook uses /trigger[^\n]*kind:/ and /success_criterion[^\n]*type:/ regexes,
    * so both fields must appear on the same line as their prefix.
    */
   function writeValidLoopStage0Plan(planPath) {
     const content = [
       `<!-- plan-source: ${planPath} -->`,
-      `<!-- plan-kind: loop-stage0 -->`,
-      `<!-- plan-executor: collie-harness:loop -->`,
+      `<!-- plan-kind: autoiter-stage0 -->`,
+      `<!-- plan-executor: collie-harness:autoiter -->`,
       ``,
       `# Loop Stage 0 Plan`,
       ``,
@@ -292,8 +292,8 @@ describe('hook: loop-stage0 bypass in post-writing-plans-reviewer', () => {
     fs.writeFileSync(planPath, content, 'utf8');
   }
 
-  test('loop-stage0: valid plan with all 3 metadata + 4 enum fields → ExitPlanMode returns approve', () => {
-    const planPath = path.join(tmpRoot, 'docs', 'plans', 'loop-stage0-plan.md');
+  test('autoiter-stage0: valid plan with all 3 metadata + 4 enum fields → ExitPlanMode returns approve', () => {
+    const planPath = path.join(tmpRoot, 'docs', 'plans', 'autoiter-stage0-plan.md');
     writeValidLoopStage0Plan(planPath);
 
     // Write last-plan.json (reviewers NOT approved — bypass should skip dual-reviewer check)
@@ -308,19 +308,19 @@ describe('hook: loop-stage0 bypass in post-writing-plans-reviewer', () => {
     const result = runHook({ tool_name: 'ExitPlanMode', session_id: SESSION_ID });
     assert.strictEqual(result.status, 0, `Hook failed: ${result.stderr}`);
     const stdout = result.stdout.trim();
-    assert.ok(stdout.length > 0, 'stdout should not be empty for loop-stage0 approval');
+    assert.ok(stdout.length > 0, 'stdout should not be empty for autoiter-stage0 approval');
     const out = JSON.parse(stdout);
     assert.notStrictEqual(out.decision, 'block',
-      `loop-stage0 with valid plan should NOT block, got: ${JSON.stringify(out)}`);
+      `autoiter-stage0 with valid plan should NOT block, got: ${JSON.stringify(out)}`);
     assert.strictEqual(out.decision, 'approve', `expected approve, got: ${JSON.stringify(out)}`);
   });
 
-  test('loop-stage0: plan missing plan-source → returns block mentioning plan-source', () => {
+  test('autoiter-stage0: plan missing plan-source → returns block mentioning plan-source', () => {
     const planPath = path.join(tmpRoot, 'docs', 'plans', 'missing-source-plan.md');
     // Plan has plan-kind and plan-executor but NO plan-source
     const content = [
-      `<!-- plan-kind: loop-stage0 -->`,
-      `<!-- plan-executor: collie-harness:loop -->`,
+      `<!-- plan-kind: autoiter-stage0 -->`,
+      `<!-- plan-executor: collie-harness:autoiter -->`,
       ``,
       `# Loop Stage 0 Plan`,
       `primary_goal: fix issues`,
@@ -349,7 +349,7 @@ describe('hook: loop-stage0 bypass in post-writing-plans-reviewer', () => {
       `reason should mention "plan-source", got: ${out.reason}`);
   });
 
-  test('loop-stage0: non-loop-stage0 plan falls through to existing dual-reviewer logic (blocks when not approved)', () => {
+  test('autoiter-stage0: non-autoiter-stage0 plan falls through to existing dual-reviewer logic (blocks when not approved)', () => {
     // A plan with no plan-kind → falls through to dual-reviewer logic → blocks (reviewers not approved)
     const planPath = path.join(tmpRoot, 'docs', 'plans', 'normal-plan.md');
     const content = [
@@ -375,7 +375,7 @@ describe('hook: loop-stage0 bypass in post-writing-plans-reviewer', () => {
     const out = JSON.parse(result.stdout.trim());
     // The bypass must NOT engage — should hit normal dual-reviewer block
     assert.strictEqual(out.decision, 'block',
-      'non-loop-stage0 plan with unapproved reviewers should block');
+      'non-autoiter-stage0 plan with unapproved reviewers should block');
     // Should mention both reviewers (normal dual-reviewer block message)
     assert.ok(
       out.reason.includes('plan-doc-reviewer') || out.reason.includes('collie-harness:review'),

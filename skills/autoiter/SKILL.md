@@ -1,6 +1,6 @@
 ---
-name: collie-harness:loop
-description: "Main loop orchestrator for collie-harness. Drives the 'run → observe → triage → deep-verify → fix → rerun' self-iteration pipeline. Called by commands/loop.md on every ralph-loop session restart. Implements a persistent state machine (§3.5) across ralph-loop session restarts: fresh-start → Stage 0 (Discovery planmode) → Stage 1 (kickoff) → Stage 2 (run trigger) → Stage 3 (observe + auto-recovery) → Stage 4a (Triage) → Stage 4b (Deep Verify) → Stage 5.0 (fix-plan) → Stage 5.1 (gated-workflow) → Stage 5.2 (G6 diff audit + rerun) → Stage 6 (rollback + stop check). Completion signal: <promise>Collie: LOOP DONE</promise> (emitted ONLY by the §3.5 terminal branch after ralph-loop restart, NEVER inline)."
+name: collie-harness:autoiter
+description: "Main loop orchestrator for collie-harness. Drives the 'run → observe → triage → deep-verify → fix → rerun' self-iteration pipeline. Called by commands/autoiter.md on every ralph-loop session restart. Implements a persistent state machine (§3.5) across ralph-loop session restarts: fresh-start → Stage 0 (Discovery planmode) → Stage 1 (kickoff) → Stage 2 (run trigger) → Stage 3 (observe + auto-recovery) → Stage 4a (Triage) → Stage 4b (Deep Verify) → Stage 5.0 (fix-plan) → Stage 5.1 (gated-workflow) → Stage 5.2 (G6 diff audit + rerun) → Stage 6 (rollback + stop check). Completion signal: <promise>Collie: AUTOITER DONE</promise> (emitted ONLY by the §3.5 terminal branch after ralph-loop restart, NEVER inline)."
 dependencies:
   - collie-harness:gated-workflow
   - collie-harness:review
@@ -8,11 +8,11 @@ dependencies:
   - superpowers:subagent-driven-development
 ---
 
-# collie-harness:loop — Main Loop Orchestrator
+# collie-harness:autoiter — Main Autoiter Orchestrator
 
-Drives the iterative improvement pipeline: run trigger → observe → triage → deep-verify → gated fix → rerun → stop check. Invoked by `commands/loop.md` on every ralph-loop session restart.
+Drives the iterative improvement pipeline: run trigger → observe → triage → deep-verify → gated fix → rerun → stop check. Invoked by `commands/autoiter.md` on every ralph-loop session restart.
 
-**Completion signal**: `<promise>Collie: LOOP DONE</promise>`
+**Completion signal**: `<promise>Collie: AUTOITER DONE</promise>`
 **Sentinel rule**: Emitted ONLY by the §3.5 terminal branch. NO other stage emits it inline.
 
 ---
@@ -20,11 +20,11 @@ Drives the iterative improvement pipeline: run trigger → observe → triage �
 ## Flowchart
 
 ```dot
-digraph loop {
+digraph autoiter {
   rankdir=TB;
   node [shape=box, style=rounded];
   entry [label="SKILL entry\n§3.5 state machine"];
-  nested_check [label="Nested-call check\n(COLLIE_LOOP_ACTIVE?)"];
+  nested_check [label="Nested-call check\n(COLLIE_AUTOITER_ACTIVE?)"];
   fail_fast [label="fail-fast escalate\n(do NOT rm current-run)", shape=ellipse];
   no_current_run [label="current-run missing?", shape=diamond];
   fresh_start [label="Fresh start:\ngenerate runId\nwrite current-run"];
@@ -33,7 +33,7 @@ digraph loop {
   run_spec_missing [label="run-spec.md missing?", shape=diamond];
   recovery [label="Recovery chain:\nlast-plan.json→plan file\n→plan-source→cp run-spec.md"];
   recovery_fail [label="Recovery failed\nrm current-run", shape=ellipse];
-  worktree_prepare [label="Create worktree\nloop-prepare (if needed)\ninit state.json(iter=1)"];
+  worktree_prepare [label="Create worktree\nautoiter-prepare (if needed)\ninit state.json(iter=1)"];
   read_state [label="Read state.json"];
   terminal [label="status=terminal:\nrm current-run\nemit sentinel", shape=ellipse];
   stage1 [label="Stage 1 Kickoff"];
@@ -54,7 +54,7 @@ digraph loop {
   next_iter [label="iter++\nstate=running → Stage 1"];
 
   entry -> nested_check;
-  nested_check -> fail_fast [label="COLLIE_LOOP_ACTIVE set"];
+  nested_check -> fail_fast [label="COLLIE_AUTOITER_ACTIVE set"];
   nested_check -> no_current_run [label="not nested"];
   no_current_run -> fresh_start [label="yes"];
   no_current_run -> run_spec_missing [label="no"];
@@ -91,6 +91,68 @@ digraph loop {
 
 ---
 
+## Section 0 — Orchestrator Contract（必读，约束所有 stage）
+
+⛔ **主 session 是协调器，不是执行器。**
+
+### 主 session 禁止做的事
+
+- ❌ 读项目源代码（src 文件）
+- ❌ grep / find / 全文搜索项目代码（除单点 hash/scalar 提取）
+- ❌ 写实现代码 / 修复代码
+- ❌ 解析 > 50 行日志
+- ❌ inline 执行 git revert / git reset --hard 实质操作
+
+### 主 session 必须做的事
+
+- ✅ 决策（基于 subagent 输出）
+- ✅ dispatch 子 agent + 状态文件读写
+- ✅ 写 status.md / progress.md / fix-plan.md（汇总 subagent 输出）
+- ✅ 触发外部命令（trigger / rerun bash 启动）但不解析 stdout
+
+### 主 session 例外项（明文允许 inline）
+
+仅以下 5 类操作允许 inline，逻辑上是单点动作：
+
+1. Stage 2 `nohup bash` 启动 trigger（单行命令）
+2. Stage 5.0 写 `fix-plan.md`（仅汇总 4b deep-verify 输出，禁止读源码）
+3. Stage 5.2 `git diff HEAD~1..HEAD --name-only`（单行 git，结果不解析）
+4. 状态文件 IO（`~/.collie-harness/autoiter/...` 下的 status / progress / state）
+5. iter 边界的目录创建（`mkdir -p iter-N/`）
+
+### Subagent 派发裁定基准（主 agent 自主裁定，不在 plan 硬编码）
+
+每次需要执行操作时，主 agent 按以下基准**自主裁定** inline vs dispatch + model：
+
+**裁定步骤**：
+1. 此步是"决策"还是"执行"？决策 inline，执行 dispatch
+2. 输入是否会污染主 agent 上下文（log / source code / 大返回）？是 → dispatch
+3. 选 model：参考用户 `~/.claude/CLAUDE.md` 中的"Agent 模型选择速查"+"Subagent 派发策略"两节
+
+**Agent 模型选择速查**（节选自用户 CLAUDE.md）：
+- `Explore` → haiku（文件搜索、代码分析、只读探索）
+- `general-purpose 轻量` → haiku（文档生成、简单分析）
+- `general-purpose 标准` → sonnet（代码实现、中等复杂度）
+- `general-purpose 复杂` → opus（架构决策、复杂重构）
+- `code-reviewer` → sonnet
+- `Plan` → opus（架构设计、规划）
+
+**典型应用例子**（参考，非强制；具体 stage 由主 agent 实时裁定）：
+- 应用 fix patch 到 worktree → 实现型 → dispatch sonnet
+- 解析 raw.log 提 scalar → 文档/分析型 → dispatch haiku
+- 写 fix-plan.md 综合 → 决策型 → inline（受 §例外项 #2 约束）
+- 跑 git revert + verify hash → 执行型 → dispatch haiku
+- Triage / Deep Verify → 复杂推理型 → dispatch opus（这是历史不变式，contract test 强制）
+
+### 历史不变式（contract test 强制保留）
+
+- Stage 4a/4b（Triage / Deep Verify）必须保持 opus subagent，不可降为 inline 或更低 model
+- Stage 5.0 fix-plan 必须保持 inline 但受 §例外项 #2 约束
+
+任何其他 stage 的 inline / dispatch + model 选择由主 agent 实时裁定，plan 不硬编码。
+
+---
+
 ## §3.5 Entry State Machine (FIRST thing executed every session)
 
 ### Setup
@@ -102,18 +164,18 @@ CURRENT_RUN_FILE=$(node -e "const s=require('./hooks/_state.js'); console.log(s.
 
 ### Nested-call check
 
-If `COLLIE_LOOP_ACTIVE` environment variable is set → this is a nested call from inside another `/auto` or `/loop` session.
+If `COLLIE_AUTOITER_ACTIVE` environment variable is set → this is a nested call from inside another `/auto` or `/autoiter` session.
 
 Action: call `scripts/escalate.sh "nested_loop_call" "$PROJECT_ID"` then **stop immediately**. Do NOT rm current-run (the outer run owns it).
 
-If not nested: set `export COLLIE_LOOP_ACTIVE=1` for all subprocesses in this session, then proceed.
+If not nested: set `export COLLIE_AUTOITER_ACTIVE=1` for all subprocesses in this session, then proceed.
 
 ### Branch A — No current-run file
 
-`~/.collie-harness/loop/{project-id}/current-run` does NOT exist → **Fresh start**:
+`~/.collie-harness/autoiter/{project-id}/current-run` does NOT exist → **Fresh start**:
 
 1. Generate `runId`: `YYYYMMDD-HHMMSS-{shortSessionId}` (use `date +%Y%m%d-%H%M%S` + first 6 chars of `$CLAUDE_SESSION_ID` or random hex)
-2. `mkdir -p ~/.collie-harness/loop/{project-id}/`
+2. `mkdir -p ~/.collie-harness/autoiter/{project-id}/`
 3. Write runId to current-run file
 4. Proceed to Stage 0
 
@@ -128,15 +190,15 @@ Post-planmode recovery path:
    - If recovery chain fails at any step → `rm $CURRENT_RUN_FILE` → go to Branch A
 3. Recovery succeeded:
    ```bash
-   mkdir -p ~/.collie-harness/loop/{project-id}/{runId}/
+   mkdir -p ~/.collie-harness/autoiter/{project-id}/{runId}/
    # ⛔ NEVER use Write or Edit — cp only (prevents LLM rewriting content)
-   cp "$PLAN_SOURCE" ~/.collie-harness/loop/{project-id}/{runId}/run-spec.md
-   git worktree add .worktrees/loop-{runId} -b loop/{runId}
-   echo "$(pwd)/.worktrees/loop-{runId}" > ~/.collie-harness/loop/{project-id}/{runId}/worktree-path
+   cp "$PLAN_SOURCE" ~/.collie-harness/autoiter/{project-id}/{runId}/run-spec.md
+   git worktree add .worktrees/autoiter-{runId} -b autoiter/{runId}
+   echo "$(pwd)/.worktrees/autoiter-{runId}" > ~/.collie-harness/autoiter/{project-id}/{runId}/worktree-path
    ```
 4. Read `skip_prepare` from run-spec.md
 5. If `skip_prepare=false` AND `prepare-report.md` does NOT exist:
-   - Call `Skill('collie-harness:loop-prepare')` with: `run_spec_path`, `report_path`, `project_id`, `run_id`, `worktree_path`
+   - Call `Skill('collie-harness:autoiter-prepare')` with: `run_spec_path`, `report_path`, `project_id`, `run_id`, `worktree_path`
    - PASS → continue
    - FAIL (interactive): `AskUserQuestion "Prepare failed: [X]. Fix material and retry, or abort?"`
    - FAIL (queued): write `state.json.status="escalated"` → **return** (§3.5 terminal handles on next restart)
@@ -150,7 +212,7 @@ Post-planmode recovery path:
      "stop_reason": null,
      "last_scalar": null,
      "baseline_scalar": null,
-     "promise_signal": "Collie: LOOP DONE"
+     "promise_signal": "Collie: AUTOITER DONE"
    }
    ```
 7. Proceed to Stage 1
@@ -163,7 +225,7 @@ Read `state.json`:
 |--------|--------|
 | `"running"` | Re-enter Stage 1 kickoff (idempotent: skip write if kickoff.md already exists) |
 | `"iter_done"` | Proceed to Stage 6 stop check |
-| `"converged"` / `"budget_exhausted"` / `"escalated"` | **Terminal**: rm current-run → print `[loop {runId}] All done — status={status}` → emit `<promise>Collie: LOOP DONE</promise>` → stop |
+| `"converged"` / `"budget_exhausted"` / `"escalated"` | **Terminal**: rm current-run → print `[autoiter {runId}] All done — status={status}` → emit `<promise>Collie: AUTOITER DONE</promise>` → stop |
 | missing | Treat same as Branch B (run-spec.md missing path) |
 
 ---
@@ -178,7 +240,7 @@ Call `EnterPlanMode`.
 
 ### Step 0.2 — Discovery subagent (haiku, Explore / read-only)
 
-Dispatch haiku subagent using system prompt from `skills/loop/references/discovery-prompt.md`. Input: project root. Output:
+Dispatch haiku subagent using system prompt from `skills/autoiter/references/discovery-prompt.md`. Input: project root. Output:
 - Ranked candidate trigger list (each: command, kind, score 1-5, rationale)
 - Suggested `success_criterion` type (`all_green` / `scalar_threshold` / `convergence_delta` / `custom`)
 - Suggested `primary_goal` (`correctness` / `optimization` / `both`)
@@ -198,8 +260,8 @@ Write to planmode system-prompt-specified plan file (do NOT override path). Top 
 
 ```
 <!-- plan-source: <planmode plan file absolute path> -->
-<!-- plan-kind: loop-stage0 -->
-<!-- plan-executor: collie-harness:loop -->
+<!-- plan-kind: autoiter-stage0 -->
+<!-- plan-executor: collie-harness:autoiter -->
 ```
 
 Body YAML:
@@ -233,11 +295,28 @@ ralph-loop restarts the session. §3.5 Branch B (recovery path) handles everythi
 
 ## Stage 1 — Kickoff (idempotent)
 
+### Step 0 — TaskCreate stage 锚定（每 iter 起始必做）
+
+⛔ 每次进入 Stage 1（iteration 起始）必须先做这一步，再做原 Step 1。
+
+1. 上一 iter 的 `[iter-{N-1} stage-*]` 任务先标 completed（正常结束）或 deleted（被 rollback）
+2. `TaskCreate` 6 次建立本 iter 锚点：
+   - `[iter-N stage-1] Kickoff（git HEAD + baseline）`
+   - `[iter-N stage-2] Run trigger（subprocess background + Monitor/tail）`
+   - `[iter-N stage-3] Observe（ISSUE 收集 + auto-recovery 阶梯）`
+   - `[iter-N stage-4] Triage + Deep Verify（4a/4b opus）`
+   - `[iter-N stage-5] Fix Plan + gated-workflow + G6 audit + Rerun（5.0/5.1/5.2/5.3）`
+   - `[iter-N stage-6] Rollback + Stop Check`
+
+   `N` 从 state.json 读取
+3. `TaskUpdate [iter-N stage-1] in_progress`，进入原 Step 1
+4. **Self-anchor**：长 dispatch（subagent 返回 > 200 字符或耗时 > 30s）后，主 agent 必须先 `TaskList` 确认当前 anchor 与 SKILL 当前 stage 一致；漂移 → STOP + escalate `stage_anchor_drift`。Stage 切换时 `TaskUpdate` 切 completed/in_progress 后再进入下一 stage。
+
 **All Stage 1+ work runs inside the worktree.** Read `worktree-path` to get the absolute path.
 
 ```bash
-WORKTREE=$(cat ~/.collie-harness/loop/{project-id}/{runId}/worktree-path)
-ITER_DIR=~/.collie-harness/loop/{project-id}/{runId}/iter-{N}
+WORKTREE=$(cat ~/.collie-harness/autoiter/{project-id}/{runId}/worktree-path)
+ITER_DIR=~/.collie-harness/autoiter/{project-id}/{runId}/iter-{N}
 mkdir -p $ITER_DIR/fixes
 ```
 
@@ -253,7 +332,7 @@ timestamp: <ISO-8601>
 **Observability**:
 - Overwrite `status.md`: `iter N/M · Stage 1 · Kickoff · preparing trigger`
 - Append `user-log.md`: `## iter-N · <ts>\nKickoff. HEAD: <sha>. Baseline scalar: <val>.`
-- Stdout: `[loop {runId}] iter-N Stage 1 → Kickoff`
+- Stdout: `[autoiter {runId}] iter-N Stage 1 → Kickoff`
 
 ---
 
@@ -290,11 +369,13 @@ ToolSearch query="select:Monitor"
 
 **Observability**:
 - Overwrite `status.md`: `iter N/M · Stage 2 · Running trigger · <elapsed>s elapsed`
-- Stdout: `[loop {runId}] iter-N Stage 2 → trigger running (timeout: {timeout_min}min)`
+- Stdout: `[autoiter {runId}] iter-N Stage 2 → trigger running (timeout: {timeout_min}min)`
 
 ---
 
 ## Stage 3 — Observe & Auto-Recovery
+
+⚠️ 本 stage 内每次执行操作前请按 §Section 0 裁定基准选择 inline / dispatch + model。fix 应用属"执行"型，参考速查表选 sonnet。
 
 ### Step 3.1 — Write observations.md
 
@@ -336,13 +417,13 @@ kill -TERM <pid>; sleep 5; kill -KILL <pid> 2>/dev/null || true
 2. Overwrite `status.md`: `iter N/M · Stage 3 · BLOCKED · auto-recovery ladder exhausted`
 3. Append to `user-log.md`
 4. `scripts/escalate.sh "blocker_unrecoverable" "$RUN_ID"`
-5. If `$COLLIE_LOOP_NOTIFY_CMD` set: `bash -c "$COLLIE_LOOP_NOTIFY_CMD"` with env `COLLIE_LOOP_EVENT=blocker_unrecoverable`, `COLLIE_LOOP_RUN_ID`, `COLLIE_LOOP_STATUS_FILE`
+5. If `$COLLIE_AUTOITER_NOTIFY_CMD` set: `bash -c "$COLLIE_AUTOITER_NOTIFY_CMD"` with env `COLLIE_AUTOITER_EVENT=blocker_unrecoverable`, `COLLIE_AUTOITER_RUN_ID`, `COLLIE_AUTOITER_STATUS_FILE`
 6. Write `state.json.status = "escalated"`
 7. **RETURN** — §3.5 terminal handles sentinel on next restart. Do NOT emit inline.
 
 **Observability**:
 - Overwrite `status.md`: `iter N/M · Stage 3 · Observing · {n} issues found`
-- Stdout: `[loop {runId}] iter-N Stage 3 → {n} issues recorded, {m} blocking`
+- Stdout: `[autoiter {runId}] iter-N Stage 3 → {n} issues recorded, {m} blocking`
 
 ---
 
@@ -375,7 +456,7 @@ rationale: <adversarial reasoning>
 
 **Observability**:
 - Overwrite `status.md`: `iter N/M · Stage 4a · Triage · {n_real} Real, {n_deferred} DEFERRED`
-- Stdout: `[loop {runId}] iter-N Stage 4a → triage complete ({n} → {m} to Deep Verify)`
+- Stdout: `[autoiter {runId}] iter-N Stage 4a → triage complete ({n} → {m} to Deep Verify)`
 
 ---
 
@@ -414,41 +495,43 @@ uncertainty_tag: triage_unclear | none
 
 **Observability**:
 - Overwrite `status.md`: `iter N/M · Stage 4b · Deep Verify · {n} FIX in verification`
-- Stdout: `[loop {runId}] iter-N Stage 4b → {n} issues in parallel Deep Verify`
+- Stdout: `[autoiter {runId}] iter-N Stage 4b → {n} issues in parallel Deep Verify`
 
 ---
 
 ## Stage 5.0 — Consolidated Fix Plan
 
+⚠️ 本 stage 是 §Section 0 例外项 #2（受约束 inline）。仅汇总 4b deep-verify 输出到 fix-plan.md，禁止读源码。如需补充信息 → 按裁定基准 dispatch。
+
 ### G7 check FIRST (before filling template)
 
 ```javascript
-const { jaccard, bucketize } = require('./skills/loop/lib/jaccard.js');
+const { jaccard, bucketize } = require('./skills/autoiter/lib/jaccard.js');
 // currentTasksText: concatenated task subject strings from current iter FIX-*.md files
 // prevTasksText: concatenated task subject strings from iter-(N-1)/fix-plan.md (empty string if iter=1)
 const ratio = jaccard(currentTasksText, prevTasksText); // returns [0.0, 1.0]
 const bucket = bucketize(ratio);                        // returns 1-5
 ```
 
-See `skills/loop/references/overfit-guards.md §G7` for bucket thresholds.
+See `skills/autoiter/references/overfit-guards.md §G7` for bucket thresholds.
 
 If `bucket >= 4` AND `consecutiveDelta0 >= 2`:
 1. Append to `iter-N/summary.md`: Jaccard ratio + bucket
 2. Write `state.json.status = "escalated"`
 3. `scripts/escalate.sh "loop_no_progress" "$RUN_ID"`
-4. If `$COLLIE_LOOP_NOTIFY_CMD` set: notify with `COLLIE_LOOP_EVENT=deadlock`
+4. If `$COLLIE_AUTOITER_NOTIFY_CMD` set: notify with `COLLIE_AUTOITER_EVENT=deadlock`
 5. **RETURN** — §3.5 terminal handles sentinel on next restart
 
 ### Fill fix-plan.md
 
 Only FIX entries with `fix_confidence ≥ 3` AND non-empty `root_cause` AND non-empty `reproduction_test` are eligible.
 
-Write `iter-N/fix-plan.md` using `skills/loop/references/fix-plan-template.md`:
+Write `iter-N/fix-plan.md` using `skills/autoiter/references/fix-plan-template.md`:
 
 1. **3 metadata lines** (top):
    ```
    <!-- plan-source: <absolute path to iter-N/fix-plan.md> -->
-   <!-- plan-topic: loop-iter-N-fixes -->
+   <!-- plan-topic: autoiter-iter-N-fixes -->
    <!-- plan-executor: collie-harness:gated-workflow -->
    ```
 2. **Task Execution DAG** (from FIX `dependencies` fields; independent FIX = same batch)
@@ -458,7 +541,7 @@ Write `iter-N/fix-plan.md` using `skills/loop/references/fix-plan-template.md`:
 
 **Observability**:
 - Overwrite `status.md`: `iter N/M · Stage 5.0 · Building fix-plan · {n} FIX eligible`
-- Stdout: `[loop {runId}] iter-N Stage 5.0 → fix-plan.md built ({n} FIX)`
+- Stdout: `[autoiter {runId}] iter-N Stage 5.0 → fix-plan.md built ({n} FIX)`
 
 ---
 
@@ -473,6 +556,8 @@ Input: `iter-N/fix-plan.md`. Runs full pipeline: TDD → implement → review �
 ---
 
 ## Stage 5.2 — G6 Diff Audit (INLINE, after Stage 5.1 returns)
+
+⚠️ git diff --name-only 是 §Section 0 例外项 #3（inline 取文件清单不解析内容）。审计 diff 内容属"执行+分析"型，按裁定基准 dispatch。
 
 Execute immediately after `gated-workflow` returns.
 
@@ -490,14 +575,16 @@ If any diff line is **NOT traceable** to any FIX entry:
 
 If audit passes → proceed to Stage 5.3.
 
-See `skills/loop/references/overfit-guards.md §G6` for full audit rules.
+See `skills/autoiter/references/overfit-guards.md §G6` for full audit rules.
 
 **Observability**:
-- Stdout: `[loop {runId}] iter-N Stage 5.2 → G6 diff audit PASS` (or `FAIL`)
+- Stdout: `[autoiter {runId}] iter-N Stage 5.2 → G6 diff audit PASS` (or `FAIL`)
 
 ---
 
 ## Stage 5.3 — Rerun + Record Scalar
+
+⚠️ 启动 rerun bash 是 §Section 0 例外项 #1（inline）。raw.log 解析 / scalar 提取属"执行+分析"型，按裁定基准 dispatch。
 
 ```bash
 cd $WORKTREE
@@ -522,17 +609,19 @@ Update `state.json`: `{ "last_scalar": <new_scalar>, "status": "iter_done" }`
 **Observability**:
 - Overwrite `status.md`: `iter N/M · Stage 5.3 · Rerun done · scalar={new} (was {old}, Δ={delta})`
 - Append `user-log.md`: narrative of this iter's outcome
-- Stdout: `[loop {runId}] iter-N Stage 5.3 → rerun done, scalar={new}`
+- Stdout: `[autoiter {runId}] iter-N Stage 5.3 → rerun done, scalar={new}`
 
 ---
 
 ## Stage 6 — Rollback & Stop Check
 
+⚠️ "是否 rollback"决策 inline；执行 rollback 命令属"执行"型 + 涉及 ❌ 第 5 条（inline git reset），必须按裁定基准 dispatch。
+
 ### Rollback decision
 
-**MUST consult `skills/loop/references/stop-criterion.md` for the authoritative rollback matrix before executing any revert.** The inline table below is a quick-reference summary only; the reference document governs all edge cases.
+**MUST consult `skills/autoiter/references/stop-criterion.md` for the authoritative rollback matrix before executing any revert.** The inline table below is a quick-reference summary only; the reference document governs all edge cases.
 
-Full matrix in `skills/loop/references/stop-criterion.md`. Summary:
+Full matrix in `skills/autoiter/references/stop-criterion.md`. Summary:
 
 | `primary_goal` | `scalar_delta` | action |
 |---|---|---|
@@ -554,7 +643,7 @@ Append `rollback_log` section to `iter-N/summary.md` for each reverted FIX.
 
 ### Stop check (SC1-SC5, hybrid OR)
 
-Full spec in `skills/loop/references/stop-criterion.md`.
+Full spec in `skills/autoiter/references/stop-criterion.md`.
 
 | ID | Condition | Terminal status |
 |----|-----------|----------------|
@@ -568,15 +657,15 @@ Full spec in `skills/loop/references/stop-criterion.md`.
 1. Write final `iter-N/summary.md` decision field
 2. Overwrite `status.md`: `DONE · {reason} · scalar={final} (baseline={base}, Δ={total})`
 3. Append final entry to `user-log.md`
-4. If `$COLLIE_LOOP_NOTIFY_CMD` set: `bash -c "$COLLIE_LOOP_NOTIFY_CMD"` with `COLLIE_LOOP_EVENT=loop_done` (or `escalated`/`budget_exhausted`)
+4. If `$COLLIE_AUTOITER_NOTIFY_CMD` set: `bash -c "$COLLIE_AUTOITER_NOTIFY_CMD"` with `COLLIE_AUTOITER_EVENT=autoiter_done` (or `escalated`/`budget_exhausted`)
 5. Write `state.json.status = <terminal status>`
 6. **RETURN** — do NOT emit sentinel inline. Preserve worktree. §3.5 terminal branch handles `rm current-run` + sentinel on next ralph-loop restart.
-7. Stdout: `[loop {runId}] Stage 6 → STOP ({reason})`
+7. Stdout: `[autoiter {runId}] Stage 6 → STOP ({reason})`
 
 **If continue**:
 1. Increment iter: `state.json.iter = N+1, status = "running"`
 2. Proceed to Stage 1
-3. Stdout: `[loop {runId}] Stage 6 → continue to iter-{N+1}`
+3. Stdout: `[autoiter {runId}] Stage 6 → continue to iter-{N+1}`
 
 ---
 
@@ -586,33 +675,33 @@ At every stage transition and iter boundary, update ALL of:
 
 1. **`status.md`** (overwrite): `iter N/M · Stage X · <description> · scalar=<val>`
 2. **`user-log.md`** (append): human-readable narrative
-3. **stdout tick**: `[loop {runId}] iter-N Stage X → ...`
-4. **External notify** (terminal events only): if `$COLLIE_LOOP_NOTIFY_CMD` set:
+3. **stdout tick**: `[autoiter {runId}] iter-N Stage X → ...`
+4. **External notify** (terminal events only): if `$COLLIE_AUTOITER_NOTIFY_CMD` set:
    ```bash
-   COLLIE_LOOP_EVENT=<event> \
-   COLLIE_LOOP_RUN_ID=<runId> \
-   COLLIE_LOOP_STATUS_FILE=<path/to/status.md> \
-   bash -c "$COLLIE_LOOP_NOTIFY_CMD"
+   COLLIE_AUTOITER_EVENT=<event> \
+   COLLIE_AUTOITER_RUN_ID=<runId> \
+   COLLIE_AUTOITER_STATUS_FILE=<path/to/status.md> \
+   bash -c "$COLLIE_AUTOITER_NOTIFY_CMD"
    ```
-   Terminal events: `loop_done`, `escalated`, `budget_exhausted`, `blocker_unrecoverable`, `prepare_failed`, `deadlock`
+   Terminal events: `autoiter_done`, `escalated`, `budget_exhausted`, `blocker_unrecoverable`, `prepare_failed`, `deadlock`
 
 ---
 
 ## Key Invariants
 
-1. **Sentinel uniqueness**: `<promise>Collie: LOOP DONE</promise>` emitted ONLY by §3.5 terminal branch. Never from Stage 3/5/6 inline.
+1. **Sentinel uniqueness**: `<promise>Collie: AUTOITER DONE</promise>` emitted ONLY by §3.5 terminal branch. Never from Stage 3/5/6 inline.
 2. **run-spec.md is write-once**: Written by `cp` in Branch B recovery; never modified after creation.
 3. **current-run cleared before sentinel**: `rm current-run` THEN emit sentinel (crash-safe ordering).
 4. **Worktree preserved**: On sentinel, worktree is NOT merged or removed. User reviews and decides.
 5. **G1 invariant**: No test file modified unless FIX is `kind=correctness` with explicit `reproduction_test` new-file addition. See `overfit-guards.md §G1`.
-6. **loop-prepare idempotency**: If `prepare-report.md` already exists, skip prepare entirely.
-7. **Nested calls rejected**: `COLLIE_LOOP_ACTIVE` check prevents `/loop` inside `/auto` or another `/loop`.
+6. **autoiter-prepare idempotency**: If `prepare-report.md` already exists, skip prepare entirely.
+7. **Nested calls rejected**: `COLLIE_AUTOITER_ACTIVE` check prevents `/autoiter` inside `/auto` or another `/autoiter`.
 
 ## Reference Files
 
-- `skills/loop/references/overfit-guards.md` — G1-G8 rules (enforced at Stage 3 / Stage 5.0 / Stage 5.2)
-- `skills/loop/references/stop-criterion.md` — SC1-SC5 + full rollback matrix
-- `skills/loop/references/fix-plan-template.md` — Stage 5.0 template
-- `skills/loop/references/discovery-prompt.md` — Stage 0.2 Discovery subagent system prompt
-- `skills/loop/references/iter-prompt.md` — per-iter observation guidance
-- `skills/loop/lib/jaccard.js` — G7 token-set Jaccard similarity (zero external deps)
+- `skills/autoiter/references/overfit-guards.md` — G1-G8 rules (enforced at Stage 3 / Stage 5.0 / Stage 5.2)
+- `skills/autoiter/references/stop-criterion.md` — SC1-SC5 + full rollback matrix
+- `skills/autoiter/references/fix-plan-template.md` — Stage 5.0 template
+- `skills/autoiter/references/discovery-prompt.md` — Stage 0.2 Discovery subagent system prompt
+- `skills/autoiter/references/iter-prompt.md` — per-iter observation guidance
+- `skills/autoiter/lib/jaccard.js` — G7 token-set Jaccard similarity (zero external deps)

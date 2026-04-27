@@ -25,7 +25,7 @@ scheduled_at: "2026-04-14T03:00:00+08:00"
 status: pending
 worktree: .worktrees/task-001
 project_dir: /path/to/project-a
-command: /collie-harness:auto   # optional; default: /collie-harness:auto; valid: /collie-harness:auto | /collie-harness:loop
+command: /collie-harness:auto   # optional; default: /collie-harness:auto; valid: /collie-harness:auto | /collie-harness:autoiter
 ---
 
 # Optional: additional context
@@ -43,11 +43,11 @@ project_dir: /Users/me/myapp
 status: pending
 ---
 
-# loop task:
+# autoiter task:
 ---
 id: task-002
 prompt: "get all unit tests passing"
-command: /collie-harness:loop
+command: /collie-harness:autoiter
 project_dir: /Users/me/myapp
 status: pending
 ---
@@ -126,8 +126,8 @@ Actual prompt content injected into `<<autonomous-loop>>`:
 > Execution steps:
 > 1. cd to {task.project_dir}
 > 2. Dispatch based on task.command (default: /collie-harness:auto):
->    - If task.command == "/collie-harness:loop":
->        Run /collie-harness:loop "{task.prompt}" --mode queued
+>    - If task.command == "/collie-harness:autoiter":
+>        Run /collie-harness:autoiter "{task.prompt}" --mode queued
 >    - Otherwise (default):
 >        Run /collie-harness:auto "{task.prompt}" --max-iterations {task.max_iterations}
 > 3. After completion, update task file status to "done"
@@ -141,7 +141,7 @@ Actual prompt content injected into `<<autonomous-loop>>`:
 - **Allowlist**: Only execute `project_dir` listed in `~/.collie-harness/queue/allowlist.txt`
   - If allowlist.txt does not exist: prompt user to create allowlist before execution
   - allowlist.txt format: one absolute path per line
-  - Note: allowlist controls which **project directories** are permitted to run; it is NOT a command allowlist — both `/collie-harness:auto` and `/collie-harness:loop` are always permitted for any allowlisted project_dir
+  - Note: allowlist controls which **project directories** are permitted to run; it is NOT a command allowlist — both `/collie-harness:auto` and `/collie-harness:autoiter` are always permitted for any allowlisted project_dir
 - **Budget Protection**: daily tokens > 70% → stop (reserves buffer for daily interaction)
 - **Lock Timeout**: zombie locks (>2h) auto-cleared
 

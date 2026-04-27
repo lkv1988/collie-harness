@@ -1,5 +1,5 @@
 <!-- plan-source: <fix-plan.md absolute path> -->
-<!-- plan-topic: loop-iter-N-fixes -->
+<!-- plan-topic: autoiter-iter-N-fixes -->
 <!-- plan-executor: collie-harness:gated-workflow -->
 
 > **For agentic workers:** MUST invoke Skill('collie-harness:gated-workflow') to implement this plan.
