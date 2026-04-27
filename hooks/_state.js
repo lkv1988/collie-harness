@@ -16,11 +16,11 @@ function projectId(cwd) {
 }
 
 function loopDir(projId, runId) {
-  return path.join(STATE_HOME, 'loop', projId, runId, '');
+  return path.join(STATE_HOME, 'autoiter', projId, runId, '');
 }
 
 function currentRunFile(projId) {
-  return path.join(STATE_HOME, 'loop', projId, 'current-run');
+  return path.join(STATE_HOME, 'autoiter', projId, 'current-run');
 }
 
 function iterDir(projId, runId, n) {
