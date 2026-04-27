@@ -657,7 +657,7 @@ Full spec in `skills/autoiter/references/stop-criterion.md`.
 1. Write final `iter-N/summary.md` decision field
 2. Overwrite `status.md`: `DONE · {reason} · scalar={final} (baseline={base}, Δ={total})`
 3. Append final entry to `user-log.md`
-4. If `$COLLIE_AUTOITER_NOTIFY_CMD` set: `bash -c "$COLLIE_AUTOITER_NOTIFY_CMD"` with `COLLIE_AUTOITER_EVENT=loop_done` (or `escalated`/`budget_exhausted`)
+4. If `$COLLIE_AUTOITER_NOTIFY_CMD` set: `bash -c "$COLLIE_AUTOITER_NOTIFY_CMD"` with `COLLIE_AUTOITER_EVENT=autoiter_done` (or `escalated`/`budget_exhausted`)
 5. Write `state.json.status = <terminal status>`
 6. **RETURN** — do NOT emit sentinel inline. Preserve worktree. §3.5 terminal branch handles `rm current-run` + sentinel on next ralph-loop restart.
 7. Stdout: `[loop {runId}] Stage 6 → STOP ({reason})`
@@ -683,7 +683,7 @@ At every stage transition and iter boundary, update ALL of:
    COLLIE_AUTOITER_STATUS_FILE=<path/to/status.md> \
    bash -c "$COLLIE_AUTOITER_NOTIFY_CMD"
    ```
-   Terminal events: `loop_done`, `escalated`, `budget_exhausted`, `blocker_unrecoverable`, `prepare_failed`, `deadlock`
+   Terminal events: `autoiter_done`, `escalated`, `budget_exhausted`, `blocker_unrecoverable`, `prepare_failed`, `deadlock`
 
 ---
 

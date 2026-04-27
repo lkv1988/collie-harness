@@ -74,7 +74,7 @@ Regardless of stop reason:
 2. Overwrite `status.md` with one-line terminal state, e.g.:
    `DONE · converged after 3 iters · scalar=5 (baseline=2, +3)`
 3. Append final entry to `user-log.md`.
-4. If `COLLIE_AUTOITER_NOTIFY_CMD` is set, call it with `COLLIE_AUTOITER_EVENT=loop_done`
+4. If `COLLIE_AUTOITER_NOTIFY_CMD` is set, call it with `COLLIE_AUTOITER_EVENT=autoiter_done`
    (or `escalated` / `budget_exhausted` as appropriate).
 5. Write terminal `state.json.status`.
 6. **Return** — do NOT inline-emit sentinel. §3.5 terminal branch handles

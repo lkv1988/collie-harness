@@ -57,7 +57,7 @@ Plugin 内置 stub，只写日志到 `~/.collie-harness/escalations.log`。
 export COLLIE_AUTOITER_NOTIFY_CMD="osascript -e 'display notification ...'"
 # 或 Slack webhook、email 等
 # Payload 通过以下环境变量传入：
-#   COLLIE_AUTOITER_EVENT        # 事件类型（loop-done / loop-escalate / etc.）
+#   COLLIE_AUTOITER_EVENT        # 事件类型（autoiter_done / blocker_unrecoverable / deadlock / escalated / budget_exhausted）
 #   COLLIE_AUTOITER_RUN_ID       # 当前 runId
 #   COLLIE_AUTOITER_STATUS_FILE  # status.md 文件路径
 # 未设则仅 stdout 输出，无外推
