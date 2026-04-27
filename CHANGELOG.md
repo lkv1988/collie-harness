@@ -4,6 +4,18 @@ All notable changes to collie-harness are documented here.
 
 ---
 
+## 0.2.4 — 2026-04-27
+
+### Fixed
+- **0.2.3 加载失败**：`.claude-plugin/plugin.json` 的 `dependencies` 用裸名 `"ralph-loop"` / `"superpowers"`，会被 Claude Code 解析为 `<name>@<own-marketplace>` = `ralph-loop@collie-marketplace`，但本 marketplace 只发布了 `collie-harness` 一个插件，安装后 `✘ failed to load`。改为带 marketplace 限定符的对象数组（`{name, marketplace: "claude-plugins-official"}`），并在 `marketplace.json` 显式声明 `allowCrossMarketplaceDependenciesOn: ["claude-plugins-official"]`（跨 marketplace 依赖默认禁止，必须放行）。
+
+### Changed
+- **`/collie-harness:auto` 显式 EnterPlanMode**：原先隐式假设用户已在 plan mode 才能正确运行（writing-plans 需要 planmode plan file 路径，dual reviewer 与 ExitPlanMode hook 都在 planmode 内）。现在新增 `Step ⓪ EnterPlanMode` 作为 Mandatory Sequence 第一步，配 `<HARD-GATE>` 禁止在进入 plan mode 之前执行 TaskCreate / Research / brainstorming 等任何后续动作。已在 plan mode 时跳过即可。原 ⓪~⑥ 顺延为 ①~⑦，DOT 流程图同步更新。
+
+Refs: 0.2.3 release plugin-load failure; user request to make plan-mode entry explicit.
+
+---
+
 ## 0.2.3 — 2026-04-26
 
 ### Added
