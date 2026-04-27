@@ -1,11 +1,11 @@
 ---
 name: collie-harness:autoiter-prepare
-description: "Pre-flight environment check SKILL for the collie-harness loop command. Called by the main loop SKILL (collie-harness:loop) in the §3.5 post-ExitPlanMode recovery path, after worktree creation, before Stage 1 iteration begins. Runs 5 checks: (1) trigger dry-run, (2) scalar extraction validation, (3) observability validation (Monitor/Read-tail + kill signal), (4) persistent directory writability. Outputs prepare-report.md with PASS/FAIL evidence. Returns failure signal to caller on any FAIL — does NOT fix issues. Supports skip_prepare bypass and is idempotent (skips all checks if prepare-report.md already exists). Do NOT invoke directly from user prompts; this is an internal skill invoked exclusively by collie-harness:loop."
+description: "Pre-flight environment check SKILL for the collie-harness loop command. Called by the main autoiter SKILL (collie-harness:autoiter) in the §3.5 post-ExitPlanMode recovery path, after worktree creation, before Stage 1 iteration begins. Runs 5 checks: (1) trigger dry-run, (2) scalar extraction validation, (3) observability validation (Monitor/Read-tail + kill signal), (4) persistent directory writability. Outputs prepare-report.md with PASS/FAIL evidence. Returns failure signal to caller on any FAIL — does NOT fix issues. Supports skip_prepare bypass and is idempotent (skips all checks if prepare-report.md already exists). Do NOT invoke directly from user prompts; this is an internal skill invoked exclusively by collie-harness:autoiter."
 ---
 
 # loop-prepare — Pre-flight Environment Check
 
-Called exclusively by `collie-harness:loop` at Stage 0.5. Never invoked directly by the user.
+Called exclusively by `collie-harness:autoiter` at Stage 0.5. Never invoked directly by the user.
 
 **Hard scope limits** (do not exceed):
 - Does NOT fix trigger issues (those are user material problems)
@@ -47,7 +47,7 @@ Before running any check: if `report_path` already exists (session restart safet
 Collect all results. Write `prepare-report.md` after all checks complete (one atomic write at the end, not incremental).
 
 For detailed commands, timeouts, and pass/fail criteria for each check, read:
-`skills/loop-prepare/references/prepare-checks.md`
+`skills/autoiter-prepare/references/prepare-checks.md`
 
 ### Check 1 — Trigger Dry-Run
 
@@ -124,6 +124,6 @@ After writing `prepare-report.md`, return to the calling SKILL:
 - All checks passed: `{ status: "pass" }`
 - Any check failed: `{ status: "fail", failed_checks: ["check1", "check3b"], report_path: "<path>" }`
 
-**Do not attempt to fix failures.** The caller (main loop SKILL) decides:
+**Do not attempt to fix failures.** The caller (main autoiter SKILL) decides:
 - Interactive mode: `AskUserQuestion("Prepare failed on [X]. Fix your material and retry, or abort?")`
 - Queued mode: `scripts/escalate.sh` + `state.json.status = "escalated"` → return

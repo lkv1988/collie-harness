@@ -1,6 +1,6 @@
 # Overfit Guards (G1–G8)
 
-> Reference for `collie-harness:loop`. These 8 guards are enforced jointly by
+> Reference for `collie-harness:autoiter`. These 8 guards are enforced jointly by
 > `collie-harness:plan-doc-reviewer` (structural) and `collie-harness:review`
 > (Collie rubric) at every fix-plan review point, and by the loop SKILL's inline
 > diff-audit (G6) after `gated-workflow` returns.
@@ -133,7 +133,7 @@ a task goal.
 **Rule**: At the start of Stage 5.0, before filling `fix-plan.md`, the SKILL
 computes the **token-set Jaccard similarity** between the current iteration's
 Task description set and the previous iteration's Task description set using
-`skills/loop/lib/jaccard.js`.
+`skills/autoiter/lib/jaccard.js`.
 
 **Scoring bucket** (integer 1–5, consistent with §12 scoring spec):
 | Jaccard ratio | Bucket |

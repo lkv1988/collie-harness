@@ -1,13 +1,15 @@
+> **Each iteration MUST start with TaskCreate of 6 stage anchors** (see SKILL.md `## Stage 1 — Kickoff` Step 0). After every long dispatch (subagent return), self-anchor by reading the current `[iter-N stage-X]` task before continuing — see SKILL.md Step 0.4 self-anchoring 协议.
+
 # Iteration Subagent Prompts — Stages 1–6
 
 > Prompt templates and instructions for all subagents invoked during loop
-> iterations. Referenced by `collie-harness:loop` SKILL.md.
+> iterations. Referenced by `collie-harness:autoiter` SKILL.md.
 
 ---
 
 ## Stage 3 — Observation Agent Instructions
 
-The main loop agent (not a subagent) performs Stage 3 observation inline.
+The main autoiter agent performs Stage 3 observation inline (orchestrator contract: 仅启动 + 状态记录；超过 50 行 raw.log 解析需 dispatch).
 Use the following instructions when monitoring the trigger subprocess.
 
 ### Observation recording schema
@@ -218,8 +220,8 @@ uncertainty_tag: triage_unclear | none
 
 ## Stage 5.0 — Fix Plan Assembly (main agent inline)
 
-Stage 5.0 is performed by the main loop agent, not a subagent. Use
-`references/fix-plan-template.md` as the fill target. Instructions:
+Stage 5.0 is performed by the main autoiter agent inline, but strictly limited to summarizing 4b deep-verify subagent outputs into fix-plan.md. ⛔ Reading source code, grep, or running anything beyond verify is forbidden in this stage.
+Use `references/fix-plan-template.md` as the fill target. Instructions:
 
 1. Load all `iter-N/fixes/FIX-*.md` files.
 2. Apply G8 gate: exclude any FIX where `fix_confidence ≤ 2` (write excluded

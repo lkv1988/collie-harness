@@ -9,7 +9,7 @@ Run an iterative test → observe → fix → re-run loop in Collie-style.
 
 ## Completion Promise
 
-This command uses ralph-loop. Completion signal: `<promise>Collie: LOOP DONE</promise>`
+This command uses ralph-loop. Completion signal: `<promise>Collie: AUTOITER DONE</promise>`
 
 **The completion signal can only be output when the skill's state machine reaches a terminal state
 (max iterations exhausted, goal achieved, or budget exceeded).**
@@ -42,9 +42,9 @@ When starting, inject this as the working prompt (substitute $ARGUMENTS with the
 
 > Your task: $ARGUMENTS
 >
-> Invoke Skill('collie-harness:loop') and pass all parsed arguments.
+> Invoke Skill('collie-harness:autoiter') and pass all parsed arguments.
 > The SKILL's §3.5 state machine will automatically call _state.projectId() to determine the current
-> project ID, then check ~/.collie-harness/loop/{project-id}/current-run to decide between
+> project ID, then check ~/.collie-harness/autoiter/{project-id}/current-run to decide between
 > fresh-start and resume. No additional logic is needed in this command file.
 >
-> When the skill returns a terminal status, output: `<promise>Collie: LOOP DONE</promise>`
+> When the skill returns a terminal status, output: `<promise>Collie: AUTOITER DONE</promise>`

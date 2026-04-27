@@ -1,6 +1,6 @@
 # Stop Criterion & Rollback Decision Matrix
 
-> Reference for `collie-harness:loop` Stage 6. Defines when to stop iterating
+> Reference for `collie-harness:autoiter` Stage 6. Defines when to stop iterating
 > and what to do with accumulated changes when scalar degrades.
 
 ---
@@ -74,11 +74,11 @@ Regardless of stop reason:
 2. Overwrite `status.md` with one-line terminal state, e.g.:
    `DONE · converged after 3 iters · scalar=5 (baseline=2, +3)`
 3. Append final entry to `user-log.md`.
-4. If `COLLIE_LOOP_NOTIFY_CMD` is set, call it with `COLLIE_LOOP_EVENT=loop_done`
+4. If `COLLIE_AUTOITER_NOTIFY_CMD` is set, call it with `COLLIE_AUTOITER_EVENT=loop_done`
    (or `escalated` / `budget_exhausted` as appropriate).
 5. Write terminal `state.json.status`.
 6. **Return** — do NOT inline-emit sentinel. §3.5 terminal branch handles
-   `rm current-run` + `<promise>Collie: LOOP DONE</promise>` after
+   `rm current-run` + `<promise>Collie: AUTOITER DONE</promise>` after
    ralph-loop restarts the session.
 7. **Preserve worktree** — do not auto-merge or auto-remove. User reviews
    `summary.md` and decides whether to merge.

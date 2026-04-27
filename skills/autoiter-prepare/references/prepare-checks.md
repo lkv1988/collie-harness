@@ -1,6 +1,6 @@
 # prepare-checks.md — Detailed Check Specifications
 
-Reference for `collie-harness:loop-prepare`. Each section defines exact commands, timeouts, and pass/fail criteria for the 5 checks (Check 3 has 3 sub-checks).
+Reference for `collie-harness:autoiter-prepare`. Each section defines exact commands, timeouts, and pass/fail criteria for the 5 checks (Check 3 has 3 sub-checks).
 
 ---
 
