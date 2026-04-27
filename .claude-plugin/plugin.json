@@ -26,7 +26,7 @@
     "./skills/"
   ],
   "dependencies": [
-    "ralph-loop",
-    "superpowers"
+    { "name": "ralph-loop", "marketplace": "claude-plugins-official" },
+    { "name": "superpowers", "marketplace": "claude-plugins-official" }
   ]
 }

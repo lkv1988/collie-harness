@@ -7,6 +7,7 @@
     "version": "0.2.3",
     "description": "Collie-style autonomous development agent harness for Claude Code"
   },
+  "allowCrossMarketplaceDependenciesOn": ["claude-plugins-official"],
   "plugins": [
     {
       "name": "collie-harness",
