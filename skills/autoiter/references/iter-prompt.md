@@ -236,7 +236,7 @@ Use `references/fix-plan-template.md` as the fill target. Instructions:
 
 ## Stage 6 — Summary Agent Instructions (main agent inline)
 
-After `gated-workflow` returns and Stage 5.2 rerun completes:
+After `flow` returns and Stage 5.2 rerun completes:
 
 Write `iter-N/summary.md` with:
 

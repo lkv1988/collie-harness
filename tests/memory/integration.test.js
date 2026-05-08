@@ -1,7 +1,7 @@
 /**
  * integration.test.js — Full session lifecycle integration test
  *
- * Simulates the complete memory-palace session lifecycle end-to-end:
+ * Simulates the complete memory session lifecycle end-to-end:
  * SessionStart → capture messages → write memory → bump access → search → consolidate
  *
  * Uses a temp directory as HOME to isolate from real ~/.collie/memory/

@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-07  
 **Model:** claude-haiku-4-5 (dispatched as subagent per test case)  
-**Decision tree source:** `SKILL.md` (memory-palace skill)  
+**Decision tree source:** `SKILL.md` (memory skill)  
 **Preset:** 当前记忆库为空，不考虑任何 CLAUDE.md 或配置文件  
 **Result: 9/9 PASS**
 

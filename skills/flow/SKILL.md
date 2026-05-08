@@ -1,9 +1,9 @@
 ---
-name: gated-workflow
+name: flow
 description: Post-planmode implementation workflow with quality gates. Use immediately after exiting planmode to execute an approved plan.
 ---
 
-# Gated Workflow（严谨计划执行流）
+# Flow（严谨计划执行流）
 
 退出 planmode 后立即执行本 skill。本 skill 包含从 worktree 隔离到合并分支的完整流程。
 
@@ -120,7 +120,7 @@ TodoList snapshot: <当前所有 TaskCreate 条目的 subject 列表>
 ```
 <!-- plan-source: /absolute/path/to/plan/file.md -->
 <!-- plan-topic: my-feature-slug -->
-<!-- plan-executor: collie:gated-workflow -->
+<!-- plan-executor: collie:flow -->
 ```
 
 **归档流程**：
@@ -294,7 +294,7 @@ Skill("collie:review")
 4. 修复 → 重审循环直到 PASS
 5. 连续 3 轮仍 BLOCK → 升级（通过 `scripts/escalate.sh` 上报，等用户介入）
 
-⛔ **禁止退出 gated-workflow 返回 auto.md 层修复**——TodoList 状态会丢失，CR 历史链断裂。
+⛔ **禁止退出 flow 返回 auto.md 层修复**——TodoList 状态会丢失，CR 历史链断裂。
 
 ### 与 `[task N-CR]` 的区别
 

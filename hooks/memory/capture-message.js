@@ -5,7 +5,7 @@
  * Reads user message from stdin (Claude Code UserPromptSubmit hook JSON),
  * appends it to a session log, increments a counter, and when the counter
  * reaches 20 outputs a JSON additionalContext asking the agent to invoke
- * the memory-palace skill.
+ * the memory skill.
  *
  * Input  (stdin): { "prompt": "<user message>", "cwd": "...", ... }
  * Output (stdout): "" (count < 20) or JSON additionalContext (count ≥ 20)
@@ -155,12 +155,12 @@ const { newCount } = incrementCounter();
 
 if (newCount >= THRESHOLD) {
   resetCounter();
-  // Output additionalContext to ask the agent to run the memory-palace skill
+  // Output additionalContext to ask the agent to run the memory skill
   const output = {
     additionalContext: [
-      `[memory-palace] You have exchanged ${newCount} messages this session.`,
+      `[memory] You have exchanged ${newCount} messages this session.`,
       `Session log: ${sessionPath}`,
-      'Please invoke the memory-palace skill now and evaluate recent messages against the decision tree.',
+      'Please invoke the memory skill now and evaluate recent messages against the decision tree.',
     ].join(' '),
   };
   process.stdout.write(JSON.stringify(output) + '\n');

@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# pre-compact.sh — PreCompact hook wrapper for memory-palace
+# pre-compact.sh — PreCompact hook wrapper for memory
 #
 # Outputs a JSON payload that injects context into the agent before
 # Claude Code compacts the conversation context window.
 #
 # The agent is instructed to:
-#   1. invoke the memory-palace skill
+#   1. invoke the memory skill
 #   2. read the current session log
 #   3. run the decision tree and write any memories worth keeping
 #
@@ -35,7 +35,7 @@ else
   LOG_LINE="Session log: not yet created for this session"
 fi
 
-INVOKE_PROMPT="MEMORY-PALACE PRE-COMPACT: Before the context window is compacted, invoke the memory-palace skill now. Read the session log at: ${SESSION_LOG:-~/.collie/memory/sessions/<current-session>.jsonl}. Run the decision tree on all messages. Write any memories that pass the filter. Do NOT delete the session log — the session will continue after compaction."
+INVOKE_PROMPT="MEMORY PRE-COMPACT: Before the context window is compacted, invoke the memory skill now. Read the session log at: ${SESSION_LOG:-~/.collie/memory/sessions/<current-session>.jsonl}. Run the decision tree on all messages. Write any memories that pass the filter. Do NOT delete the session log — the session will continue after compaction."
 
 # Escape for JSON embedding
 escape_for_json() {

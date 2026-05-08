@@ -355,7 +355,7 @@ describe('hook: autoiter-stage0 bypass in post-writing-plans-reviewer', () => {
     const content = [
       `<!-- plan-source: ${planPath} -->`,
       `<!-- plan-topic: normal-topic -->`,
-      `<!-- plan-executor: collie:gated-workflow -->`,
+      `<!-- plan-executor: collie:flow -->`,
       ``,
       `# Normal Plan`,
     ].join('\n');

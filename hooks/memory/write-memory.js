@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * write-memory.js — write a memory file into the memory palace
+ * write-memory.js — write a memory file into the memory store
  *
  * Usage:
  *   node write-memory.js --type <type> --scope <user|project> \

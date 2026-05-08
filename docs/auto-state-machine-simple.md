@@ -13,7 +13,7 @@ digraph collie_auto {
     BRAIN  [shape=box, label="② brainstorming\n(→ writing-plans)"];
     REVIEW [shape=box, label="③ plan-doc-reviewer\n+ collie:review Mode=plan\n(parallel)"];
     EXIT   [shape=box, label="④ ExitPlanMode\nmark 4 tasks done"];
-    IMPL   [shape=box, label="⑤ gated-workflow"];
+    IMPL   [shape=box, label="⑤ flow"];
     CR     [shape=box, label="⑥ collie:review Mode=code"];
 
     // ── Session-wide stop hook (side channel) ────────────────────

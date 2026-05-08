@@ -1,9 +1,9 @@
 ---
-name: memory-palace
+name: memory
 description: "Boids-inspired memory management for AI agents. Evaluates conversation content against a fixed decision tree to decide what to remember, where to store it, and when to consolidate. Activate on Stop hook and PreCompact hook for automatic memory capture. Also activate when the agent detects information during conversation that might change future behavior — user corrections, preferences, role info, project constraints, or external system references. Do NOT activate for knowledge questions, in-session operations, or debug conclusions."
 ---
 
-# Memory Palace
+# Memory
 
 7 local rules, emergent global memory. Inspired by Boids, grounded in cognitive science.
 
@@ -106,7 +106,7 @@ Fires on every user message. The script (`capture-message.js`) does two things:
 - Append user message to `~/.collie/memory/sessions/<session-id>.jsonl`
 - Increment a counter
 
-When counter reaches 20, output a one-line prompt that tells the agent to invoke the memory-palace skill and evaluate recent messages against the decision tree. Reset counter to 0.
+When counter reaches 20, output a one-line prompt that tells the agent to invoke the memory skill and evaluate recent messages against the decision tree. Reset counter to 0.
 
 No regex, no analysis, no LLM. Pure file append + counter check.
 
@@ -121,7 +121,7 @@ This ensures memories that are actively referenced stay promoted and don't get p
 
 **4. PreCompact — mid-session consume (no delete)**
 
-Fires before context compression. Output the session log path and `invoke memory-palace skill`. The agent:
+Fires before context compression. Output the session log path and `invoke memory skill`. The agent:
 - Loads this SKILL.md
 - Reads the session log
 - Runs the decision tree

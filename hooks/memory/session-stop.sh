@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# session-stop.sh — Stop hook for memory-palace
+# session-stop.sh — Stop hook for memory
 #
 # Stop hooks cannot inject prompts into Claude (no hookSpecificOutput support).
 # This script only runs consolidate.js synchronously as the primary consolidation

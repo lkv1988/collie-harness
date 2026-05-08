@@ -36,7 +36,7 @@ function runHook(payload) {
   });
 }
 
-test('post-exitplan-gated-hint: both reviewers approved → stdout contains gated-workflow mention, phase.json written', () => {
+test('post-exitplan-gated-hint: both reviewers approved → stdout contains flow mention, phase.json written', () => {
   // Pre-create last-plan.json with both approved
   const sessionStateDir = path.join(tmpHome, '.collie', 'state', SESSION_ID);
   fs.mkdirSync(sessionStateDir, { recursive: true });
@@ -57,7 +57,7 @@ test('post-exitplan-gated-hint: both reviewers approved → stdout contains gate
   assert.ok(result.stdout.trim().length > 0, 'stdout should not be empty when both approved');
   const out = JSON.parse(result.stdout.trim());
   assert.ok(out.additionalContext, 'additionalContext should be present');
-  assert.ok(out.additionalContext.includes('gated-workflow'), 'additionalContext should mention gated-workflow');
+  assert.ok(out.additionalContext.includes('flow'), 'additionalContext should mention flow');
 
   assert.ok(fs.existsSync(phaseFile()), 'phase.json should be written');
   const phase = JSON.parse(fs.readFileSync(phaseFile(), 'utf8'));

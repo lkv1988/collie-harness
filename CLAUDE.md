@@ -34,7 +34,7 @@ No build step — pure Node.js, zero external dependencies.
 | **0** | `acceptEdits` mode + escalation channel (`scripts/escalate.sh`) |
 | **1** | Chain-link hooks enforcing dual-reviewer handshake (collie:plan-doc-reviewer + collie:review) before ExitPlanMode |
 | **2** | `skills/review/` — single source of truth for Collie's 13 red-lines + 6 questions + Reflexion + ELEPHANT. Called directly at both plan stage (parallel with `plan-doc-reviewer`) and code stage (flow [collie-final-review] Step 5.7). |
-| **3** | Self-driven harness (`commands/auto.md` + `skills/queue/`) with CronCreate task queue |
+| **3** | Self-driven harness (`commands/auto.md` + `commands/autoiter.md`) |
 
 ## Workflow Sequence (enforced by hooks)
 
@@ -95,9 +95,7 @@ All runtime state lives under `~/.collie/`:
   state/{sessionId}/
     last-plan.json             # Plan review status per session
     counter.json               # Step count + error hash tracking
-  state/scheduled_tasks.lock   # Concurrency lock for collie:queue
   escalations.log              # All escalation events
-  queue/*.md                   # Unattended tasks for collie:queue skill
   autoiter/{project-id}/current-run     # runId 指针（project-scoped，EnterPlanMode 前写入）
   autoiter/{project-id}/{runId}/
     run-spec.md / prepare-report.md / state.json
@@ -110,7 +108,6 @@ All runtime state lives under `~/.collie/`:
 - **Rubric red-lines** (BLOCK): 13 hard violations in `skills/review/references/rubric-red-lines.md` (single source of truth). Any single red-line = automatic BLOCK.
 - **Dual reviewer at plan stage**: `collie:plan-doc-reviewer` (structural) AND `collie:review` (Collie rubric) must both approve before ExitPlanMode. Enforced by `post-writing-plans-reviewer.js` + `post-approved-exitplan-hint.js`.
 - **Loop trap**: 3 identical error hashes in a row → WARN escalation; 5 steps without file changes → WARN escalation.
-- **Task queue** (`collie:queue`) runs at `concurrency=1` — never two collie sessions simultaneously.
 - **ELEPHANT check** in rubric reviewer: 8-point sycophancy self-check; must answer all 8 before issuing PASS.
 - **Doc maintenance enforcement**：任何 plan 若改动用户可见行为 / 架构约束 / 已有文档内容，必须包含显式的文档更新任务（README / CLAUDE.md / docs/*-spec.md / `.claude/skills/*/SKILL.md`（若改动涉及项目级 SOP/操作清单））。由 `collie:plan-doc-reviewer` 的 Doc Maintenance 检查 + `collie:review` 的 Red line #12（文档同步检查）强制。`flow` Step 5.5 作为安全网。
 - **E2E enforcement**：brainstorming 阶段必须完成 E2E Assessment（探测基建 + 可行性结论）；flow TodoList 根据 Assessment 结论创建条件性 `[e2e-setup]` / `[e2e-verify]` 任务；Step 1 建 list 后 haiku subagent 交叉核对 plan-todo 对齐；`collie:review` Q5 + `plan-doc-reviewer` E2E Assessment 行共同强制。

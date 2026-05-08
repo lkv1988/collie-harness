@@ -20,7 +20,7 @@ digraph collie_auto {
     "(brainstorming internals:\n9 sub-tasks, self-managed)"          [shape=box, style=dashed];
     "③ PARALLEL:\nAgent(plan-doc-reviewer)\nSkill(collie:review Mode=plan)" [shape=box];
     "④ ExitPlanMode\nTaskUpdate → mark all 4 done"                 [shape=box];
-    // gated-workflow 节点已展开为 cluster，见下方 subgraph
+    // flow 节点已展开为 cluster，见下方 subgraph
     "fix issues"                                                    [shape=box];
 
     // ── Main flow ────────────────────────────────────────────────
@@ -73,9 +73,9 @@ digraph collie_auto {
     "④ ExitPlanMode\nTaskUpdate → mark all 4 done"
         -> GW_START;
 
-    // ── ⑤ gated-workflow (substate machine) ──────────────────────
+    // ── ⑤ flow (substate machine) ──────────────────────
     subgraph cluster_gw {
-        label="⑤ gated-workflow";
+        label="⑤ flow";
         style=dashed;
 
         GW_START [shape=box, label="Step 0: create worktree\n(using-git-worktrees)"];
@@ -130,4 +130,4 @@ digraph collie_auto {
 - **Q1** Hook gate 与 HARD-GATE 是否拆成两个菱形？
 - **Q2** ~~reviewer 失败时 re-dispatch 几个？~~ 已确认：fix + re-dispatch，循环无限制，stop hook 不作为该阶段的退出机制，可接受。
 - **Q3** ExitPlanMode 段是否需要补一句「brainstorming 的 9 条不要 TaskUpdate」？
-- **Q4** gated-workflow 内部是否展开为子状态机？
+- **Q4** flow 内部是否展开为子状态机？

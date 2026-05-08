@@ -64,7 +64,7 @@ test('path hit: bumps access_count and last_accessed', () => {
 // ---------------------------------------------------------------------------
 // Test 2: Path miss — file outside ~/.collie/memory/ is not touched
 // ---------------------------------------------------------------------------
-test('path miss: file outside memory-palace is not modified', () => {
+test('path miss: file outside memory is not modified', () => {
   const { fakeHome } = createFakeHome();
 
   // Create a file outside .collie/memory/
@@ -83,7 +83,7 @@ test('path miss: file outside memory-palace is not modified', () => {
   runScript({ tool_input: { file_path: filePath } }, fakeHome);
 
   const content = readFileSync(filePath, 'utf8');
-  assert.equal(content, original, 'file outside memory-palace should be unchanged');
+  assert.equal(content, original, 'file outside memory should be unchanged');
 });
 
 // ---------------------------------------------------------------------------

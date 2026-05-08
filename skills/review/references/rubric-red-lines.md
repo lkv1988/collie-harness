@@ -42,7 +42,7 @@ Any single red line → **BLOCK**. Do not downgrade to WARN.
 - 能 → 用户级 skill（`~/.claude/skills/`），**本 harness 不涉及**
 - 不能 → 项目级 skill，Red line #12 一并审视
 
-新建或更新项目级 skill 必须走 `Skill('skill-creator')`（详见 `skills/gated-workflow/SKILL.md` Step 5.5）。
+新建或更新项目级 skill 必须走 `Skill('skill-creator')`（详见 `skills/flow/SKILL.md` Step 5.5）。
 
 ### Red line #13 — 补充说明
 

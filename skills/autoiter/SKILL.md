@@ -1,8 +1,8 @@
 ---
 name: collie:autoiter
-description: "Main loop orchestrator for collie. Drives the 'run → observe → triage → deep-verify → fix → rerun' self-iteration pipeline. Called by commands/autoiter.md on every ralph-loop session restart. Implements a persistent state machine (§3.5) across ralph-loop session restarts: fresh-start → Stage 0 (Discovery planmode) → Stage 1 (kickoff) → Stage 2 (run trigger) → Stage 3 (observe + auto-recovery) → Stage 4a (Triage) → Stage 4b (Deep Verify) → Stage 5.0 (fix-plan) → Stage 5.1 (gated-workflow) → Stage 5.2 (G6 diff audit + rerun) → Stage 6 (rollback + stop check). Completion signal: <promise>Collie: AUTOITER DONE</promise> (emitted ONLY by the §3.5 terminal branch after ralph-loop restart, NEVER inline)."
+description: "Main loop orchestrator for collie. Drives the 'run → observe → triage → deep-verify → fix → rerun' self-iteration pipeline. Called by commands/autoiter.md on every ralph-loop session restart. Implements a persistent state machine (§3.5) across ralph-loop session restarts: fresh-start → Stage 0 (Discovery planmode) → Stage 1 (kickoff) → Stage 2 (run trigger) → Stage 3 (observe + auto-recovery) → Stage 4a (Triage) → Stage 4b (Deep Verify) → Stage 5.0 (fix-plan) → Stage 5.1 (flow) → Stage 5.2 (G6 diff audit + rerun) → Stage 6 (rollback + stop check). Completion signal: <promise>Collie: AUTOITER DONE</promise> (emitted ONLY by the §3.5 terminal branch after ralph-loop restart, NEVER inline)."
 dependencies:
-  - collie:gated-workflow
+  - collie:flow
   - collie:review
   - ralph-loop
   - superpowers:subagent-driven-development
@@ -45,7 +45,7 @@ digraph autoiter {
   stage4b [label="Stage 4b Deep Verify\n(opus, adversarial, parallel)"];
   stage50 [label="Stage 5.0 Fix Plan\n(G7 check first)"];
   g7_fail [label="G7 deadlock\nescalated → return", shape=ellipse];
-  stage51 [label="Stage 5.1 gated-workflow"];
+  stage51 [label="Stage 5.1 flow"];
   stage52 [label="Stage 5.2 G6 Diff Audit"];
   g6_fail [label="G6 fail\nescalated → return", shape=ellipse];
   stage53 [label="Stage 5.3 Rerun + scalar"];
@@ -305,7 +305,7 @@ ralph-loop restarts the session. §3.5 Branch B (recovery path) handles everythi
    - `[iter-N stage-2] Run trigger（subprocess background + Monitor/tail）`
    - `[iter-N stage-3] Observe（ISSUE 收集 + auto-recovery 阶梯）`
    - `[iter-N stage-4] Triage + Deep Verify（4a/4b opus）`
-   - `[iter-N stage-5] Fix Plan + gated-workflow + G6 audit + Rerun（5.0/5.1/5.2/5.3）`
+   - `[iter-N stage-5] Fix Plan + flow + G6 audit + Rerun（5.0/5.1/5.2/5.3）`
    - `[iter-N stage-6] Rollback + Stop Check`
 
    `N` 从 state.json 读取
@@ -532,7 +532,7 @@ Write `iter-N/fix-plan.md` using `skills/autoiter/references/fix-plan-template.m
    ```
    <!-- plan-source: <absolute path to iter-N/fix-plan.md> -->
    <!-- plan-topic: autoiter-iter-N-fixes -->
-   <!-- plan-executor: collie:gated-workflow -->
+   <!-- plan-executor: collie:flow -->
    ```
 2. **Task Execution DAG** (from FIX `dependencies` fields; independent FIX = same batch)
 3. **Task Details**: `root_cause → Why`, `fix_outline → How`, `reproduction_test → Verify`
@@ -545,10 +545,10 @@ Write `iter-N/fix-plan.md` using `skills/autoiter/references/fix-plan-template.m
 
 ---
 
-## Stage 5.1 — gated-workflow
+## Stage 5.1 — flow
 
 ```
-Skill('collie:gated-workflow')
+Skill('collie:flow')
 ```
 
 Input: `iter-N/fix-plan.md`. Runs full pipeline: TDD → implement → review → simplify → regression → [collie-final-review].
@@ -559,7 +559,7 @@ Input: `iter-N/fix-plan.md`. Runs full pipeline: TDD → implement → review �
 
 ⚠️ git diff --name-only 是 §Section 0 例外项 #3（inline 取文件清单不解析内容）。审计 diff 内容属"执行+分析"型，按裁定基准 dispatch。
 
-Execute immediately after `gated-workflow` returns.
+Execute immediately after `flow` returns.
 
 ```bash
 git diff HEAD~1..HEAD --name-only

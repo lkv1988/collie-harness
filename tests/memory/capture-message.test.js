@@ -72,7 +72,7 @@ test('counter increment: counter increases with each message', () => {
 
 // ── Test 3: Threshold trigger on 20th message ─────────────────────────────────
 
-test('threshold trigger: 20th message produces stdout with "memory-palace"', () => {
+test('threshold trigger: 20th message produces stdout with "memory"', () => {
   const { home } = makeTempHome();
 
   let lastResult;
@@ -82,8 +82,8 @@ test('threshold trigger: 20th message produces stdout with "memory-palace"', () 
   }
 
   assert.ok(
-    lastResult.stdout.includes('memory-palace'),
-    `Expected stdout to contain "memory-palace", got: ${JSON.stringify(lastResult.stdout)}`
+    lastResult.stdout.includes('memory'),
+    `Expected stdout to contain "memory", got: ${JSON.stringify(lastResult.stdout)}`
   );
 
   // Verify it's valid JSON

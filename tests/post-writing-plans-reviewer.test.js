@@ -120,7 +120,7 @@ test('post-writing-plans-reviewer: ExitPlanMode with reviewed plan → stdout em
   // Pre-create a last-plan.json with both reviewers approved + actual plan file with metadata
   const planPath = path.join(tmpRoot, 'docs', 'plans', '2026-04-14-collie-plan.md');
   fs.mkdirSync(path.dirname(planPath), { recursive: true });
-  fs.writeFileSync(planPath, `<!-- plan-source: ${planPath} -->\n<!-- plan-topic: collie -->\n<!-- plan-executor: collie:gated-workflow -->\n# Collie Harness Implementation Plan\n`, 'utf8');
+  fs.writeFileSync(planPath, `<!-- plan-source: ${planPath} -->\n<!-- plan-topic: collie -->\n<!-- plan-executor: collie:flow -->\n# Collie Harness Implementation Plan\n`, 'utf8');
   fs.mkdirSync(stateDir(), { recursive: true });
   fs.writeFileSync(lastPlanFile(), JSON.stringify({
     path: planPath,
@@ -211,7 +211,7 @@ test('post-writing-plans-reviewer: ExitPlanMode WARN when only collie:review app
 test('post-writing-plans-reviewer: ExitPlanMode silent when both reviewers approved', () => {
   const planPath = path.join(tmpRoot, 'docs', 'plans', 'foo-plan.md');
   fs.mkdirSync(path.dirname(planPath), { recursive: true });
-  fs.writeFileSync(planPath, `<!-- plan-source: ${planPath} -->\n<!-- plan-topic: foo -->\n<!-- plan-executor: collie:gated-workflow -->\n# Foo Implementation Plan\n`, 'utf8');
+  fs.writeFileSync(planPath, `<!-- plan-source: ${planPath} -->\n<!-- plan-topic: foo -->\n<!-- plan-executor: collie:flow -->\n# Foo Implementation Plan\n`, 'utf8');
   fs.mkdirSync(stateDir(), { recursive: true });
   fs.writeFileSync(lastPlanFile(), JSON.stringify({
     path: planPath,
@@ -247,7 +247,7 @@ test('post-writing-plans-reviewer: ExitPlanMode passes with all three metadata l
   const planPath = path.join(tmpRoot, 'docs', 'plans', 'full-meta-plan.md');
   fs.mkdirSync(path.dirname(planPath), { recursive: true });
   fs.writeFileSync(planPath,
-    `<!-- plan-source: ${planPath} -->\n<!-- plan-topic: full-meta -->\n<!-- plan-executor: collie:gated-workflow -->\n# Full Meta Plan\n`, 'utf8');
+    `<!-- plan-source: ${planPath} -->\n<!-- plan-topic: full-meta -->\n<!-- plan-executor: collie:flow -->\n# Full Meta Plan\n`, 'utf8');
   fs.mkdirSync(stateDir(), { recursive: true });
   fs.writeFileSync(lastPlanFile(), JSON.stringify({
     path: planPath,

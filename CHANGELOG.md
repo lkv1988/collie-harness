@@ -4,6 +4,17 @@ All notable changes to collie are documented here.
 
 ---
 
+## 0.4.3 — 2026-05-08
+
+### Changed
+- **品牌收尾**：清除全部 `gated-workflow` → `flow`、`memory-palace` → `memory` 残留（hooks / tests / skills / commands / docs / manifests 共 70+ 处），含大小写和空格变体
+- **README 重写**：从零重写为统一 collie 品牌叙事（~110 行），移除架构/hooks/文件结构等内部细节（保留在 CLAUDE.md）
+- **CLAUDE.md**：删除 `collie:queue` 相关引用（`scheduled_tasks.lock` / `queue/*.md` / Task queue constraint），更新 Layer 3 描述
+- **marketplace.json**：description 补充 `+ memory`
+- **hooks.json**：`Collie-harness` → `Collie`
+
+---
+
 ## 0.4.0 — 2026-05-08
 
 ### Added
