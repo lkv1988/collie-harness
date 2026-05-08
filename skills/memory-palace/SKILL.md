@@ -74,12 +74,12 @@ SessionStart         UserPromptSubmit      PostToolUse(Read)   PreCompact       
 (session begin)      (every message)       (after Read tool)   (before compress)   (session end)
      │                    │                      │                   │                  │
      ▼                    ▼                      ▼                   ▼                  ▼
-cleanup stale        append message to     path in               read session log   read session log
-short/ + long/       session log +         ~/.memory-palace/?    run decision tree  run decision tree
-sync INDEX           count++               yes → bump            write memories     write memories
-read INDEX files          │                last_accessed +        (keep log)         promote short→long
-inject into context  count ≥ 20?           access_count                             merge long dups
-                     ├─ no → done          no → skip                                delete log
+cleanup stale        append message to     path in               systemMessage →    consolidate.js
+short/ + long/       session log +         ~/.memory-palace/?    read session log   promote short→long
+sync INDEX           count++               yes → bump            run decision tree  merge long dups
+read INDEX files          │                last_accessed +        write memories     (no agent prompt)
+inject into context  count ≥ 20?           access_count          (keep log)
+                     ├─ no → done          no → skip
                      └─ yes → inject
                               "evaluate
                                recent msgs"
@@ -129,17 +129,13 @@ Fires before context compression. Output the session log path and `invoke memory
 
 The session log is **not** deleted (session is still ongoing). Acts as insurance for long sessions where context compression would otherwise lose information.
 
-**5. Stop — consume + consolidate + cleanup**
+**5. Stop — consolidate only (no agent prompt)**
 
-Fires when the session ends. Output the session log path and `invoke memory-palace skill`. The agent:
-- Loads this SKILL.md
-- Reads the session log
-- Runs the decision tree → writes new memories to `short/`
+Fires when the session ends. Stop hooks cannot inject prompts into Claude (no `hookSpecificOutput` support; `decision: "block"` would prevent session exit). The script runs `consolidate.js` synchronously:
 - **Promote**: `short/` items with `access_count ≥ 3` across 2+ sessions → move to `long/`, add to `INDEX.md`
 - **Merge**: `long/` items with overlapping content → combine into one
-- Deletes the session log
 
-This is the primary consumption and consolidation point. Even if the mid-conversation trigger (count ≥ 20) was missed or skipped, Stop catches everything.
+Memory capture (decision tree) relies on hooks #2 (every 20 messages) and #4 (PreCompact). Stop only does structural maintenance.
 
 ### Why this works
 
