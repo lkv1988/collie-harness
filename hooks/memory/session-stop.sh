@@ -15,7 +15,7 @@
 # agent has had a chance to process memories.
 #
 # Output format (Claude Code):
-#   { "hookSpecificOutput": { "hookEventName": "Stop", "additionalContext": "..." } }
+#   { "stopReason": "...", "systemMessage": "..." }
 
 set -euo pipefail
 
@@ -54,8 +54,8 @@ escape_for_json() {
 
 ESCAPED=$(escape_for_json "$INVOKE_PROMPT")
 
-# Output the agent instruction prompt
-printf '{"hookSpecificOutput":{"hookEventName":"Stop","additionalContext":"%s"}}\n' "$ESCAPED"
+# Output via top-level stopReason + systemMessage (Stop event doesn't support hookSpecificOutput)
+printf '{"stopReason":"memory-palace session stop","systemMessage":"%s"}\n' "$ESCAPED"
 
 # Also run consolidate.js in the background so structural maintenance happens
 # even if the agent skips it. This is a best-effort safety net.

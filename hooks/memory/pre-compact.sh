@@ -12,7 +12,7 @@
 # The session log is NOT deleted here — the session continues after compact.
 #
 # Output format (Claude Code):
-#   { "hookSpecificOutput": { "hookEventName": "PreCompact", "additionalContext": "..." } }
+#   { "systemMessage": "..." }
 
 set -euo pipefail
 
@@ -50,4 +50,4 @@ escape_for_json() {
 
 ESCAPED=$(escape_for_json "$INVOKE_PROMPT")
 
-printf '{"hookSpecificOutput":{"hookEventName":"PreCompact","additionalContext":"%s"}}\n' "$ESCAPED"
+printf '{"systemMessage":"%s"}\n' "$ESCAPED"
