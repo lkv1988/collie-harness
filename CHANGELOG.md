@@ -4,6 +4,21 @@ All notable changes to collie-harness are documented here.
 
 ---
 
+## 0.4.0 — 2026-05-08
+
+### Added
+- **memory-palace 集成**：认知科学驱动的 agent 记忆系统，从独立 repo (`~/git/memory-palace` v0.1.0) 合并。
+  - `hooks/memory/` — 7 个 JS 脚本 + 2 个 shell wrapper（load-index / capture-message / bump-access / write-memory / search-memory / consolidate / resolve-project / pre-compact.sh / session-stop.sh）
+  - `skills/memory-palace/SKILL.md` — decision tree + lifecycle 规则 + 元规则参考
+  - `skills/memory-palace/references/meta-rules.md` — 7 条认知科学元规则交叉验证矩阵
+- **5 个新 hook 事件**追加到 `hooks/hooks.json`：SessionStart / UserPromptSubmit / PostToolUse(Read) / PreCompact / Stop（追加）
+- **16 个新单测**（`tests/memory/`）：resolve-project 5 + capture-message 5 + bump-access 5 + integration 7-step lifecycle
+
+### Why
+独立 memory-palace plugin 维护开销大于收益（当前只 for Claude Code）。合并后 collie-harness 成为 one-stop harness：workflow + quality gate + memory。未来如需多 agent 适配再拆出。
+
+---
+
 ## 0.3.0 — 2026-04-27
 
 - **rename**：`/collie-harness:loop` → `/collie-harness:autoiter`；同步改 SKILL/状态目录/env var/hook plan-kind/queue enum。原因：与 Claude Code 内置全局 `loop` skill 命名冲突。
