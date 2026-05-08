@@ -4,6 +4,16 @@ All notable changes to collie are documented here.
 
 ---
 
+## 0.4.4 — 2026-05-08
+
+### Fixed
+- **capture-message.js**：UserPromptSubmit hook 输出格式修复 — 缺少 `hookSpecificOutput` wrapper 导致 Claude Code 静默忽略 20 条消息阈值触发，memory skill 从未被调用
+
+### Added
+- **README 宣传图**：`docs/assets/collie-overview.png` 展示五大能力
+
+---
+
 ## 0.4.3 — 2026-05-08
 
 ### Changed

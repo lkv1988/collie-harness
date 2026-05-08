@@ -157,11 +157,14 @@ if (newCount >= THRESHOLD) {
   resetCounter();
   // Output additionalContext to ask the agent to run the memory skill
   const output = {
-    additionalContext: [
-      `[memory] You have exchanged ${newCount} messages this session.`,
-      `Session log: ${sessionPath}`,
-      'Please invoke the memory skill now and evaluate recent messages against the decision tree.',
-    ].join(' '),
+    hookSpecificOutput: {
+      hookEventName: 'UserPromptSubmit',
+      additionalContext: [
+        `[memory] You have exchanged ${newCount} messages this session.`,
+        `Session log: ${sessionPath}`,
+        'Please invoke the memory skill now and evaluate recent messages against the decision tree.',
+      ].join(' '),
+    },
   };
   process.stdout.write(JSON.stringify(output) + '\n');
 }

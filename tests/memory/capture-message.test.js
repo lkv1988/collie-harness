@@ -86,9 +86,11 @@ test('threshold trigger: 20th message produces stdout with "memory"', () => {
     `Expected stdout to contain "memory", got: ${JSON.stringify(lastResult.stdout)}`
   );
 
-  // Verify it's valid JSON
+  // Verify it's valid JSON with hookSpecificOutput wrapper
   const parsed = JSON.parse(lastResult.stdout.trim());
-  assert.ok('additionalContext' in parsed, 'Expected additionalContext key in output');
+  assert.ok('hookSpecificOutput' in parsed, 'Expected hookSpecificOutput key in output');
+  assert.strictEqual(parsed.hookSpecificOutput.hookEventName, 'UserPromptSubmit');
+  assert.ok('additionalContext' in parsed.hookSpecificOutput, 'Expected additionalContext in hookSpecificOutput');
 });
 
 // ── Test 4: Counter resets to 0 after threshold ───────────────────────────────
