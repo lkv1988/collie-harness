@@ -1,5 +1,7 @@
 # Collie
 
+![Collie Overview](docs/assets/collie-overview.png)
+
 Claude Code plugin that enforces a complete development workflow — brainstorm, plan, dual-review, gated implementation, rubric code review — with hooks that make every step non-optional.
 
 ## What is Collie
