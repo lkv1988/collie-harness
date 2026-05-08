@@ -1,6 +1,6 @@
 # prepare-checks.md — Detailed Check Specifications
 
-Reference for `collie-harness:autoiter-prepare`. Each section defines exact commands, timeouts, and pass/fail criteria for the 5 checks (Check 3 has 3 sub-checks).
+Reference for `collie:autoiter-prepare`. Each section defines exact commands, timeouts, and pass/fail criteria for the 5 checks (Check 3 has 3 sub-checks).
 
 ---
 
@@ -123,8 +123,8 @@ ToolSearch select:Monitor
 
 **Method**:
 ```bash
-touch ~/.collie-harness/autoiter/<project_id>/<run_id>/iter-0/raw.log.probe && \
-rm ~/.collie-harness/autoiter/<project_id>/<run_id>/iter-0/raw.log.probe && \
+touch ~/.collie/autoiter/<project_id>/<run_id>/iter-0/raw.log.probe && \
+rm ~/.collie/autoiter/<project_id>/<run_id>/iter-0/raw.log.probe && \
 echo "writable"
 ```
 
@@ -144,22 +144,22 @@ echo "writable"
 
 **Method**:
 ```bash
-mkdir -p ~/.collie-harness/autoiter/<project_id>/<run_id>/iter-0/ && \
-touch ~/.collie-harness/autoiter/<project_id>/<run_id>/iter-0/.probe && \
-rm ~/.collie-harness/autoiter/<project_id>/<run_id>/iter-0/.probe && \
+mkdir -p ~/.collie/autoiter/<project_id>/<run_id>/iter-0/ && \
+touch ~/.collie/autoiter/<project_id>/<run_id>/iter-0/.probe && \
+rm ~/.collie/autoiter/<project_id>/<run_id>/iter-0/.probe && \
 echo "ok"
 ```
 
 **Pass criteria**: All three commands succeed (`mkdir -p`, `touch`, `rm`).
 
 **Fail criteria**:
-- `mkdir -p` fails: permission denied on `~/.collie-harness/` or parent path issue
+- `mkdir -p` fails: permission denied on `~/.collie/` or parent path issue
 - `touch` fails: directory created but not writable (unlikely but possible with ACLs)
 - Disk full
 
 **Evidence to capture**:
 - On PASS: `"directory created and writable: <full path>"`
-- On FAIL: which command failed + full error output + `df -h ~/.collie-harness/ 2>/dev/null` output (disk space diagnostic)
+- On FAIL: which command failed + full error output + `df -h ~/.collie/ 2>/dev/null` output (disk space diagnostic)
 
 ---
 

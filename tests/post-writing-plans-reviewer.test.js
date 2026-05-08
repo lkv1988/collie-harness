@@ -33,7 +33,7 @@ afterEach(() => {
 });
 
 function stateDir() {
-  return path.join(tmpHome, '.collie-harness', 'state', SESSION_ID);
+  return path.join(tmpHome, '.collie', 'state', SESSION_ID);
 }
 
 function lastPlanFile() {
@@ -58,7 +58,7 @@ test('post-writing-plans-reviewer: Write to plan file → last-plan.json written
     tool_name: 'Write',
     session_id: SESSION_ID,
     tool_input: {
-      file_path: 'docs/plans/2026-04-14-collie-harness-plan.md',
+      file_path: 'docs/plans/2026-04-14-collie-plan.md',
       content: '# Plan',
     },
   };
@@ -92,7 +92,7 @@ test('post-writing-plans-reviewer: ExitPlanMode with unreviewed plan → stdout 
   // Pre-create a last-plan.json with both reviewers pending
   fs.mkdirSync(stateDir(), { recursive: true });
   fs.writeFileSync(lastPlanFile(), JSON.stringify({
-    path: 'docs/plans/2026-04-14-collie-harness-plan.md',
+    path: 'docs/plans/2026-04-14-collie-plan.md',
     written_at: new Date().toISOString(),
     plan_doc_reviewer: { approved: false, approved_at: null },
     collie_reviewer:   { approved: false, approved_at: null },
@@ -111,16 +111,16 @@ test('post-writing-plans-reviewer: ExitPlanMode with unreviewed plan → stdout 
   assert.ok(out.reason, 'output should have reason field');
   assert.ok(
     out.reason.includes('plan-doc-reviewer') &&
-    out.reason.includes('collie-harness:review'),
+    out.reason.includes('collie:review'),
     'reason should mention both reviewers in missing list'
   );
 });
 
 test('post-writing-plans-reviewer: ExitPlanMode with reviewed plan → stdout empty, exits 0', () => {
   // Pre-create a last-plan.json with both reviewers approved + actual plan file with metadata
-  const planPath = path.join(tmpRoot, 'docs', 'plans', '2026-04-14-collie-harness-plan.md');
+  const planPath = path.join(tmpRoot, 'docs', 'plans', '2026-04-14-collie-plan.md');
   fs.mkdirSync(path.dirname(planPath), { recursive: true });
-  fs.writeFileSync(planPath, `<!-- plan-source: ${planPath} -->\n<!-- plan-topic: collie-harness -->\n<!-- plan-executor: collie-harness:gated-workflow -->\n# Collie Harness Implementation Plan\n`, 'utf8');
+  fs.writeFileSync(planPath, `<!-- plan-source: ${planPath} -->\n<!-- plan-topic: collie -->\n<!-- plan-executor: collie:gated-workflow -->\n# Collie Harness Implementation Plan\n`, 'utf8');
   fs.mkdirSync(stateDir(), { recursive: true });
   fs.writeFileSync(lastPlanFile(), JSON.stringify({
     path: planPath,
@@ -167,7 +167,7 @@ test('post-writing-plans-reviewer: ExitPlanMode WARN when both reviewers pending
   const out = JSON.parse(result.stdout.trim());
   assert.strictEqual(out.decision, 'block', 'decision should be block');
   assert.ok(out.reason.includes('plan-doc-reviewer'), 'reason should include plan-doc-reviewer');
-  assert.ok(out.reason.includes('collie-harness:review'), 'reason should include collie-harness:review');
+  assert.ok(out.reason.includes('collie:review'), 'reason should include collie:review');
 });
 
 test('post-writing-plans-reviewer: ExitPlanMode WARN when only plan-doc-reviewer approved', () => {
@@ -182,14 +182,14 @@ test('post-writing-plans-reviewer: ExitPlanMode WARN when only plan-doc-reviewer
   assert.strictEqual(result.status, 0);
   const out = JSON.parse(result.stdout.trim());
   assert.strictEqual(out.decision, 'block', 'decision should be block');
-  assert.ok(out.reason.includes('collie-harness:review'), 'reason should include collie-harness:review');
-  // The missing list (before 批准) should only mention collie-harness:review, not plan-doc-reviewer
+  assert.ok(out.reason.includes('collie:review'), 'reason should include collie:review');
+  // The missing list (before 批准) should only mention collie:review, not plan-doc-reviewer
   const missingMatch7 = out.reason.match(/尚未被 ([^批]+)批准/);
   assert.ok(missingMatch7, 'reason should contain missing list pattern');
   assert.ok(!missingMatch7[1].includes('plan-doc-reviewer'), 'missing list should NOT include already-approved plan-doc-reviewer');
 });
 
-test('post-writing-plans-reviewer: ExitPlanMode WARN when only collie-harness:review approved', () => {
+test('post-writing-plans-reviewer: ExitPlanMode WARN when only collie:review approved', () => {
   fs.mkdirSync(stateDir(), { recursive: true });
   fs.writeFileSync(lastPlanFile(), JSON.stringify({
     path: 'docs/plans/foo-plan.md',
@@ -202,16 +202,16 @@ test('post-writing-plans-reviewer: ExitPlanMode WARN when only collie-harness:re
   const out = JSON.parse(result.stdout.trim());
   assert.strictEqual(out.decision, 'block', 'decision should be block');
   assert.ok(out.reason.includes('plan-doc-reviewer'), 'reason should include plan-doc-reviewer');
-  // The missing list (before 批准) should only mention plan-doc-reviewer, not collie-harness:review
+  // The missing list (before 批准) should only mention plan-doc-reviewer, not collie:review
   const missingMatch8 = out.reason.match(/尚未被 ([^批]+)批准/);
   assert.ok(missingMatch8, 'reason should contain missing list pattern');
-  assert.ok(!missingMatch8[1].includes('collie-harness:review'), 'missing list should NOT include already-approved collie-harness:review');
+  assert.ok(!missingMatch8[1].includes('collie:review'), 'missing list should NOT include already-approved collie:review');
 });
 
 test('post-writing-plans-reviewer: ExitPlanMode silent when both reviewers approved', () => {
   const planPath = path.join(tmpRoot, 'docs', 'plans', 'foo-plan.md');
   fs.mkdirSync(path.dirname(planPath), { recursive: true });
-  fs.writeFileSync(planPath, `<!-- plan-source: ${planPath} -->\n<!-- plan-topic: foo -->\n<!-- plan-executor: collie-harness:gated-workflow -->\n# Foo Implementation Plan\n`, 'utf8');
+  fs.writeFileSync(planPath, `<!-- plan-source: ${planPath} -->\n<!-- plan-topic: foo -->\n<!-- plan-executor: collie:gated-workflow -->\n# Foo Implementation Plan\n`, 'utf8');
   fs.mkdirSync(stateDir(), { recursive: true });
   fs.writeFileSync(lastPlanFile(), JSON.stringify({
     path: planPath,
@@ -247,7 +247,7 @@ test('post-writing-plans-reviewer: ExitPlanMode passes with all three metadata l
   const planPath = path.join(tmpRoot, 'docs', 'plans', 'full-meta-plan.md');
   fs.mkdirSync(path.dirname(planPath), { recursive: true });
   fs.writeFileSync(planPath,
-    `<!-- plan-source: ${planPath} -->\n<!-- plan-topic: full-meta -->\n<!-- plan-executor: collie-harness:gated-workflow -->\n# Full Meta Plan\n`, 'utf8');
+    `<!-- plan-source: ${planPath} -->\n<!-- plan-topic: full-meta -->\n<!-- plan-executor: collie:gated-workflow -->\n# Full Meta Plan\n`, 'utf8');
   fs.mkdirSync(stateDir(), { recursive: true });
   fs.writeFileSync(lastPlanFile(), JSON.stringify({
     path: planPath,

@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to collie-harness are documented here.
+All notable changes to collie are documented here.
 
 ---
 
@@ -15,13 +15,13 @@ All notable changes to collie-harness are documented here.
 - **16 个新单测**（`tests/memory/`）：resolve-project 5 + capture-message 5 + bump-access 5 + integration 7-step lifecycle
 
 ### Why
-独立 memory-palace plugin 维护开销大于收益（当前只 for Claude Code）。合并后 collie-harness 成为 one-stop harness：workflow + quality gate + memory。未来如需多 agent 适配再拆出。
+独立 memory-palace plugin 维护开销大于收益（当前只 for Claude Code）。合并后 collie 成为 one-stop harness：workflow + quality gate + memory。未来如需多 agent 适配再拆出。
 
 ---
 
 ## 0.3.0 — 2026-04-27
 
-- **rename**：`/collie-harness:loop` → `/collie-harness:autoiter`；同步改 SKILL/状态目录/env var/hook plan-kind/queue enum。原因：与 Claude Code 内置全局 `loop` skill 命名冲突。
+- **rename**：`/collie:loop` → `/collie:autoiter`；同步改 SKILL/状态目录/env var/hook plan-kind/queue enum。原因：与 Claude Code 内置全局 `loop` skill 命名冲突。
 - **新增 Section 0 Orchestrator Contract**：约束 autoiter SKILL 主 session 行为（禁止读源码 / 写实现代码 / 解析长日志），引入主 agent 自主裁定基准（参考 user CLAUDE.md "Subagent 派发策略"）。
 - **新增 Stage TaskList 锚定**：每 iter 起始 TaskCreate 6 条 stage anchor，长 dispatch 返回时 self-anchor 防遗忘。
 - 新增 `tests/autoiter-orchestrator-contract.test.js` grep-based 强制（5 项核心断言）。
@@ -31,10 +31,10 @@ All notable changes to collie-harness are documented here.
 ## 0.2.4 — 2026-04-27
 
 ### Fixed
-- **0.2.3 加载失败**：`.claude-plugin/plugin.json` 的 `dependencies` 用裸名 `"ralph-loop"` / `"superpowers"`，会被 Claude Code 解析为 `<name>@<own-marketplace>` = `ralph-loop@collie-marketplace`，但本 marketplace 只发布了 `collie-harness` 一个插件，安装后 `✘ failed to load`。改为带 marketplace 限定符的对象数组（`{name, marketplace: "claude-plugins-official"}`），并在 `marketplace.json` 显式声明 `allowCrossMarketplaceDependenciesOn: ["claude-plugins-official"]`（跨 marketplace 依赖默认禁止，必须放行）。
+- **0.2.3 加载失败**：`.claude-plugin/plugin.json` 的 `dependencies` 用裸名 `"ralph-loop"` / `"superpowers"`，会被 Claude Code 解析为 `<name>@<own-marketplace>` = `ralph-loop@collie-marketplace`，但本 marketplace 只发布了 `collie` 一个插件，安装后 `✘ failed to load`。改为带 marketplace 限定符的对象数组（`{name, marketplace: "claude-plugins-official"}`），并在 `marketplace.json` 显式声明 `allowCrossMarketplaceDependenciesOn: ["claude-plugins-official"]`（跨 marketplace 依赖默认禁止，必须放行）。
 
 ### Changed
-- **`/collie-harness:auto` 显式 EnterPlanMode**：原先隐式假设用户已在 plan mode 才能正确运行（writing-plans 需要 planmode plan file 路径，dual reviewer 与 ExitPlanMode hook 都在 planmode 内）。现在新增 `Step ⓪ EnterPlanMode` 作为 Mandatory Sequence 第一步，配 `<HARD-GATE>` 禁止在进入 plan mode 之前执行 TaskCreate / Research / brainstorming 等任何后续动作。已在 plan mode 时跳过即可。原 ⓪~⑥ 顺延为 ①~⑦，DOT 流程图同步更新。
+- **`/collie:auto` 显式 EnterPlanMode**：原先隐式假设用户已在 plan mode 才能正确运行（writing-plans 需要 planmode plan file 路径，dual reviewer 与 ExitPlanMode hook 都在 planmode 内）。现在新增 `Step ⓪ EnterPlanMode` 作为 Mandatory Sequence 第一步，配 `<HARD-GATE>` 禁止在进入 plan mode 之前执行 TaskCreate / Research / brainstorming 等任何后续动作。已在 plan mode 时跳过即可。原 ⓪~⑥ 顺延为 ①~⑦，DOT 流程图同步更新。
 
 Refs: 0.2.3 release plugin-load failure; user request to make plan-mode entry explicit.
 
@@ -43,14 +43,14 @@ Refs: 0.2.3 release plugin-load failure; user request to make plan-mode entry ex
 ## 0.2.3 — 2026-04-26
 
 ### Added
-- **`/collie-harness:loop` slash command**：自迭代闭环（run → observe → triage → fix → rerun），对标 Karpathy autoresearch。复用 ralph-loop 作为外层循环驱动（与 `/auto` 一致），不新建 Stop hook。
+- **`/collie:loop` slash command**：自迭代闭环（run → observe → triage → fix → rerun），对标 Karpathy autoresearch。复用 ralph-loop 作为外层循环驱动（与 `/auto` 一致），不新建 Stop hook。
 - **`skills/loop/SKILL.md`** 主 orchestrator（§3.5 跨 session 状态机 + Stage 0-6 完整编排 + dot 状态机图）。Completion signal `<promise>Collie: LOOP DONE</promise>`（迭代结束 + worktree 保留，与 `/auto` 的 `Collie: SHIP IT` 区分）。
 - **`skills/loop-prepare/SKILL.md`** 独立前置体检 SKILL（trigger dry-run / scalar extraction / observability / 持久化目录验证）。
 - **`skills/loop/lib/jaccard.js`** G7 重复任务检测 helper（token-set Jaccard，零依赖纯 Node.js）。
 - **5 份 references**：`overfit-guards.md`（G1-G8 防过拟合硬约束）、`stop-criterion.md`（5 停止条件 + rollback 矩阵）、`discovery-prompt.md`、`iter-prompt.md`、`fix-plan-template.md`。
 - **`hooks/_state.js`** 新增 `projectId / loopDir / iterDir / currentRunFile` helpers（project-scoped 路径推导）。
 - **`hooks/post-writing-plans-reviewer.js`** 新增 `plan-kind: loop-stage0` 旁路：跳过 auto 双 reviewer 门禁，只校验 3 条 metadata + 4 enum 字段（auto 路径零回归）。
-- **`skills/queue/SKILL.md`** task schema 扩展 `command` 字段，支持 `/collie-harness:loop` 与 `/collie-harness:auto` 分派。
+- **`skills/queue/SKILL.md`** task schema 扩展 `command` 字段，支持 `/collie:loop` 与 `/collie:auto` 分派。
 - **Overfit Guards G1-G8**：硬性约束防 patch overfitting；G8 = Triage（confidence≤2 → DEFERRED）+ Deep Verify（fix_confidence≤2 → DEFERRED）双层 confidence gate。
 - **可选环境变量 `COLLIE_LOOP_NOTIFY_CMD`**：终态事件外部通知（macOS 通知 / Slack / 邮件 / 自定义 shell）。
 - **31 个新单测**（`tests/loop.test.js`）+ **`e2e-05-loop-shim`** smoke 场景。
@@ -98,7 +98,7 @@ Refs: docs/plans/2026-04-24-loop-command-plan.md
 - **rubric Q11 "Surgical scope"**：与 Red-line #13 + `:34-40` 同 reviewer 同时刻同属性，Karpathy Principle 2/3 复述。
 
 ### Changed
-- **rubric 问题数 11 → 6**；全仓库计数引用同步（CLAUDE.md / README.md / skills/review/SKILL.md / skills/review/references/collie-voice.md / skills/gated-workflow/SKILL.md）。
+- **rubric 问题数 11 → 6**；全仓库计数引用同步（CLAUDE.md / README.md / skills/review/SKILL.md / skills/review/references/collie-voice.md / skills/flow/SKILL.md）。
 - **Review 输出格式压缩**：`skills/review/SKILL.md` Review System Prompt 改为"只列 FAIL + PASS 汇总计数"。全 PASS 场景下 review 文本量下降 ≈ 50%。内部仍严谨评审所有 6 问，只是输出折叠。
 - **auto.md:150 澄清**：`Approval delegation, NOT discussion suppression`——明确 auto 模式下 AskUserQuestion 与用户讨论不被 skip，仅 brainstorming 的 Step 5/8 正式 approval 门交给 dual-reviewer。
 
@@ -121,15 +121,15 @@ Refs: docs/plans/2026-04-20-less-is-more-harness-distillation-plan.md
 ### Added
 
 - `agents/plan-doc-reviewer.md`: 新增 **Impact Assessment** 强制检查 — What to Check 表格、Block-worthy issues、Do NOT flag 豁免、触发条件 + grep 反查校验流程。触发条件：跨 2+ 模块 / public API 变更 / 共享 utilities 修改；单文件 < 20 行 trivial 改动可豁免。
-- `skills/gated-workflow/SKILL.md`: TodoList 模板新增 `[collie-final-review]` 节点（`[doc-refresh]` 后、`[finish]` 前）；新增 **Step 5.7 最终 rubric 审查 GATE** — 定义调用方式、PASS/WARN/BLOCK 语义、就地修复循环（连续 3 轮 BLOCK → escalate）、与 per-task CR 的区别。`[finish]` 前置条件显式依赖 Step 5.7 PASS。
+- `skills/flow/SKILL.md`: TodoList 模板新增 `[collie-final-review]` 节点（`[doc-refresh]` 后、`[finish]` 前）；新增 **Step 5.7 最终 rubric 审查 GATE** — 定义调用方式、PASS/WARN/BLOCK 语义、就地修复循环（连续 3 轮 BLOCK → escalate）、与 per-task CR 的区别。`[finish]` 前置条件显式依赖 Step 5.7 PASS。
 - `skills/review/references/rubric-red-lines.md`: 新增 **Red line #13 Speculative scope** — 加任务未要求的 feature / flexibility / 抽象 / 顺手改无关代码 = BLOCK（引自 Karpathy CLAUDE.md Principle 2）。新增 **Q11 Surgical scope** — 每行 diff / plan 条目必须可追溯到任务目标（Karpathy Principle 3）。更新 Plan-mode focus（追加 #13）、Code-mode focus（all 13）。
 
 ### Changed
 
-- `commands/auto.md`: 删除 Step ⑥（collie:review Mode=code 独立步骤）；Mandatory Sequence 从 ⑦ 步简化为 ⑥ 步；Completion Promise 改为"gated-workflow 返回成功"；Brainstorming 约束新增 Impact Assessment（必做）5 子项；Anti-Patterns 新增 2 条。
+- `commands/auto.md`: 删除 Step ⑥（collie:review Mode=code 独立步骤）；Mandatory Sequence 从 ⑦ 步简化为 ⑥ 步；Completion Promise 改为"flow 返回成功"；Brainstorming 约束新增 Impact Assessment（必做）5 子项；Anti-Patterns 新增 2 条。
 - `skills/review/SKILL.md`: description 字段同步指向 `[collie-final-review] Step 5.7`；4 处计数 12→13 / 10→11；Review System Prompt 输出模板新增 Q11 行。
 - `skills/review/references/collie-voice.md`: 计数同步 12 red lines + 10 questions → 13 + 11。
-- `CLAUDE.md`: Workflow Sequence 代码块改为 gated-workflow 内含 `[collie-final-review]`；Layer 2 描述更新；Key Design Constraints 新增 3 条（Impact Assessment 强制 + Pre-merge rubric gate + Surgical scope red line）；2 处计数同步。
+- `CLAUDE.md`: Workflow Sequence 代码块改为 flow 内含 `[collie-final-review]`；Layer 2 描述更新；Key Design Constraints 新增 3 条（Impact Assessment 强制 + Pre-merge rubric gate + Surgical scope red line）；2 处计数同步。
 - `README.md`: 工作流代码块同步；新增 Impact Assessment 强制说明段落；2 处计数同步。
 - `docs/auto-state-machine-detailed.md`: 状态机图插入 Step 5.7 `[collie-final-review]` 节点（在 Step 5.5 和 Step 6 之间），删除原 Step ⑥ 节点。
 
@@ -162,11 +162,11 @@ Refs: docs/plans/2026-04-20-less-is-more-harness-distillation-plan.md
 - `commands/auto.md`: 跳过 brainstorming 的 human approval gates（Step 5 "User approves design?" 和 Step 8 "User reviews written spec?"）——在 auto 模式下这两步会阻塞未干预运行；collie 双 reviewer 已承担审批职责
 - `commands/auto.md`: 双 reviewer 任一返回 WARN/BLOCK 后，修复计划必须重跑**双方**（不得只重跑失败方）；HARD-GATE 增加"in the same review round"约束
 - `commands/auto.md`: 补上 Skip brainstorming 约束行缺失的 `>` blockquote 前缀（格式 bug）
-- `skills/gated-workflow/SKILL.md`: dispatch prompt 新增要求——所有 git commit 的 message body 必须包含 `Refs: <plan 归档相对路径>`，确保任意 commit 可回溯到对应 plan
+- `skills/flow/SKILL.md`: dispatch prompt 新增要求——所有 git commit 的 message body 必须包含 `Refs: <plan 归档相对路径>`，确保任意 commit 可回溯到对应 plan
 
 ### Changed
 
-- `skills/gated-workflow/SKILL.md`: 移除条件分发逻辑（≥2 并行 / =1 直接），统一使用 `dispatching-parallel-agents`，减少认知分支
+- `skills/flow/SKILL.md`: 移除条件分发逻辑（≥2 并行 / =1 直接），统一使用 `dispatching-parallel-agents`，减少认知分支
 
 ### Docs
 
@@ -180,7 +180,7 @@ Refs: docs/plans/2026-04-20-less-is-more-harness-distillation-plan.md
 ### Added — E2E Workflow Integration
 
 - `commands/auto.md`: brainstorming 约束新增强制 **E2E Assessment**（探测目标项目 e2e 基建、评估可行性、给出结论）
-- `skills/gated-workflow/SKILL.md`: Step 1 TodoList 新增条件性 `[e2e-setup]` / `[e2e-verify]` 任务槽位（根据 brainstorming Assessment 结论决定是否建立），并在建立 TodoList 后用 haiku subagent 交叉核对 plan-todo 对齐
+- `skills/flow/SKILL.md`: Step 1 TodoList 新增条件性 `[e2e-setup]` / `[e2e-verify]` 任务槽位（根据 brainstorming Assessment 结论决定是否建立），并在建立 TodoList 后用 haiku subagent 交叉核对 plan-todo 对齐
 - `agents/plan-doc-reviewer.md`: 新增 **E2E Assessment** 检查行，要求 brainstorming 结论在 plan 中有明确记录
 - `skills/review/SKILL.md` Q5: 扩展覆盖 e2e 承诺兑现（code mode）和 plan-todo 对齐核对
 
@@ -189,13 +189,13 @@ Refs: docs/plans/2026-04-20-less-is-more-harness-distillation-plan.md
 规划→执行衔接处 7 个缺陷修复：
 
 - `commands/auto.md`: 新增 6 项 superpowers 覆写约束
-  - plan 文件须有三条 metadata（`plan-source` + `plan-topic` + `plan-executor: collie-harness:gated-workflow`）
-  - plan header "For agentic workers" 行覆写为正向指令，指向 `collie-harness:gated-workflow`
+  - plan 文件须有三条 metadata（`plan-source` + `plan-topic` + `plan-executor: collie:flow`）
+  - plan header "For agentic workers" 行覆写为正向指令，指向 `collie:flow`
   - plan 须包含 Task Execution DAG 表（供 plan-reader subagent 使用）
-  - 跳过 writing-plans 内置 Plan Review Loop（collie-harness Step ③ 双审已覆盖）
-  - 跳过 writing-plans Execution Handoff（由 auto.md → gated-workflow 控制）
+  - 跳过 writing-plans 内置 Plan Review Loop（collie Step ③ 双审已覆盖）
+  - 跳过 writing-plans Execution Handoff（由 auto.md → flow 控制）
   - design doc + plan 合并写入 planmode plan file，不分别写入两个目录
-- `skills/gated-workflow/SKILL.md`:
+- `skills/flow/SKILL.md`:
   - Step 1: 主 session 不再直接 Read plan 文件；改为 dispatch haiku plan-reader subagent（提取 DAG + 行号 + 文件冲突检查，输出 JSON）
   - Step 2: metadata 引用从"前两行"改为"前三行"，示例块补入 `plan-executor` 行
   - Step 3: 条件分发——batch ≥ 2 调用 `dispatching-parallel-agents`；batch = 1 直接 Agent tool dispatch
@@ -213,8 +213,8 @@ Refs: docs/plans/2026-04-20-less-is-more-harness-distillation-plan.md
 
 ### Breaking
 
-- **移除 `collie-harness:reviewer` agent**（原为 thin shell，逻辑全在 `collie-harness:review` skill）。
-  - 迁移：`Agent(subagent_type="collie-harness:reviewer")` → `Skill("collie-harness:review")` + `Mode=code`、`Target=<worktree diff>`
+- **移除 `collie:reviewer` agent**（原为 thin shell，逻辑全在 `collie:review` skill）。
+  - 迁移：`Agent(subagent_type="collie:reviewer")` → `Skill("collie:review")` + `Mode=code`、`Target=<worktree diff>`
   - `plugin.json` 的 `agents` 数组从 2 项减为 1 项
 
 ### Added
@@ -222,8 +222,8 @@ Refs: docs/plans/2026-04-20-less-is-more-harness-distillation-plan.md
 - `agents/plan-doc-reviewer.md`: 新增 **Doc Maintenance** 检查和 **Spec Consultation** 检查
   - Doc Maintenance：plan 改动会导致 README / CLAUDE.md / docs/*-spec.md 过时时，必须包含对应文档更新任务，否则 block
   - Spec Consultation：有明显相关 spec 但 plan 完全未引用时 block
-- `skills/gated-workflow/SKILL.md`: 新增 **Step 5.5 文档对齐（GATE 5.95）**，作为收尾前的文档核对安全网；TodoList 模板新增 `[doc-refresh]` 条目
-- `skills/gated-workflow/SKILL.md`: 实现 subagent 对照 plan 验收的**行号方案**——读取 plan 时记录每个 task 的行号范围，dispatch subagent 时传入，subagent 用 `Read(offset, limit)` 精确读取对应段落做 VBC
+- `skills/flow/SKILL.md`: 新增 **Step 5.5 文档对齐（GATE 5.95）**，作为收尾前的文档核对安全网；TodoList 模板新增 `[doc-refresh]` 条目
+- `skills/flow/SKILL.md`: 实现 subagent 对照 plan 验收的**行号方案**——读取 plan 时记录每个 task 的行号范围，dispatch subagent 时传入，subagent 用 `Read(offset, limit)` 精确读取对应段落做 VBC
 - `agents/plan-doc-reviewer.md`: 新增 **commit Refs 检查**，验证 plan 中引用的 commit 是否实际存在
 - Planning TodoList 调整：规划阶段从 5 条简化为 4 条，移除冗余的 `[brainstorm]` 条目，新增 `TaskCreate TodoList` 步骤并在 ExitPlanMode 后显式清理
 - State machine docs: 拆分为 simple / detailed 两版，auto.md 内嵌简版流程图
@@ -244,7 +244,7 @@ Refs: docs/plans/2026-04-20-less-is-more-harness-distillation-plan.md
 
 - plan 文件前两行写入 `plan-source` / `plan-topic` 元数据（由 writing-plans / auto.md 步骤注入）
 - `hooks/post-writing-plans-reviewer.js`: ExitPlanMode 时验证前两行 metadata 存在，缺失则 hard-block
-- `skills/gated-workflow/SKILL.md` Step 2: 从 plan 内容前两行提取 `$PLAN_SOURCE`，用 `cp` 归档（不再依赖外部路径传递）
+- `skills/flow/SKILL.md` Step 2: 从 plan 内容前两行提取 `$PLAN_SOURCE`，用 `cp` 归档（不再依赖外部路径传递）
 
 ---
 
@@ -259,7 +259,7 @@ Four-layer design enforcing the full Collie-style development workflow:
 | Layer | What it does |
 |-------|-------------|
 | **0** | `acceptEdits` mode + escalation channel (`scripts/escalate.sh`) |
-| **1** | Hook chain enforcing dual-reviewer handshake (`collie-harness:plan-doc-reviewer` + `collie-harness:review`) before ExitPlanMode |
+| **1** | Hook chain enforcing dual-reviewer handshake (`collie:plan-doc-reviewer` + `collie:review`) before ExitPlanMode |
 | **2** | `skills/review/` — single source of truth for Collie's 12 red-lines + 10 questions + Reflexion + ELEPHANT. `agents/reviewer.md` delegates here. |
 | **3** | Self-driven harness (`/auto` command via ralph-loop + CronCreate task queue) |
 
@@ -267,12 +267,12 @@ Four-layer design enforcing the full Collie-style development workflow:
 
 | Entry point | Type | Purpose |
 |-------------|------|---------|
-| `/collie-harness:auto` | slash command | Full Collie workflow loop (brainstorm → plan → review → implement → rubric) |
-| `/collie-harness:queue` | slash command | Scan `~/.collie-harness/queue/*.md` and schedule pending tasks |
-| `collie-harness:review` | Skill | Collie rubric reviewer (12 red-lines + ELEPHANT check) |
-| `collie-harness:queue` | Skill | CronCreate-based task queue engine |
-| `collie-harness:gated-workflow` | Skill | Post-planmode implementation pipeline with quality gates |
-| `collie-harness:plan-doc-reviewer` | Agent | Structural plan document reviewer |
+| `/collie:auto` | slash command | Full Collie workflow loop (brainstorm → plan → review → implement → rubric) |
+| `/collie:queue` | slash command | Scan `~/.collie/queue/*.md` and schedule pending tasks |
+| `collie:review` | Skill | Collie rubric reviewer (12 red-lines + ELEPHANT check) |
+| `collie:queue` | Skill | CronCreate-based task queue engine |
+| `collie:flow` | Skill | Post-planmode implementation pipeline with quality gates |
+| `collie:plan-doc-reviewer` | Agent | Structural plan document reviewer |
 
 ### Tests
 

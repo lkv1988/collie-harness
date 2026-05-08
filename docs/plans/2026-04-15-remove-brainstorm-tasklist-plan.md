@@ -8,7 +8,7 @@
 [research]       — Research & Reuse
 [brainstorm]     — Brainstorming (superpowers:brainstorming)
 [plan-review]    — plan-doc-reviewer
-[collie-review]  — collie-harness:review Mode=plan
+[collie-review]  — collie:review Mode=plan
 [exit]           — ExitPlanMode
 ```
 
@@ -24,8 +24,8 @@
 | 条目 | 对应组件 | 组件是否自建 task |
 |------|---------|-------------------|
 | `[research]` | 无对应 sub-skill，纯粹我们负责 | N/A |
-| `[plan-review]` | collie-harness:plan-doc-reviewer（agent） | 不建（且 subagent 任务与父 session 隔离） |
-| `[collie-review]` | collie-harness:review（Mode=plan） | 不建 |
+| `[plan-review]` | collie:plan-doc-reviewer（agent） | 不建（且 subagent 任务与父 session 隔离） |
+| `[collie-review]` | collie:review（Mode=plan） | 不建 |
 | `[exit]` | ExitPlanMode（built-in tool） | 不建 |
 
 所以**只需删除 `[brainstorm]` 一条**，其他保留。
@@ -83,4 +83,4 @@ Step 1 的注释同步：去掉 `[brainstorm]`
 4. Brainstorming 叙述段落里有说明 brainstorming 会自建 9 条子任务
 5. `grep -rn '\[brainstorm\]' commands/ hooks/ skills/` → 0 matches
 6. `node --test tests/*.test.js` → all pass
-7. `claude plugin validate ~/git/collie-harness` → ✔ Validation passed
+7. `claude plugin validate ~/git/collie` → ✔ Validation passed

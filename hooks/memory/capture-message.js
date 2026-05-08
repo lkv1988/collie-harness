@@ -11,8 +11,8 @@
  * Output (stdout): "" (count < 20) or JSON additionalContext (count ≥ 20)
  *
  * Files:
- *   ~/.memory-palace/sessions/<session-id>.jsonl  — session log (JSONL)
- *   ~/.memory-palace/sessions/.counter            — persisted message counter
+ *   ~/.collie/memory/sessions/<session-id>.jsonl  — session log (JSONL)
+ *   ~/.collie/memory/sessions/.counter            — persisted message counter
  *
  * Performance target: < 10ms for typical runs (sync IO only, no network/LLM).
  */
@@ -21,7 +21,7 @@ import { readFileSync, writeFileSync, mkdirSync, openSync, readSync, ftruncateSy
 import { join } from 'path';
 import { homedir } from 'os';
 
-const SESSIONS_DIR = join(homedir(), '.memory-palace', 'sessions');
+const SESSIONS_DIR = join(homedir(), '.collie/memory', 'sessions');
 const COUNTER_FILE = join(SESSIONS_DIR, '.counter');
 const THRESHOLD = 20;
 
@@ -142,7 +142,7 @@ const message = (typeof input.prompt === 'string' ? input.prompt : '') ||
                 (typeof input.content === 'string' ? input.content : '');
 const cwd = typeof input.cwd === 'string' ? input.cwd : (process.env.CLAUDE_PROJECT_DIR || process.cwd());
 
-// Ensure ~/.memory-palace/sessions/ exists
+// Ensure ~/.collie/memory/sessions/ exists
 ensureSessionsDir();
 
 // Resolve session and append to log

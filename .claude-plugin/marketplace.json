@@ -10,7 +10,7 @@
   "allowCrossMarketplaceDependenciesOn": ["claude-plugins-official"],
   "plugins": [
     {
-      "name": "collie-harness",
+      "name": "collie",
       "version": "0.4.2",
       "description": "Collie-style autonomous development agent harness: rubric review + budget guardrails + loop detection",
       "category": "development",

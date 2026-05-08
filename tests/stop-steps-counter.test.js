@@ -34,7 +34,7 @@ afterEach(() => {
 });
 
 function stateDir() {
-  return path.join(tmpHome, '.collie-harness', 'state', SESSION_ID);
+  return path.join(tmpHome, '.collie', 'state', SESSION_ID);
 }
 
 function makeTranscriptFile(lines) {

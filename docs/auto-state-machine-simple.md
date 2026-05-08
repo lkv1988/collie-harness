@@ -1,4 +1,4 @@
-# `/collie-harness:auto` State Machine — Simplified
+# `/collie:auto` State Machine — Simplified
 
 ```dot
 digraph collie_auto {

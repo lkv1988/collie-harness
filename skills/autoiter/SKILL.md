@@ -1,14 +1,14 @@
 ---
-name: collie-harness:autoiter
-description: "Main loop orchestrator for collie-harness. Drives the 'run → observe → triage → deep-verify → fix → rerun' self-iteration pipeline. Called by commands/autoiter.md on every ralph-loop session restart. Implements a persistent state machine (§3.5) across ralph-loop session restarts: fresh-start → Stage 0 (Discovery planmode) → Stage 1 (kickoff) → Stage 2 (run trigger) → Stage 3 (observe + auto-recovery) → Stage 4a (Triage) → Stage 4b (Deep Verify) → Stage 5.0 (fix-plan) → Stage 5.1 (gated-workflow) → Stage 5.2 (G6 diff audit + rerun) → Stage 6 (rollback + stop check). Completion signal: <promise>Collie: AUTOITER DONE</promise> (emitted ONLY by the §3.5 terminal branch after ralph-loop restart, NEVER inline)."
+name: collie:autoiter
+description: "Main loop orchestrator for collie. Drives the 'run → observe → triage → deep-verify → fix → rerun' self-iteration pipeline. Called by commands/autoiter.md on every ralph-loop session restart. Implements a persistent state machine (§3.5) across ralph-loop session restarts: fresh-start → Stage 0 (Discovery planmode) → Stage 1 (kickoff) → Stage 2 (run trigger) → Stage 3 (observe + auto-recovery) → Stage 4a (Triage) → Stage 4b (Deep Verify) → Stage 5.0 (fix-plan) → Stage 5.1 (gated-workflow) → Stage 5.2 (G6 diff audit + rerun) → Stage 6 (rollback + stop check). Completion signal: <promise>Collie: AUTOITER DONE</promise> (emitted ONLY by the §3.5 terminal branch after ralph-loop restart, NEVER inline)."
 dependencies:
-  - collie-harness:gated-workflow
-  - collie-harness:review
+  - collie:gated-workflow
+  - collie:review
   - ralph-loop
   - superpowers:subagent-driven-development
 ---
 
-# collie-harness:autoiter — Main Autoiter Orchestrator
+# collie:autoiter — Main Autoiter Orchestrator
 
 Drives the iterative improvement pipeline: run trigger → observe → triage → deep-verify → gated fix → rerun → stop check. Invoked by `commands/autoiter.md` on every ralph-loop session restart.
 
@@ -117,7 +117,7 @@ digraph autoiter {
 1. Stage 2 `nohup bash` 启动 trigger（单行命令）
 2. Stage 5.0 写 `fix-plan.md`（仅汇总 4b deep-verify 输出，禁止读源码）
 3. Stage 5.2 `git diff HEAD~1..HEAD --name-only`（单行 git，结果不解析）
-4. 状态文件 IO（`~/.collie-harness/autoiter/...` 下的 status / progress / state）
+4. 状态文件 IO（`~/.collie/autoiter/...` 下的 status / progress / state）
 5. iter 边界的目录创建（`mkdir -p iter-N/`）
 
 ### Subagent 派发裁定基准（主 agent 自主裁定，不在 plan 硬编码）
@@ -172,10 +172,10 @@ If not nested: set `export COLLIE_AUTOITER_ACTIVE=1` for all subprocesses in thi
 
 ### Branch A — No current-run file
 
-`~/.collie-harness/autoiter/{project-id}/current-run` does NOT exist → **Fresh start**:
+`~/.collie/autoiter/{project-id}/current-run` does NOT exist → **Fresh start**:
 
 1. Generate `runId`: `YYYYMMDD-HHMMSS-{shortSessionId}` (use `date +%Y%m%d-%H%M%S` + first 6 chars of `$CLAUDE_SESSION_ID` or random hex)
-2. `mkdir -p ~/.collie-harness/autoiter/{project-id}/`
+2. `mkdir -p ~/.collie/autoiter/{project-id}/`
 3. Write runId to current-run file
 4. Proceed to Stage 0
 
@@ -185,20 +185,20 @@ Post-planmode recovery path:
 
 1. `runId = $(cat $CURRENT_RUN_FILE)`
 2. Attempt recovery chain:
-   - Read `~/.collie-harness/state/{sessionId}/last-plan.json` → get plan file path
+   - Read `~/.collie/state/{sessionId}/last-plan.json` → get plan file path
    - Read first 3 lines of plan file → extract `plan-source` field value
    - If recovery chain fails at any step → `rm $CURRENT_RUN_FILE` → go to Branch A
 3. Recovery succeeded:
    ```bash
-   mkdir -p ~/.collie-harness/autoiter/{project-id}/{runId}/
+   mkdir -p ~/.collie/autoiter/{project-id}/{runId}/
    # ⛔ NEVER use Write or Edit — cp only (prevents LLM rewriting content)
-   cp "$PLAN_SOURCE" ~/.collie-harness/autoiter/{project-id}/{runId}/run-spec.md
+   cp "$PLAN_SOURCE" ~/.collie/autoiter/{project-id}/{runId}/run-spec.md
    git worktree add .worktrees/autoiter-{runId} -b autoiter/{runId}
-   echo "$(pwd)/.worktrees/autoiter-{runId}" > ~/.collie-harness/autoiter/{project-id}/{runId}/worktree-path
+   echo "$(pwd)/.worktrees/autoiter-{runId}" > ~/.collie/autoiter/{project-id}/{runId}/worktree-path
    ```
 4. Read `skip_prepare` from run-spec.md
 5. If `skip_prepare=false` AND `prepare-report.md` does NOT exist:
-   - Call `Skill('collie-harness:autoiter-prepare')` with: `run_spec_path`, `report_path`, `project_id`, `run_id`, `worktree_path`
+   - Call `Skill('collie:autoiter-prepare')` with: `run_spec_path`, `report_path`, `project_id`, `run_id`, `worktree_path`
    - PASS → continue
    - FAIL (interactive): `AskUserQuestion "Prepare failed: [X]. Fix material and retry, or abort?"`
    - FAIL (queued): write `state.json.status="escalated"` → **return** (§3.5 terminal handles on next restart)
@@ -261,7 +261,7 @@ Write to planmode system-prompt-specified plan file (do NOT override path). Top 
 ```
 <!-- plan-source: <planmode plan file absolute path> -->
 <!-- plan-kind: autoiter-stage0 -->
-<!-- plan-executor: collie-harness:autoiter -->
+<!-- plan-executor: collie:autoiter -->
 ```
 
 Body YAML:
@@ -315,8 +315,8 @@ ralph-loop restarts the session. §3.5 Branch B (recovery path) handles everythi
 **All Stage 1+ work runs inside the worktree.** Read `worktree-path` to get the absolute path.
 
 ```bash
-WORKTREE=$(cat ~/.collie-harness/autoiter/{project-id}/{runId}/worktree-path)
-ITER_DIR=~/.collie-harness/autoiter/{project-id}/{runId}/iter-{N}
+WORKTREE=$(cat ~/.collie/autoiter/{project-id}/{runId}/worktree-path)
+ITER_DIR=~/.collie/autoiter/{project-id}/{runId}/iter-{N}
 mkdir -p $ITER_DIR/fixes
 ```
 
@@ -532,7 +532,7 @@ Write `iter-N/fix-plan.md` using `skills/autoiter/references/fix-plan-template.m
    ```
    <!-- plan-source: <absolute path to iter-N/fix-plan.md> -->
    <!-- plan-topic: autoiter-iter-N-fixes -->
-   <!-- plan-executor: collie-harness:gated-workflow -->
+   <!-- plan-executor: collie:gated-workflow -->
    ```
 2. **Task Execution DAG** (from FIX `dependencies` fields; independent FIX = same batch)
 3. **Task Details**: `root_cause → Why`, `fix_outline → How`, `reproduction_test → Verify`
@@ -548,7 +548,7 @@ Write `iter-N/fix-plan.md` using `skills/autoiter/references/fix-plan-template.m
 ## Stage 5.1 — gated-workflow
 
 ```
-Skill('collie-harness:gated-workflow')
+Skill('collie:gated-workflow')
 ```
 
 Input: `iter-N/fix-plan.md`. Runs full pipeline: TDD → implement → review → simplify → regression → [collie-final-review].

@@ -2,7 +2,7 @@
 
 > System prompt for the Stage 0 Discovery subagent.
 > Model: **haiku** (Explore type, read-only).
-> Invoked by `collie-harness:autoiter` SKILL during Stage 0 inside planmode.
+> Invoked by `collie:autoiter` SKILL during Stage 0 inside planmode.
 
 ---
 

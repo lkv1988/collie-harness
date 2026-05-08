@@ -66,7 +66,7 @@ description: Post-planmode implementation workflow with quality gates. Use immed
 - `[e2e-verify]` 运行 e2e / 集成测试，验证 critical path（条件：仅当 plan E2E Assessment 结论为 `e2e_feasible: true` 时创建）
 - `[test-verify]` 运行单元测试，确保 0 失败
 - `[doc-refresh]` 对照实现结果核对 README / CLAUDE.md / spec，补更新遗漏
-- `[collie-final-review]` 最终 rubric 审查（worktree 清理前的 pre-merge gate，调用 collie-harness:review Mode=code）
+- `[collie-final-review]` 最终 rubric 审查（worktree 清理前的 pre-merge gate，调用 collie:review Mode=code）
 - `[finish]` finishing-a-development-branch
 
 **示例**（3 个互相独立的 task）：
@@ -82,7 +82,7 @@ description: Post-planmode implementation workflow with quality gates. Use immed
 [e2e-verify] 运行 e2e / 集成测试（条件性）
 [test-verify] 运行单元测试
 [doc-refresh] 对照实现结果核对 README / CLAUDE.md / spec，补更新遗漏
-[collie-final-review] 最终 rubric 审查（collie-harness:review Mode=code）
+[collie-final-review] 最终 rubric 审查（collie:review Mode=code）
 [finish] finishing-a-development-branch
 ```
 
@@ -115,12 +115,12 @@ TodoList snapshot: <当前所有 TaskCreate 条目的 subject 列表>
 
 ## Step 2：归档计划文档（task0）
 
-执行阶段 session context 里带有 plan 内容，但 planmode 原始文件路径不会自动传递。plan 文件的前三行嵌有元数据（由 `/collie-harness:auto` Step 2 写入，hook 在 ExitPlanMode 前已验证存在）：
+执行阶段 session context 里带有 plan 内容，但 planmode 原始文件路径不会自动传递。plan 文件的前三行嵌有元数据（由 `/collie:auto` Step 2 写入，hook 在 ExitPlanMode 前已验证存在）：
 
 ```
 <!-- plan-source: /absolute/path/to/plan/file.md -->
 <!-- plan-topic: my-feature-slug -->
-<!-- plan-executor: collie-harness:gated-workflow -->
+<!-- plan-executor: collie:gated-workflow -->
 ```
 
 **归档流程**：
@@ -254,7 +254,7 @@ subagent 调用 `superpowers:requesting-code-review`。
 
 判断"是否需要新增/更新 skill"的启发见 `skills/review/references/rubric-red-lines.md` Red line #12 补充说明。
 
-如果 plan 阶段已规划好对应的 doc 更新任务（通过 plan-doc-reviewer 和 collie-harness:review 的审查），这一步通常只是快速确认。
+如果 plan 阶段已规划好对应的 doc 更新任务（通过 plan-doc-reviewer 和 collie:review 的审查），这一步通常只是快速确认。
 如果没有规划，说明 plan 阶段双 reviewer 漏检，这一步就是安全网——必须补上再进入 Step 6。
 
 豁免情况：本次改动仅限于内部逻辑（无 user-facing 命令 / workflow / 配置 / 约束变更），且未新增 agent / skill / hook，可在 TodoList 里把 `[doc-refresh]` 直接标记为 N/A 并注明理由。
@@ -268,7 +268,7 @@ subagent 调用 `superpowers:requesting-code-review`。
 ### 调用方式
 
 ```
-Skill("collie-harness:review")
+Skill("collie:review")
   Mode=code
   Target=<当前 worktree 绝对路径 或 "worktree diff">
   Context="Plan: $ARCHIVE_PATH（from task0）"
@@ -290,7 +290,7 @@ Skill("collie-harness:review")
    - FAIL 问题清单（引用 review 原文）
    - worktree 绝对路径
    - `$ARCHIVE_PATH`（plan 归档路径）
-3. 修复 subagent 完成后，dispatch 新的 `Skill("collie-harness:review")` with 同样 Mode/Target/Context
+3. 修复 subagent 完成后，dispatch 新的 `Skill("collie:review")` with 同样 Mode/Target/Context
 4. 修复 → 重审循环直到 PASS
 5. 连续 3 轮仍 BLOCK → 升级（通过 `scripts/escalate.sh` 上报，等用户介入）
 
@@ -299,7 +299,7 @@ Skill("collie-harness:review")
 ### 与 `[task N-CR]` 的区别
 
 - `[task N-CR]`：per-task 粒度，使用 `superpowers:requesting-code-review`，关注**单个 task 的实现质量**
-- `[collie-final-review]`：整体 rubric 粒度，使用 `collie-harness:review` Mode=code，关注**所有改动聚合后的 13 红线 + 6 问题 + ELEPHANT**
+- `[collie-final-review]`：整体 rubric 粒度，使用 `collie:review` Mode=code，关注**所有改动聚合后的 13 红线 + 6 问题 + ELEPHANT**
 
 两者互补，不重复。
 

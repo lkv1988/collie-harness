@@ -1,9 +1,9 @@
-# `/collie-harness:auto` State Machine — Detailed
+# `/collie:auto` State Machine — Detailed
 
 ```dot
 digraph collie_auto {
     // ── Terminals ────────────────────────────────────────────────
-    "invoke /collie-harness:auto" [shape=doublecircle];
+    "invoke /collie:auto" [shape=doublecircle];
     "SHIP IT ✅"                  [shape=doublecircle];
     "blocked\nawait user ⚠️" [shape=doublecircle];
 
@@ -24,7 +24,7 @@ digraph collie_auto {
     "fix issues"                                                    [shape=box];
 
     // ── Main flow ────────────────────────────────────────────────
-    "invoke /collie-harness:auto"
+    "invoke /collie:auto"
         -> "⓪ TaskCreate\n[research][plan-review]\n[collie-review][exit]";
 
     "⓪ TaskCreate\n[research][plan-review]\n[collie-review][exit]"

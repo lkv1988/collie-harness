@@ -21,7 +21,7 @@ afterEach(() => {
 });
 
 function stateDir() {
-  return path.join(tmpHome, '.collie-harness', 'state', SESSION_ID);
+  return path.join(tmpHome, '.collie', 'state', SESSION_ID);
 }
 
 function lastPlanFile() {
@@ -45,7 +45,7 @@ test('post-approved-exitplan-hint: Agent plan-doc-reviewer with Approved → las
     tool_name: 'Agent',
     session_id: SESSION_ID,
     tool_input: {
-      subagent_type: 'collie-harness:plan-doc-reviewer',
+      subagent_type: 'collie:plan-doc-reviewer',
     },
     tool_response: {
       content: '## Review\n\n**Status:** Approved\n\nLooks good, well structured.',
@@ -69,7 +69,7 @@ test('post-approved-exitplan-hint: Agent plan-doc-reviewer with Approved → las
   const out = JSON.parse(result.stdout.trim());
   assert.ok(out.additionalContext, 'additionalContext should be present');
   assert.ok(
-    out.additionalContext.includes('ExitPlanMode') || out.additionalContext.includes('collie-harness:review'),
+    out.additionalContext.includes('ExitPlanMode') || out.additionalContext.includes('collie:review'),
     'additionalContext should mention ExitPlanMode or next step'
   );
 });
@@ -97,7 +97,7 @@ test('post-approved-exitplan-hint: plan-doc-reviewer without Approved in respons
     tool_name: 'Agent',
     session_id: SESSION_ID,
     tool_input: {
-      subagent_type: 'collie-harness:plan-doc-reviewer',
+      subagent_type: 'collie:plan-doc-reviewer',
     },
     tool_response: {
       content: '**Status:** Rejected\n\nNeeds more detail.',
@@ -110,7 +110,7 @@ test('post-approved-exitplan-hint: plan-doc-reviewer without Approved in respons
   assert.strictEqual(result.stdout.trim(), '', 'stdout should be empty when not approved');
 });
 
-test('post-approved-exitplan-hint: Skill collie-harness:review PASS updates collie_reviewer branch', () => {
+test('post-approved-exitplan-hint: Skill collie:review PASS updates collie_reviewer branch', () => {
   // Pre-seed state with plan_doc_reviewer already approved
   fs.mkdirSync(stateDir(), { recursive: true });
   fs.writeFileSync(lastPlanFile(), JSON.stringify({
@@ -123,7 +123,7 @@ test('post-approved-exitplan-hint: Skill collie-harness:review PASS updates coll
   const payload = {
     tool_name: 'Skill',
     session_id: SESSION_ID,
-    tool_input: { skill: 'collie-harness:review' },
+    tool_input: { skill: 'collie:review' },
     tool_response: {
       content: '## Collie Reviewer\n\n**Mode:** plan\n**Target:** docs/plans/foo-plan.md\n**Status:** PASS\n\n### Red line violations\n- None\n',
     },
@@ -141,11 +141,11 @@ test('post-approved-exitplan-hint: Skill collie-harness:review PASS updates coll
   assert.ok(out.additionalContext.includes('plan-doc-reviewer'), 'hint should mention still-waiting plan-doc-reviewer');
 });
 
-test('post-approved-exitplan-hint: Skill collie-harness:review WARN does not update state', () => {
+test('post-approved-exitplan-hint: Skill collie:review WARN does not update state', () => {
   const payload = {
     tool_name: 'Skill',
     session_id: SESSION_ID,
-    tool_input: { skill: 'collie-harness:review' },
+    tool_input: { skill: 'collie:review' },
     tool_response: {
       content: '## Collie Reviewer\n\n**Status:** WARN\n\n### Issues\n- Some issue',
     },
@@ -154,7 +154,7 @@ test('post-approved-exitplan-hint: Skill collie-harness:review WARN does not upd
   const result = runHook(payload);
   assert.strictEqual(result.status, 0);
   assert.strictEqual(result.stdout.trim(), '', 'stdout should be empty when status is not PASS');
-  assert.ok(!fs.existsSync(lastPlanFile()), 'last-plan.json should NOT be written for non-PASS collie-harness:review');
+  assert.ok(!fs.existsSync(lastPlanFile()), 'last-plan.json should NOT be written for non-PASS collie:review');
 });
 
 test('post-approved-exitplan-hint: two-step plan-doc then collie PASS → both approved hint', () => {
@@ -170,15 +170,15 @@ test('post-approved-exitplan-hint: two-step plan-doc then collie PASS → both a
   runHook({
     tool_name: 'Agent',
     session_id: SESSION_ID,
-    tool_input: { subagent_type: 'collie-harness:plan-doc-reviewer' },
+    tool_input: { subagent_type: 'collie:plan-doc-reviewer' },
     tool_response: { content: '**Status:** Approved\n\nLooks good.' },
   });
 
-  // Second: collie-harness:review PASS
+  // Second: collie:review PASS
   const result2 = runHook({
     tool_name: 'Skill',
     session_id: SESSION_ID,
-    tool_input: { skill: 'collie-harness:review' },
+    tool_input: { skill: 'collie:review' },
     tool_response: {
       content: '## Collie Reviewer\n\n**Status:** PASS\n\n### Red line violations\n- None\n',
     },
@@ -198,7 +198,7 @@ test('post-approved-exitplan-hint: regex tolerant to extra whitespace in Status 
   const payload = {
     tool_name: 'Skill',
     session_id: SESSION_ID,
-    tool_input: { skill: 'collie-harness:review' },
+    tool_input: { skill: 'collie:review' },
     tool_response: {
       // Double space between ** and PASS
       content: '## Collie Reviewer\n\n**Status:**  PASS\n\n### Red line violations\n- None\n',

@@ -22,12 +22,12 @@ function runScript(hookJson, fakeHome) {
 }
 
 /**
- * Create a temp dir and a fake ~/.memory-palace/ inside it.
+ * Create a temp dir and a fake ~/.collie/memory/ inside it.
  * Returns { fakeHome, memoryRoot }.
  */
 function createFakeHome() {
   const fakeHome = mkdtempSync(path.join(tmpdir(), 'mp-test-'));
-  const memoryRoot = path.join(fakeHome, '.memory-palace');
+  const memoryRoot = path.join(fakeHome, '.collie/memory');
   mkdirSync(memoryRoot, { recursive: true });
   return { fakeHome, memoryRoot };
 }
@@ -62,12 +62,12 @@ test('path hit: bumps access_count and last_accessed', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Test 2: Path miss — file outside ~/.memory-palace/ is not touched
+// Test 2: Path miss — file outside ~/.collie/memory/ is not touched
 // ---------------------------------------------------------------------------
 test('path miss: file outside memory-palace is not modified', () => {
   const { fakeHome } = createFakeHome();
 
-  // Create a file outside .memory-palace/
+  // Create a file outside .collie/memory/
   const outsideDir = mkdtempSync(path.join(tmpdir(), 'mp-outside-'));
   const filePath = path.join(outsideDir, 'other-note.md');
   const original = [

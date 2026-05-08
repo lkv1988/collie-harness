@@ -1,8 +1,8 @@
-# Plan: 把文档维护纳入 collie-harness 工作流
+# Plan: 把文档维护纳入 collie 工作流
 
 ## Context
 
-当前 collie-harness 工作流对文档的处理**是断裂的**，且是**双向断裂**——写文档和读文档两侧都有缺口：
+当前 collie 工作流对文档的处理**是断裂的**，且是**双向断裂**——写文档和读文档两侧都有缺口：
 
 **写侧缺口**（plan / 实现 → 文档）：
 
@@ -135,7 +135,7 @@
    3. **docs/\*-spec.md** — 如果实现过程中发现的新认知与 spec 有偏差，或学到了新 pitfall，必须回写到对应 spec
    4. **docs/plans/** — 本次计划文档已在 Step 2 归档，无需重复
 
-   如果 plan 阶段已规划好对应的 doc 更新任务（通过 plan-doc-reviewer 和 collie-harness:review 的审查），这一步通常只是快速确认。
+   如果 plan 阶段已规划好对应的 doc 更新任务（通过 plan-doc-reviewer 和 collie:review 的审查），这一步通常只是快速确认。
    如果没有规划，说明 plan 阶段双 reviewer 漏检，这一步就是安全网——必须补上再进入 Step 6。
 
    豁免情况：纯内部重构 / 不改变用户可见行为 / 不影响任何已存在文档的改动，可在 TodoList 里把 `[doc-refresh]` 直接标记为 N/A。
@@ -145,14 +145,14 @@
 
 ---
 
-### Task 4: 更新 `CLAUDE.md`（collie-harness 项目自己的）
+### Task 4: 更新 `CLAUDE.md`（collie 项目自己的）
 
 **文件**：`CLAUDE.md`（仓库根目录）
 
 **改动点**：
 
 1. "Key Design Constraints" 章节新增一条：
-   > - **文档维护强制**：任何 plan 若改动用户可见行为 / 架构约束 / 已有文档内容，必须包含显式的文档更新任务（README / CLAUDE.md / docs/\*-spec.md）。由 `collie-harness:plan-doc-reviewer` 的 Doc Maintenance 检查 + `collie-harness:review` 的 Red line #12（plan mode 扩展）共同强制。`gated-workflow` Step 5.5 作为安全网。
+   > - **文档维护强制**：任何 plan 若改动用户可见行为 / 架构约束 / 已有文档内容，必须包含显式的文档更新任务（README / CLAUDE.md / docs/\*-spec.md）。由 `collie:plan-doc-reviewer` 的 Doc Maintenance 检查 + `collie:review` 的 Red line #12（plan mode 扩展）共同强制。`gated-workflow` Step 5.5 作为安全网。
 
 2. "Release Checklist" 新增一小节（在 "依赖审计" 之后）：
    ```markdown
@@ -257,7 +257,7 @@
 1. **静态检查**：
    ```bash
    node --test tests/*.test.js                # 期望全通过
-   claude plugin validate ~/git/collie-harness  # 期望 ✔ Validation passed
+   claude plugin validate ~/git/collie  # 期望 ✔ Validation passed
    ```
 
 2. **Rubric 内部一致性**：
@@ -280,7 +280,7 @@
 
 ## 范围边界（明确不做）
 
-- **不修改外部 superpowers skill**：`writing-plans` / `brainstorming` / `finishing-a-development-branch` 都是外部 plugin，不能改。doc 维护靠 collie-harness 自己的两个 reviewer + gated-workflow 在自己的边界内强制
+- **不修改外部 superpowers skill**：`writing-plans` / `brainstorming` / `finishing-a-development-branch` 都是外部 plugin，不能改。doc 维护靠 collie 自己的两个 reviewer + gated-workflow 在自己的边界内强制
 - **不引入新的 hook**：现有 hook 机制已经足够（双 reviewer 握手），不需要新增 PostToolUse 检查文档内容
 - **不写新的自动化检查工具**：文档是否"同步"是语义问题，不是机械检查能覆盖的；靠 reviewer 的判断力 + Release Checklist 的人工对照
 - **不延伸到 AGENTS.md / GEMINI.md**：本项目只服务 Claude Code

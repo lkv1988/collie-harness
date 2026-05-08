@@ -1,16 +1,16 @@
 <!-- plan-source: /Users/kevin/.claude/plans/auto-gated-workflow-plan-impl-auto-plan-virtual-puppy.md -->
 <!-- plan-topic: loop-command -->
-<!-- plan-executor: collie-harness:gated-workflow -->
+<!-- plan-executor: collie:gated-workflow -->
 
 # Loop Command Design & Implementation Plan
 
-> **For agentic workers:** MUST invoke Skill('collie-harness:gated-workflow') to implement this plan.
+> **For agentic workers:** MUST invoke Skill('collie:gated-workflow') to implement this plan.
 
 ## Context
 
-用户希望新增一个 `/collie-harness:loop` slash command（与 `/collie-harness:auto` 同级），用来驱动"跑长测试 → 观察 → 校验 → 批量修复 → 重跑"的自迭代闭环，对标 Karpathy `autoresearch`（github.com/karpathy/autoresearch, Oct 2025）。
+用户希望新增一个 `/collie:loop` slash command（与 `/collie:auto` 同级），用来驱动"跑长测试 → 观察 → 校验 → 批量修复 → 重跑"的自迭代闭环，对标 Karpathy `autoresearch`（github.com/karpathy/autoresearch, Oct 2025）。
 
-当前 `/collie-harness:auto` 走 **R&R → brainstorming → writing-plans → dual-review → gated-workflow → SHIP** 的一次性线性闭环，不适合"长期观察 + 多轮迭代收敛"这类工程质量打磨场景。新命令的核心差异：
+当前 `/collie:auto` 走 **R&R → brainstorming → writing-plans → dual-review → gated-workflow → SHIP** 的一次性线性闭环，不适合"长期观察 + 多轮迭代收敛"这类工程质量打磨场景。新命令的核心差异：
 
 1. **输入是 prompt（任务描述），不是预先配置好的脚本或数据集** — 触发器由主 agent + haiku Discovery 从项目中探测，由用户在 Stage 0 确认后锁定。
 2. **有 primary_goal 二元区分** — `correctness`（让工程跑起来不崩）/ `optimization`（打磨指标）/ `both`（默认），影响停止条件和回退策略。
@@ -30,7 +30,7 @@
 - **Skill**: `skills/loop/SKILL.md`（主 orchestrator ~350 行）
 - **前置体检 Skill**: `skills/loop-prepare/SKILL.md`（独立 SKILL，由主 loop SKILL 在 Stage 0.5 调用——**不是**用户直达入口；详见 §4.5）
 - **References**: `skills/loop/references/{overfit-guards.md, stop-criterion.md, discovery-prompt.md, iter-prompt.md, fix-plan-template.md}` 以及 `skills/loop-prepare/references/prepare-checks.md`
-- **调用**: `/collie-harness:loop "<task>" [--max-iterations N] [--budget-tokens M] [--mode interactive|queued]`
+- **调用**: `/collie:loop "<task>" [--max-iterations N] [--budget-tokens M] [--mode interactive|queued]`
   - 默认 `--max-iterations 5`（prior art 显示 gains concentrate in iterations 1-2）
   - 默认 `--budget-tokens` 无上限（仅在用户指定或 queued 模式下启用）
   - 默认 `--mode interactive`
@@ -40,10 +40,10 @@
 **project-id 推导**：`git rev-parse --show-toplevel` 输出，将 `/` 替换为 `-`，去掉开头的 `-`，与 Claude Code 的 projects 目录编码一致（例：`/Users/kevin/git/myproject` → `Users-kevin-git-myproject`）。由 `_state.js` 的 `projectId()` helper 统一实现，SKILL 不自行推导。
 
 ```
-~/.collie-harness/loop/{project-id}/current-run   # 纯文本文件，内容为当前活跃 runId（EnterPlanMode 前写入；ExitPlanMode 触发 context-clear 后，SKILL 恢复时的第一锚点）；project-scoped：不同项目各自独立，互不干扰
+~/.collie/loop/{project-id}/current-run   # 纯文本文件，内容为当前活跃 runId（EnterPlanMode 前写入；ExitPlanMode 触发 context-clear 后，SKILL 恢复时的第一锚点）；project-scoped：不同项目各自独立，互不干扰
 
-~/.collie-harness/loop/{project-id}/{runId}/
-  run-spec.md               # Stage 0 锁定的契约（task / trigger / success criterion / budget / guards / primary_goal / iter_rollback_policy）；带 plan-kind: loop-stage0 + plan-executor: collie-harness:loop metadata
+~/.collie/loop/{project-id}/{runId}/
+  run-spec.md               # Stage 0 锁定的契约（task / trigger / success criterion / budget / guards / primary_goal / iter_rollback_policy）；带 plan-kind: loop-stage0 + plan-executor: collie:loop metadata
   prepare-report.md         # Stage 0.5 loop-prepare 体检报告（trigger dry-run / scalar extract / observability 结果）
   state.json                # 跨 iter 机器可读状态（见下方 schema）
   progress.md               # 跨 iter 的 DEFERRED 池 + 每轮摘要（持久化 markdown，不清空）
@@ -78,17 +78,17 @@
 }
 ```
 
-**ralph-loop 复用说明**：本命令**复用 ralph-loop 作为外层循环驱动**（与 `/auto` 一致）。`/collie-harness:loop` 输出 completion signal `<promise>Collie: LOOP DONE</promise>`（与 `/auto` 的 `Collie: SHIP IT` 区分），ralph-loop Stop hook 在未见 promise 时 block 退出形成循环。**不新建 Stop hook**。state.json 仅作 SKILL 内部跨 iter 状态交接，不被 hook 读取。
+**ralph-loop 复用说明**：本命令**复用 ralph-loop 作为外层循环驱动**（与 `/auto` 一致）。`/collie:loop` 输出 completion signal `<promise>Collie: LOOP DONE</promise>`（与 `/auto` 的 `Collie: SHIP IT` 区分），ralph-loop Stop hook 在未见 promise 时 block 退出形成循环。**不新建 Stop hook**。state.json 仅作 SKILL 内部跨 iter 状态交接，不被 hook 读取。
 
 ## §3 Dual Mode
 
 - **Interactive（默认）**：Stage 0 在真正的 Claude Code planmode 中运行（见 §4）——发起时调 `EnterPlanMode`，用户用 `ExitPlanMode` 锁定契约，SKILL 随后进 worktree 跑迭代。AskUserQuestion 用于**收集** trigger / criterion / primary_goal / 是否跳过 prepare；ExitPlanMode 是**锁定** sign-off。
-- **Queued（via `/collie-harness:queue` 托管）**：无人值守模式跳过 planmode 交互。`{project-id}/current-run` 仅在 Discovery + prepare **都通过后**才写入（run-spec.md 必须在 current-run 之前写入，保证 §3.5 状态机读到 current-run 时 run-spec.md 已存在；与 interactive 模式写 current-run 在 EnterPlanMode 前不同，queued 无 planmode，不需要跨 session planmode 锚点，可以推迟到确认启动时）。Discovery 推断失败 / prepare 不过 → 直接 `scripts/escalate.sh` 升级，`current-run` 未写 → 下次调用走全新开始，无悬挂指针。
-  - `skills/queue/SKILL.md` 的 task schema 新增 `command` 字段支持 `/collie-harness:loop`（详见 T5）。
+- **Queued（via `/collie:queue` 托管）**：无人值守模式跳过 planmode 交互。`{project-id}/current-run` 仅在 Discovery + prepare **都通过后**才写入（run-spec.md 必须在 current-run 之前写入，保证 §3.5 状态机读到 current-run 时 run-spec.md 已存在；与 interactive 模式写 current-run 在 EnterPlanMode 前不同，queued 无 planmode，不需要跨 session planmode 锚点，可以推迟到确认启动时）。Discovery 推断失败 / prepare 不过 → 直接 `scripts/escalate.sh` 升级，`current-run` 未写 → 下次调用走全新开始，无悬挂指针。
+  - `skills/queue/SKILL.md` 的 task schema 新增 `command` 字段支持 `/collie:loop`（详见 T5）。
 
 ## §3.5 SKILL 入口状态机（每次 ralph-loop 重启 session 时执行）
 
-ralph-loop 在每次 Stop 事件后重启 session，重新调用 `commands/loop.md`，后者无条件调用 `Skill('collie-harness:loop')`。**SKILL 的第一件事就是判断当前处于哪个状态**——这是跨 session 持续性的核心。
+ralph-loop 在每次 Stop 事件后重启 session，重新调用 `commands/loop.md`，后者无条件调用 `Skill('collie:loop')`。**SKILL 的第一件事就是判断当前处于哪个状态**——这是跨 session 持续性的核心。
 
 ```
 SKILL 入口（最先执行，在所有状态机分支之前）：
@@ -96,22 +96,22 @@ SKILL 入口（最先执行，在所有状态机分支之前）：
   嵌套检查：若检测到从 /auto 或另一 /loop session 内调用 → fail-fast escalate（⛔ 禁止 rm current-run：current-run 属于外层 run 而非本次调用）
 
   # 以下状态机在嵌套检查通过后执行：
-  if ~/.collie-harness/loop/{project-id}/current-run 不存在:
+  if ~/.collie/loop/{project-id}/current-run 不存在:
     → 全新开始：生成 runId，写 {project-id}/current-run，进 §4 Stage 0
 
   else:
     runId = cat {project-id}/current-run
 
-    if ~/.collie-harness/loop/{project-id}/{runId}/run-spec.md 不存在:
+    if ~/.collie/loop/{project-id}/{runId}/run-spec.md 不存在:
       → 刚完成 Stage 0 / ExitPlanMode 已触发但 cp 尚未完成
         尝试恢复链：读 last-plan.json → 得 plan file 路径 → 读前 3 行取 plan-source
         if 恢复链失败（last-plan.json 缺失 / plan file 不可读 / plan-source 字段缺失）:
           → Stage 0 中途终止（用户 abort / prepare 失败）：rm {project-id}/current-run → 全新开始
         else:
-          Bash cp "$PLAN_SOURCE" ~/.collie-harness/loop/{project-id}/{runId}/run-spec.md
+          Bash cp "$PLAN_SOURCE" ~/.collie/loop/{project-id}/{runId}/run-spec.md
           创建 worktree（若 worktree-path 不存在），写 worktree-path 文件
           if skip_prepare=false ∧ prepare-report.md 不存在:
-            调 Skill('collie-harness:loop-prepare')（在 worktree 内执行，中间产物隔离主仓）
+            调 Skill('collie:loop-prepare')（在 worktree 内执行，中间产物隔离主仓）
             PASS → 继续
             FAIL → interactive: AskUserQuestion; queued: 写 state.json.status="escalated" → return（§3.5 terminal 分支接管）
           初始化 state.json（iter=1, status="running"）
@@ -122,14 +122,14 @@ SKILL 入口（最先执行，在所有状态机分支之前）：
         status == "running"     → 从 Stage 1 kickoff 重跑当前 iter（幂等；kickoff.md 存在则跳过写）
         status == "iter_done"   → 进 §9 Stage 6 停止判断
         status in (converged | budget_exhausted | escalated):
-          → rm ~/.collie-harness/loop/{project-id}/current-run（清理指针，下次调用可全新开始）
+          → rm ~/.collie/loop/{project-id}/current-run（清理指针，下次调用可全新开始）
           → 输出 <promise>Collie: LOOP DONE</promise>
         state.json 缺失        → 同"run-spec.md 不存在"路径（兜底）
 ```
 
 **为什么这个状态机能正常工作**：`{project-id}/current-run`（持久化到 EnterPlanMode 之前）、`last-plan.json`（hook 在 planmode 期间写入）、`run-spec.md`（cp 后存在）、`state.json`（Stage 1 kickoff 首次写入）这四个文件的存在与否，精确描述了 session 在哪个阶段被中断——SKILL 无需依赖任何 session context，只读磁盘。多个 project 各自持有独立的 `{project-id}/current-run` 指针，互不干扰。
 
-**终态清理**：sentinel 发出前 rm `{project-id}/current-run`（顺序：先 rm 再 emit；crash-safe：若 rm 成功但 emit 前崩溃，下次调用走全新路径，不会死循环），确保下次调用 `/collie-harness:loop "new-task"` 走全新开始路径。
+**终态清理**：sentinel 发出前 rm `{project-id}/current-run`（顺序：先 rm 再 emit；crash-safe：若 rm 成功但 emit 前崩溃，下次调用走全新路径，不会死循环），确保下次调用 `/collie:loop "new-task"` 走全新开始路径。
 
 **Sentinel 发出点唯一性原则**：**所有 sentinel 都且只通过 §3.5 terminal 分支发出**。Stage 3.3 blocker 和 G7 deadlock 等非 §3.5 路径**不**在 inline 发 sentinel；它们只做两件事：写 `state.json.status="escalated"` + 完成 reporting（blocker-report.md / user-log.md / status.md / escalate.sh / notify），然后 return。ralph-loop 重启 session → §3.5 读到 status="escalated" → rm `{project-id}/current-run` → emit `<promise>Collie: LOOP DONE</promise>`。这确保 current-run 清理路径只有一处，不重复。
 
@@ -139,10 +139,10 @@ SKILL 入口（最先执行，在所有状态机分支之前）：
 
 **决策**：Stage 0 使用真正的 Claude Code planmode。理由由三个 opus subagent 交叉 review 得出（2 对 1）：(a) planmode 本来就是"pre-execution approval gate"的平台原语，Stage 0 形态完全匹配；(b) read-only 约束是白送的安全网（Discovery subagent 不可能误触代码）；(c) 与 `/auto` 语义对称，用户心智统一。
 
-**反方论据与反驳（落地以便独立审查）**：反对 opus 的核心 concern 是——planmode 对 unattended queued 模式不友好（EnterPlanMode 会阻塞等 AskUserQuestion，无 TTY 会死锁），同时 Discovery subagent 在 read-only 约束下只能读不能写 `~/.collie-harness/loop/{project-id}/{runId}/`，得绕 `/tmp` 暂存再在 ExitPlanMode 后搬运，复杂度额外。多数方反驳：(1) queued 死锁问题在 §3 已显式分流——queued 模式跳过 planmode 交互走 Discovery 推断+escalate（L138），不会真的卡死；(2) `/tmp` 暂存路径反而自然落在"planmode read-only"的防护面里，是 feature 不是 bug——Discovery 阶段本来就不该写最终契约文件，ExitPlanMode 后再 finalize 到 `~/.collie-harness/` 才是对的流；(3) 放弃 planmode 的隐性代价是要重新实现 pre-execution gate（比如自己做 AskUserQuestion × 5 循环 + 校验 + 锁定），这等于重造 planmode 的轮子，触发 Red line #9。
+**反方论据与反驳（落地以便独立审查）**：反对 opus 的核心 concern 是——planmode 对 unattended queued 模式不友好（EnterPlanMode 会阻塞等 AskUserQuestion，无 TTY 会死锁），同时 Discovery subagent 在 read-only 约束下只能读不能写 `~/.collie/loop/{project-id}/{runId}/`，得绕 `/tmp` 暂存再在 ExitPlanMode 后搬运，复杂度额外。多数方反驳：(1) queued 死锁问题在 §3 已显式分流——queued 模式跳过 planmode 交互走 Discovery 推断+escalate（L138），不会真的卡死；(2) `/tmp` 暂存路径反而自然落在"planmode read-only"的防护面里，是 feature 不是 bug——Discovery 阶段本来就不该写最终契约文件，ExitPlanMode 后再 finalize 到 `~/.collie/` 才是对的流；(3) 放弃 planmode 的隐性代价是要重新实现 pre-execution gate（比如自己做 AskUserQuestion × 5 循环 + 校验 + 锁定），这等于重造 planmode 的轮子，触发 Red line #9。
 
 **SKILL 启动**（全新开始路径，§3.5 嵌套检查通过 + `current-run` 不存在时才执行此段）：
-2. 调 `_state.projectId()` 得 projectId；生成 runId（`YYYYMMDD-HHMMSS-{shortSessionId}`）；写入 `~/.collie-harness/loop/{project-id}/current-run`（project-scoped 路径，plaintext）——**必须在 `EnterPlanMode` 之前完成**，这样 ralph-loop 重启 session 后 §3.5 状态机能检测到本次 run
+2. 调 `_state.projectId()` 得 projectId；生成 runId（`YYYYMMDD-HHMMSS-{shortSessionId}`）；写入 `~/.collie/loop/{project-id}/current-run`（project-scoped 路径，plaintext）——**必须在 `EnterPlanMode` 之前完成**，这样 ralph-loop 重启 session 后 §3.5 状态机能检测到本次 run
 3. 调 `EnterPlanMode` 进入 planmode
 4. 在 planmode 下按 `/auto` 惯例，将 Stage 0 的 run-spec 内容写到 **planmode system prompt 指定的 plan file**（不尝试自定义路径，Claude Code planmode 的 plan file 路径不可被 SKILL 覆盖）
 
@@ -160,10 +160,10 @@ SKILL 入口（最先执行，在所有状态机分支之前）：
 
 **run-spec.md（锁定契约，后续只读）**：
 ```yaml
-# 顶部 plan 元数据（collie-harness hook 识别所需，见 T9；写到 planmode plan file，ExitPlanMode 后 cp 到 run-spec.md）
+# 顶部 plan 元数据（collie hook 识别所需，见 T9；写到 planmode plan file，ExitPlanMode 后 cp 到 run-spec.md）
 # plan-source: <planmode system prompt 指定的 plan file 绝对路径>
 # plan-kind: loop-stage0
-# plan-executor: collie-harness:loop
+# plan-executor: collie:loop
 task: <用户 prompt 原文>
 primary_goal: correctness | optimization | both
 trigger:
@@ -185,7 +185,7 @@ skip_prepare: false        # Q5 用户选择
 
 **Stage 0 末尾**：AskUserQuestion Q1-Q5 全部收集完毕后，主 agent 直接调 `ExitPlanMode` —— **这是 Stage 0 唯一退出方式**。⚠️ loop-prepare（§4.5）**不在 planmode 内调用**：planmode 只允许写指定 plan file，loop-prepare 需要 Bash（trigger dry-run、mkdir）和 Write（prepare-report.md），两者均受限；prepare 移到 ExitPlanMode 之后、Stage 1 之前的 §3.5 恢复路径执行（见下方"ExitPlanMode 之后"）。ExitPlanMode 被 `post-writing-plans-reviewer.js` hook 识别 `plan-kind: loop-stage0` metadata（见 T9），跳过 auto 的双 reviewer 门禁（loop Stage 0 不产 multi-task plan，不需要双 reviewer；只校验三条 metadata 齐全 + 用户明示确认）。
 
-**为什么跳过 `collie-harness:review` rubric 审查是安全的（与 /auto 的决策分界）**：
+**为什么跳过 `collie:review` rubric 审查是安全的（与 /auto 的决策分界）**：
 run-spec.md 锁定的字段（trigger.invocation / scalar_extraction / success_criterion / primary_goal / overfit_guards）是后续 N 轮迭代的全局契约，乍看需要 rubric 审查防止 G5 "无界 metric" 或 G2 "root cause 字段缺失"。但 Stage 0 的结构本身已把 rubric 关键项前置消化：
 - **G5 具体 metric**：由 §4.5 `loop-prepare` 的 `Trigger dry-run` + `Scalar extraction 验证` 强制——如果 `scalar_extraction` 抽不出数值 / `all_green` 状态，prepare 直接 FAIL，根本走不到 Stage 1（prepare 在 §3.5 ExitPlanMode 之后、Stage 1 之前执行，FAIL → AskUserQuestion/escalate，阻断迭代启动）。这比 rubric 静态审查更强：执行性验证 > 文本审查。
 - **primary_goal 误选**：success_criterion.type 是 enum（`all_green` / `scalar_threshold` / `convergence_delta` / `custom`），primary_goal 是 enum（`correctness` / `optimization` / `both`），AskUserQuestion（Q2/Q3）提供显式选项列表而非自由输入——rubric 层面能挑出的"无界描述"问题在 AskUserQuestion 层面已被 enum 约束消除。
@@ -201,11 +201,11 @@ ExitPlanMode 触发 Stop 事件 → ralph-loop 重启 session → `commands/loop
 - ⛔ 必须用 Bash `cp` 归档，**禁止 Write/Edit**（避免 LLM 改写内容）：
   ```bash
   # 恢复链：last-plan.json → plan file 路径 → plan-source 元数据 → cp
-  mkdir -p ~/.collie-harness/loop/{project-id}/{runId}
-  cp "$PLAN_SOURCE" ~/.collie-harness/loop/{project-id}/{runId}/run-spec.md
+  mkdir -p ~/.collie/loop/{project-id}/{runId}
+  cp "$PLAN_SOURCE" ~/.collie/loop/{project-id}/{runId}/run-spec.md
   ```
 - 创建 worktree（`git worktree add .worktrees/loop-{runId} -b loop/{runId}`），写 `worktree-path` 文件
-- （若 `skip_prepare: false` 且 `prepare-report.md` 不存在）在 worktree 内调用 `Skill('collie-harness:loop-prepare')`（**必须在 worktree 内执行**，防止 trigger dry-run 的中间产物污染主仓；prepare-report.md 写入 `~/.collie-harness/loop/{project-id}/{runId}/`）：
+- （若 `skip_prepare: false` 且 `prepare-report.md` 不存在）在 worktree 内调用 `Skill('collie:loop-prepare')`（**必须在 worktree 内执行**，防止 trigger dry-run 的中间产物污染主仓；prepare-report.md 写入 `~/.collie/loop/{project-id}/{runId}/`）：
   - PASS → 继续
   - FAIL → interactive：AskUserQuestion（"Prepare failed: [X]. Fix material and retry, or abort?"）；queued：escalate + `state.json.status="escalated"` → **return**（§3.5 terminal 分支接管）
   - 幂等：`prepare-report.md` 已存在（session 重启）→ 跳过 prepare，直接继续
@@ -219,13 +219,13 @@ ExitPlanMode 触发 Stop 事件 → ralph-loop 重启 session → `commands/loop
 
 **动机**：不能让用户盯着跑几小时后才发现"trigger 根本跑不通 / 拿不到 scalar / Monitor 接不上"。prepare 在 Stage 1 开始前做一次前置验证。
 
-**调用时机**：在 §3.5 post-ExitPlanMode 恢复路径中，**worktree 创建之后**调用（不在 planmode 内）。原因：(a) planmode 只允许写指定 plan file，Bash 和 Write 均受限；(b) trigger dry-run 可能产出中间文件，在 worktree 内跑可隔离主仓，防止污染。prepare-report.md 写入 `~/.collie-harness/loop/{project-id}/{runId}/`（状态目录），不写入 worktree。
+**调用时机**：在 §3.5 post-ExitPlanMode 恢复路径中，**worktree 创建之后**调用（不在 planmode 内）。原因：(a) planmode 只允许写指定 plan file，Bash 和 Write 均受限；(b) trigger dry-run 可能产出中间文件，在 worktree 内跑可隔离主仓，防止污染。prepare-report.md 写入 `~/.collie/loop/{project-id}/{runId}/`（状态目录），不写入 worktree。
 
 **`skills/loop-prepare/SKILL.md` 职责**：
 1. **Trigger dry-run**：按 `run-spec.trigger.invocation` 在 `--dry-run` / 限定 iteration 最小子集上跑一次，timeout ≤ 5 min；确认 exit code 0（或 trigger 明示的 "preparation success"）
 2. **Scalar extraction 验证**：对 dry-run 的 stdout 执行 `run-spec.trigger.scalar_extraction`，确认能抽出数值；对 `all_green` 类型则确认能抽出 green/red 状态
 3. **Observability 验证**：`ToolSearch select:Monitor` 探测 Monitor tool；若不可用，跑一次 Read-tail fallback 确认 `raw.log` 写入路径可达；subprocess 终止信号可正确处理（快速起一个 `sleep 2` 子进程 + kill 验证）
-4. **持久化目录**：`~/.collie-harness/loop/{project-id}/{runId}/` 可写；`iter-0/` mkdir 成功
+4. **持久化目录**：`~/.collie/loop/{project-id}/{runId}/` 可写；`iter-0/` mkdir 成功
 5. **输出 `prepare-report.md`**：每项 PASS/FAIL + evidence；任一 FAIL → 主 SKILL 收到信号后 AskUserQuestion："Prepare failed on [X]. Fix your material and retry, or abort?"（不自动修；这些是用户物料问题）
 
 **跳过路径**：`run-spec.skip_prepare: true` → `loop-prepare` 直接返回 `skipped: true`，写 `prepare-report.md` 标注"user opted out"。用户自担后果（在 user-log.md 同步落地说明）。
@@ -318,12 +318,12 @@ uncertainty_tag: triage_unclear | none
 ## §8 Stage 5 — Consolidated Fix Plan → gated-workflow
 
 - **Stage 5.0（主 agent inline，template-fill 不是 creative-generation）**：按 `references/fix-plan-template.md`（见 T2）把所有 `fixes/FIX-*.md` 填充成 `fix-plan.md`：
-  - 3 元数据行（plan-source 指向 fix-plan.md；plan-topic 形如 `loop-iter-N-fixes`；plan-executor = `collie-harness:gated-workflow`）
+  - 3 元数据行（plan-source 指向 fix-plan.md；plan-topic 形如 `loop-iter-N-fixes`；plan-executor = `collie:gated-workflow`）
   - 模板固定字段映射：`FIX.id` → Task id；`FIX.root_cause` → Task Why；`FIX.fix_outline` → Task How；`FIX.reproduction_test` → Task Verify；`FIX.dependencies` → DAG depends-on
   - `## Task Execution DAG`（含 batch + depends-on，基于 FIX dependencies 展开）
   - `## Impact Assessment`（聚合所有 FIX 的受影响文件；Reverse impact 必填——"本轮修复可能影响的共享状态 / 缓存 / 跨 session 行为"，FIX 无相关项时写 `None — iter-local change`）
   - `## E2E Assessment`（继承 run-spec 的 trigger 作为 e2e 候选；结论沿用 run-spec）
-- **Stage 5.1**：调用 `collie-harness:gated-workflow`，输入 fix-plan.md。内部完整跑 TDD→实现→review→simplify→regression→`[collie-final-review]`。
+- **Stage 5.1**：调用 `collie:gated-workflow`，输入 fix-plan.md。内部完整跑 TDD→实现→review→simplify→regression→`[collie-final-review]`。
   - **G6 diff audit 执行位置**：由 `loop` SKILL 在 Stage 5.1 返回后、Stage 5.2 之前，inline 对 `git diff` vs. fix-plan.md 的 Task 列表做 line-level 追溯检查（**不**修改 `skills/review/`，避免污染共享 asset）。审计失败 → 写 `state.json.status="escalated"` + `scripts/escalate.sh` → **return**（§3.5 terminal 分支在 ralph-loop 重启后 rm current-run + emit sentinel）。
 - **Stage 5.2（rerun）**：gated-workflow 返回 PASS 且 G6 通过后，重新跑 trigger，解析 scalar，写 `iter-N/summary.md`。
 
@@ -364,7 +364,7 @@ uncertainty_tag: triage_unclear | none
 
 ## §10 Overfit Guards（8 条硬性约束）
 
-这 8 条被 `plan-doc-reviewer` 与 `collie-harness:review` 共同强制，写入 `skills/loop/references/overfit-guards.md`：
+这 8 条被 `plan-doc-reviewer` 与 `collie:review` 共同强制，写入 `skills/loop/references/overfit-guards.md`：
 
 1. **G1 禁止改动测试/fixture/assertion** — 除非 FIX 本身的 `kind: correctness` 且 reproduction_test 明确标注 "new test"；严禁放松已有断言。Regex 门：diff 中涉及 `tests/**` 且非 new file = BLOCK candidate。
 2. **G2 Root Cause + Reproduction 必填** — FIX-{nnn}.md 缺任一字段 = Stage 5.0 拒绝合入 fix-plan。
@@ -372,7 +372,7 @@ uncertainty_tag: triage_unclear | none
 4. **G4 全量回归** — gated-workflow 的 `[regression]` 步骤必须跑全量 suite，不得按 changed-files 剪枝（SWE-bench 结论）。
 5. **G5 具体 metric** — success_criterion 不接受 "better" / "improved" / "looks good" 这类无界描述；type=custom 必须给出可执行的 extraction command。
 6. **G6 每轮 diff 审计** — `[collie-final-review]` 额外检查：本轮 diff 每行是否能追溯到某个 FIX 条目（Red line #13 Speculative scope）。
-7. **G7 重复任务检测** — 若本轮 fix-plan.md 的 Task 列表与上一轮 **token-set Jaccard 相似度** ≥ 4/5（Jaccard ratio 分桶：0-0.2→1, 0.2-0.4→2, 0.4-0.6→3, 0.6-0.8→4, 0.8-1.0→5）且 scalar 已连续 2 轮无变化 → 自动 escalate "loop_no_progress"。**不引入任何 embedding / 网络依赖**，保持 collie-harness "zero external deps" 不变式（`CLAUDE.md:13`）。实现为 pure Node.js helper，单测覆盖。
+7. **G7 重复任务检测** — 若本轮 fix-plan.md 的 Task 列表与上一轮 **token-set Jaccard 相似度** ≥ 4/5（Jaccard ratio 分桶：0-0.2→1, 0.2-0.4→2, 0.4-0.6→3, 0.6-0.8→4, 0.8-1.0→5）且 scalar 已连续 2 轮无变化 → 自动 escalate "loop_no_progress"。**不引入任何 embedding / 网络依赖**，保持 collie "zero external deps" 不变式（`CLAUDE.md:13`）。实现为 pure Node.js helper，单测覆盖。
 8. **G8 Confidence gate（双层）** — Triage 阶段 `confidence ≤ 2` 的 Real/Unclear issue 不进 Deep Verify，写 DEFERRED 池标 `triage_low_confidence`（§6）；Deep Verify 阶段 `fix_confidence ≤ 2` 的 FIX 不进 fix-plan.md，写 DEFERRED 池标 `deep_verify_low_confidence`（§7）。理由：低信心强修是 APR patch-overfitting 主来源；宁可沉淀跨轮观察也不放行不稳方案。
 
 ## §11 Outer Loop — ralph-loop 复用（与 `/auto` 对齐）
@@ -388,8 +388,8 @@ uncertainty_tag: triage_unclear | none
   3. budget 耗尽 → status="budget_exhausted"
   4. convergence ε 满足 → status="converged"
   5. escalate（无法自愈，含 Stage 3.3 blocker + G7 deadlock）→ status="escalated"
-- ralph-loop 需要的"何时允许退出"就是 sentinel；collie-harness 已有的 `stop-steps-counter.js` 继续提供 deadlock escape（与 `/auto` 一致）。
-- ralph-loop 的 `hide-from-slash-command-tool: true` **只影响 slash command tool 对 agent 的暴露**，不影响用户从 CLI 输入 `/collie-harness:loop` 正常启动——与 `/auto` 的使用方式相同，已在该命令上验证可用。
+- ralph-loop 需要的"何时允许退出"就是 sentinel；collie 已有的 `stop-steps-counter.js` 继续提供 deadlock escape（与 `/auto` 一致）。
+- ralph-loop 的 `hide-from-slash-command-tool: true` **只影响 slash command tool 对 agent 的暴露**，不影响用户从 CLI 输入 `/collie:loop` 正常启动——与 `/auto` 的使用方式相同，已在该命令上验证可用。
 - 保留 `state.json` 作为 SKILL 内部跨 iter 的机器可读 checkpoint（见 §2 schema），**不被 hook 读取**，只由 SKILL 自己写/读。
 - 本命令**不新增** `hooks/loop-stop.js`；T3 被删除（见下方 Implementation Plan DAG 调整）。
 
@@ -402,13 +402,13 @@ uncertainty_tag: triage_unclear | none
 - similarity（token-set Jaccard bucketize：0-0.2→1, 0.2-0.4→2, 0.4-0.6→3, 0.6-0.8→4, 0.8-1.0→5；**不使用 embedding**）
 - trigger 候选 ranking
 
-禁止 0.x 分制（与 collie-harness 全局规范一致）。
+禁止 0.x 分制（与 collie 全局规范一致）。
 
 ## §13 Doc Maintenance
 
 本次改动命中项目级 SOP，必须同步：
 - `README.md`：
-  - 新增 `/collie-harness:loop` 用法章节 + 与 `/auto` 的定位差异对比表；明确两条 workflow 是**平行独立**关系，不嵌套
+  - 新增 `/collie:loop` 用法章节 + 与 `/auto` 的定位差异对比表；明确两条 workflow 是**平行独立**关系，不嵌套
   - 新增依赖章节声明 `ralph-loop` + `superpowers` 复用（与 `.claude-plugin/plugin.json` 同步）
   - 新增环境变量 `COLLIE_LOOP_NOTIFY_CMD` 说明（见 §14）
 - `CLAUDE.md`：
@@ -446,7 +446,7 @@ uncertainty_tag: triage_unclear | none
 - `iter-N/blocker-report.md`（仅 Stage 3 auto-recovery 失败时生成）
 
 **人读（user-facing）**：
-- `status.md` — **一句话当前状态**，SKILL 在每个 stage/iter 边界 **overwrite**。用户 `cat ~/.collie-harness/loop/{project-id}/{runId}/status.md` 立即知道"跑到哪了"。示例：`iter 3/5 · Stage 4b Deep Verify · 2 FIX in verification · scalar=4 (baseline=2, +2)`
+- `status.md` — **一句话当前状态**，SKILL 在每个 stage/iter 边界 **overwrite**。用户 `cat ~/.collie/loop/{project-id}/{runId}/status.md` 立即知道"跑到哪了"。示例：`iter 3/5 · Stage 4b Deep Verify · 2 FIX in verification · scalar=4 (baseline=2, +2)`
 - `user-log.md` — **叙事时间线**，每个 stage/iter 边界 **append**。面向人类可读，不求机器解析。示例 entry：
   ```
   ## iter-2 · 2026-04-23 14:32 UTC
@@ -479,8 +479,8 @@ uncertainty_tag: triage_unclear | none
 - **正常达标 / iter cap / convergence / budget** → `status.md` "DONE · <reason>" + `user-log.md` 最终 summary + 外部 notify "loop_done" + 写 `state.json.status="converged"（或 budget_exhausted）` → **return**（§3.5 terminal 分支接管 rm current-run + emit sentinel）
 
 **硬原则**：无论退出路径如何，用户下次回到终端时一定能从以下任一入口知道发生了什么：
-1. `cat ~/.collie-harness/loop/<project-id>/<latest-runId>/status.md`
-2. `tail -30 ~/.collie-harness/loop/<project-id>/<latest-runId>/user-log.md`
+1. `cat ~/.collie/loop/<project-id>/<latest-runId>/status.md`
+2. `tail -30 ~/.collie/loop/<project-id>/<latest-runId>/user-log.md`
 3. 若配置了 `COLLIE_LOOP_NOTIFY_CMD` → 已经在 macOS 通知中心 / Slack / 邮件看到
 
 ## Impact Assessment
@@ -490,7 +490,7 @@ uncertainty_tag: triage_unclear | none
 - `skills/loop/SKILL.md`（新增）+ `references/{overfit-guards.md, stop-criterion.md, discovery-prompt.md, iter-prompt.md, fix-plan-template.md}`（新增 5 份）
 - `skills/loop/lib/jaccard.js`（新增，G7 helper，pure Node.js）
 - `skills/loop-prepare/SKILL.md`（新增，独立前置体检 SKILL）+ `skills/loop-prepare/references/prepare-checks.md`（新增）
-- 运行期 user-facing artifact 契约（由 loop SKILL 在 runtime 生成，不 checked-in 但是 §14 三元 observability 的核心载体）：`~/.collie-harness/loop/{project-id}/current-run`（project-scoped runId 指针，EnterPlanMode 前写入；ExitPlanMode 触发 context-clear 后的第一恢复锚点，配合 `last-plan.json` → plan file 路径链完成 cp 归档）、`~/.collie-harness/loop/{project-id}/{runId}/status.md`（overwrite 一句话状态）、`user-log.md`（append-only 叙事）、`prepare-report.md`（Stage 0.5 体检）
+- 运行期 user-facing artifact 契约（由 loop SKILL 在 runtime 生成，不 checked-in 但是 §14 三元 observability 的核心载体）：`~/.collie/loop/{project-id}/current-run`（project-scoped runId 指针，EnterPlanMode 前写入；ExitPlanMode 触发 context-clear 后的第一恢复锚点，配合 `last-plan.json` → plan file 路径链完成 cp 归档）、`~/.collie/loop/{project-id}/{runId}/status.md`（overwrite 一句话状态）、`user-log.md`（append-only 叙事）、`prepare-report.md`（Stage 0.5 体检）
 - `hooks/_state.js`（新增 `projectId()` + `loopDir(projectId, runId)` + `iterDir(projectId, runId, n)` + `currentRunFile(projectId)` 导出）
 - `hooks/post-writing-plans-reviewer.js`（扩展 ~10 行：`plan-kind: loop-stage0` 旁路分支，跳过 auto 的双 reviewer 门禁，只校验三条 metadata + 用户明示 ExitPlanMode）
 - `.claude-plugin/plugin.json`（依赖清单同步：确保 `ralph-loop` + `superpowers` 列出）
@@ -500,16 +500,16 @@ uncertainty_tag: triage_unclear | none
 - `skills/queue/SKILL.md`（task schema 扩展 + dispatch 分支；`allowlist.txt` 保持不变，其语义是 project_dir 白名单）
 
 **Downstream consumers**：
-- `collie-harness:gated-workflow`：被 Stage 5.1 调用，输入是标准 plan 文件格式；gated-workflow 自身**无改动**
-- `collie-harness:review`（Mode=plan / Mode=code）：被 gated-workflow 内部复用，**无改动**（G6 diff audit 由 loop SKILL inline 执行，不修改共享 review skill）
+- `collie:gated-workflow`：被 Stage 5.1 调用，输入是标准 plan 文件格式；gated-workflow 自身**无改动**
+- `collie:review`（Mode=plan / Mode=code）：被 gated-workflow 内部复用，**无改动**（G6 diff audit 由 loop SKILL inline 执行，不修改共享 review skill）
 - `scripts/escalate.sh`：queued discovery 失败 + G7 deadlock + blocking issue 调用，无改动
 - `ralph-loop`：作为外层循环驱动复用（与 `/auto` 一致），**无改动**
 - `stop-steps-counter.js`：与 loop 共存——counter 是 per-session state。loop 一个 session 跑多 iter 可能提前触发 counter block；SKILL 在 iter boundary 记录 checkpoint，若 counter 触发 block，SKILL 把当前 iter 标记 deadlock escalate 并退出（保守行为，已在 CLAUDE.md 注明）
 
 **Reverse impact**：
-- 新增 `~/.collie-harness/loop/{project-id}/current-run` project-scoped 指针文件（plaintext runId）；不同 project 各自独立，同一 project 同一时间只有一个活跃 run（单 project 并发靠 queue concurrency=1 约束；多 project 可并行跑各自的 loop，互不干扰）
-- 新增 `~/.collie-harness/loop/{project-id}/{runId}/` 状态目录；老 session / `/auto` / `/queue` 零影响
-- runId 目录持久化不自动清理——首次 release notes 声明人工清理策略（`rm -rf ~/.collie-harness/loop/<project-id>/<older-than-7d>`）；v1 不做自动 GC
+- 新增 `~/.collie/loop/{project-id}/current-run` project-scoped 指针文件（plaintext runId）；不同 project 各自独立，同一 project 同一时间只有一个活跃 run（单 project 并发靠 queue concurrency=1 约束；多 project 可并行跑各自的 loop，互不干扰）
+- 新增 `~/.collie/loop/{project-id}/{runId}/` 状态目录；老 session / `/auto` / `/queue` 零影响
+- runId 目录持久化不自动清理——首次 release notes 声明人工清理策略（`rm -rf ~/.collie/loop/<project-id>/<older-than-7d>`）；v1 不做自动 GC
 - `CLAUDE.md` 新增 "Loop" 必须**显式标注**与 "Workflow Sequence"（`/auto` 流程）**平行独立、不嵌套**，避免用户误读
 - ralph-loop completion-signal 是 per-command 字符串匹配——loop 用 `Collie: LOOP DONE` 与 `/auto` 的 `Collie: SHIP IT` 区分，不互扰
 - 单一 Claude session 内**不允许嵌套**：从 `/auto` 内部触发 `/loop`（或反向）会导致 ralph-loop 状态冲突；SKILL 入口检查并拒绝嵌套（fail-fast escalate）
@@ -521,26 +521,26 @@ uncertainty_tag: triage_unclear | none
 
 **现有基建盘点**：
 - `tests/e2e/smoke.sh`（4 个场景：plugin load / auto-shim / queue-shim / gated-workflow-shim）
-- 无浏览器 e2e，collie-harness 本身是 CLI 插件
+- 无浏览器 e2e，collie 本身是 CLI 插件
 - 项目类型：Claude Code plugin → CLI 命令级 e2e
 
 **本次 e2e 策略**：
 - `e2e_feasible: partial`
 - **自动化部分**：`e2e-05-loop-shim` — 采用与现有 `auto-shim / queue-shim / gated-workflow-shim` 完全一致的 shim-verification 风格：
-  1. `/plugin list` 能看到 `/collie-harness:loop`
+  1. `/plugin list` 能看到 `/collie:loop`
   2. command shim 能 parse 必填参数 `<task>` 与可选 `--max-iterations N`、`--mode queued`
   3. SKILL 入口 `skills/loop/SKILL.md` 存在
   4. **loop-prepare SKILL 入口** `skills/loop-prepare/SKILL.md` 存在且 frontmatter 合法
   5. `_state.projectId` + `_state.loopDir` + `_state.iterDir` + `_state.currentRunFile` helper 返回期望路径（含 project-id 片段）
   6. `post-writing-plans-reviewer.js` 的 `plan-kind: loop-stage0` 分支在 mock 的空 ExitPlanMode 事件下不会 block（hook 单元测试级，沿用现有 hook test 风格；具体归入 `tests/loop.test.js`，smoke.sh 只做路径存在性检查）
   **不** mock AskUserQuestion（shell 脚本无法做到），**不** 启动 subagent，**不** 跑完整 1-6 循环
-- **人工 dogfood**：发布前在一个真实的小项目上跑一次完整 `/collie-harness:loop`，验证 Stage 0 → 1 轮完整迭代 → 停止条件触发；结果写入 release notes。
+- **人工 dogfood**：发布前在一个真实的小项目上跑一次完整 `/collie:loop`，验证 Stage 0 → 1 轮完整迭代 → 停止条件触发；结果写入 release notes。
 
 ---
 
 # Implementation Plan
 
-> **For agentic workers:** MUST invoke Skill('collie-harness:gated-workflow') to implement this plan.
+> **For agentic workers:** MUST invoke Skill('collie:gated-workflow') to implement this plan.
 
 ## Task Execution DAG
 
@@ -572,7 +572,7 @@ uncertainty_tag: triage_unclear | none
   1. Trigger dry-run（`Bash` 调 `run-spec.trigger.invocation` 的 dry-run / 最小子集变体，timeout ≤ 5 min）
   2. Scalar extraction 验证（对 dry-run 输出跑 `scalar_extraction`，确认能抽出值或 green/red 状态）
   3. Observability 验证（`ToolSearch select:Monitor` 探测 + Read-tail fallback + subprocess kill 信号验证）
-  4. 持久化目录 writable（`~/.collie-harness/loop/{project-id}/{runId}/` + `iter-0/` mkdir 成功）
+  4. 持久化目录 writable（`~/.collie/loop/{project-id}/{runId}/` + `iter-0/` mkdir 成功）
   5. 输出 `prepare-report.md`（每项 PASS/FAIL + evidence）
 - **不做**：不修 trigger（用户物料问题），不启动迭代，不动 worktree
 - 跳过路径：`run-spec.skip_prepare: true` → 立即返回 `skipped: true`，写 prepare-report.md 标注"user opted out"
@@ -583,12 +583,12 @@ uncertainty_tag: triage_unclear | none
 
 ### T1 [state-ext] — `hooks/_state.js` 扩展
 
-**Why**：复用 collie-harness 现有的路径与 sessionId 约定，不在业务代码里重复计算。
+**Why**：复用 collie 现有的路径与 sessionId 约定，不在业务代码里重复计算。
 
 **How**：
 - 在 `_state.js` 导出 `projectId(cwd?)` — 以 `cwd ?? process.cwd()` 为输入，调 `execSync('git rev-parse --show-toplevel')` 得项目根目录，将 `/` 替换为 `-`、去掉开头的 `-`，返回 slug（例：`Users-kevin-git-myproject`）；`cwd` 参数仅供单测覆写
-- 导出 `loopDir(projectId, runId)` 返回 `${COLLIE_HARNESS_HOME}/loop/${projectId}/${runId}/`（遵循 `COLLIE_HARNESS_HOME` env 覆盖）
-- 导出 `currentRunFile(projectId)` = `${COLLIE_HARNESS_HOME}/loop/${projectId}/current-run`
+- 导出 `loopDir(projectId, runId)` 返回 `${COLLIE_HOME}/loop/${projectId}/${runId}/`（遵循 `COLLIE_HOME` env 覆盖）
+- 导出 `currentRunFile(projectId)` = `${COLLIE_HOME}/loop/${projectId}/current-run`
 - 导出 helper `iterDir(projectId, runId, n)` = `loopDir(projectId, runId) + iter-${n}/`
 - 纯 pure function，无副作用（不 mkdir；目录创建由 SKILL 在 Stage 0 首次写 run-spec.md 时 inline `fs.mkdirSync(..., { recursive: true })`）
 
@@ -597,7 +597,7 @@ uncertainty_tag: triage_unclear | none
 ### T2 [refs] — 5 份 references + 1 个 pure helper
 
 **文件与内容**：
-- `references/overfit-guards.md`：逐条展开 §10 的 G1-G8（含 G8 Triage + Deep Verify 双层 confidence gate），供 plan-doc-reviewer 和 collie-harness:review 引用
+- `references/overfit-guards.md`：逐条展开 §10 的 G1-G8（含 G8 Triage + Deep Verify 双层 confidence gate），供 plan-doc-reviewer 和 collie:review 引用
 - `references/stop-criterion.md`：展开 §9 停止条件 + rollback 决策矩阵（primary_goal × scalar_delta × kind）伪代码
 - `references/discovery-prompt.md`：Stage 0 Discovery subagent 的 haiku system prompt
 - `references/iter-prompt.md`：Stage 1-6 各子 agent prompt（含 Monitor fallback 提示、reverse suspicion / adversarial 差异化 prompt）
@@ -609,7 +609,7 @@ uncertainty_tag: triage_unclear | none
 ### T3 [skill] — `skills/loop/SKILL.md`
 
 **How**：
-- **必须**通过 `Skill('skill-creator')` scaffold 创建 —— 不得手写 SKILL.md 骨架。这是项目级硬约束（CLAUDE.md Red line #12 补充说明 + `skills/gated-workflow/SKILL.md` Step 5.5）。scaffold 产出的 frontmatter dependencies 声明：`collie-harness:gated-workflow`, `collie-harness:review`, `ralph-loop`, `superpowers:subagent-driven-development`
+- **必须**通过 `Skill('skill-creator')` scaffold 创建 —— 不得手写 SKILL.md 骨架。这是项目级硬约束（CLAUDE.md Red line #12 补充说明 + `skills/gated-workflow/SKILL.md` Step 5.5）。scaffold 产出的 frontmatter dependencies 声明：`collie:gated-workflow`, `collie:review`, `ralph-loop`, `superpowers:subagent-driven-development`
 - **同步更新 `.claude-plugin/plugin.json`** 的 plugin-level 依赖清单：若 `ralph-loop` / `superpowers` 尚未列出则追加；`CLAUDE.md` Release Checklist 的"依赖审计"条目要求任何在 `commands/hooks/agents/skills/` 引用的外部 plugin 必须在 README 前置依赖章节明确列出。与 README 依赖章节同步更新（放在 T8 的 README 改动内）
 - 主体按设计规范 §1-§13 展开，每 Stage 写明：输入/输出文件、subagent 调用参数（含显式 `model=`）、失败路径（escalate 或 retry）
 - 嵌入 dot 流程图（与 `auto.md` 一致风格）
@@ -627,17 +627,17 @@ uncertainty_tag: triage_unclear | none
 - Frontmatter 声明使用 ralph-loop（与 `commands/auto.md` 一致）
 - Argument parsing：`<task>` 必填；`--max-iterations`、`--budget-tokens`、`--mode` 可选
 - **Task Prompt 核心**（ralph-loop 每次重启 session 后，模型读到这段指令并执行）：
-  > 调用 `Skill('collie-harness:loop')`，传入 arguments。SKILL 内部的 §3.5 状态机会自动调用 `_state.projectId()` 推导当前项目 ID，检测 `~/.collie-harness/loop/{project-id}/current-run` 判断 fresh-start vs resume，无需命令文件做额外判断。
+  > 调用 `Skill('collie:loop')`，传入 arguments。SKILL 内部的 §3.5 状态机会自动调用 `_state.projectId()` 推导当前项目 ID，检测 `~/.collie/loop/{project-id}/current-run` 判断 fresh-start vs resume，无需命令文件做额外判断。
 - arguments 原样透传给 SKILL
 
-**Verify**：T7 e2e `plugin list` 能看到 `/collie-harness:loop`。
+**Verify**：T7 e2e `plugin list` 能看到 `/collie:loop`。
 
 ### T5 [queue-dispatch] — `skills/queue/SKILL.md`
 
 **背景**：原 plan 误以为"加 allowlist"即可。实际 `skills/queue/SKILL.md:114-116` 的 `allowlist.txt` 是 project_dir 白名单，`skills/queue/SKILL.md:105` 的命令调用硬编码 `/auto "{task.prompt}"`。
 
 **How**：
-- 扩展 queue 的 task 文件 schema：新增 `command` 字段（默认 `/collie-harness:auto`，可选 `/collie-harness:loop`）
+- 扩展 queue 的 task 文件 schema：新增 `command` 字段（默认 `/collie:auto`，可选 `/collie:loop`）
 - Execute 步骤按 `task.command` 分派：`/auto` vs. `/loop`
 - 更新 Task File Format 示例与注释；`allowlist.txt` 语义**不变**（仍为 project_dir）
 - queued 模式下的 `/loop`：SKILL 入口检测到 `--mode queued` 且 Stage 0 Discovery 无法同时推断 trigger + primary_goal → 立即 escalate，不启动迭代（与 §3 设计一致）
@@ -648,7 +648,7 @@ uncertainty_tag: triage_unclear | none
 
 **Cases**：
 1. `projectId(cwd)` 路径编码：`/Users/kevin/git/myproject` → `Users-kevin-git-myproject`；根目录 `/` → `root`（边界）
-2. `loopDir(projectId, runId)`：默认 env 返回 `~/.collie-harness/loop/{projectId}/{runId}/`；`COLLIE_HARNESS_HOME=/tmp/x` 返回 `/tmp/x/loop/{projectId}/{runId}/`
+2. `loopDir(projectId, runId)`：默认 env 返回 `~/.collie/loop/{projectId}/{runId}/`；`COLLIE_HOME=/tmp/x` 返回 `/tmp/x/loop/{projectId}/{runId}/`
 3. `currentRunFile(projectId)`：返回路径含 projectId 片段，不同 projectId 返回不同路径
 4. `iterDir(projectId, runId, n)`：拼接正确，n=0 / n=99 边界
 5. `jaccard(a, b)`：同字符串 = 1.0，完全不同 = 0，部分重合点抽样若干
@@ -660,7 +660,7 @@ uncertainty_tag: triage_unclear | none
 ### T7 [e2e] — `tests/e2e/smoke.sh`
 
 **Case `e2e-05-loop-shim`**（shim-verification 风格，对齐现有 4 场景）：
-1. `claude --plugin-dir . --output-format=json --no-interactive -p "/plugin list"` 输出包含 `/collie-harness:loop`
+1. `claude --plugin-dir . --output-format=json --no-interactive -p "/plugin list"` 输出包含 `/collie:loop`
 2. command shim 文件 `commands/loop.md` 存在且有合法 frontmatter
 3. SKILL 入口 `skills/loop/SKILL.md` 存在
 4. node 单命令加载 `hooks/_state.js` 调用 `loopDir('proj', 'smoke-test')` 返回期望字符串（含 project-id 片段）
@@ -689,7 +689,7 @@ uncertainty_tag: triage_unclear | none
 
 ### T9 [hook-ext] — `hooks/post-writing-plans-reviewer.js` 扩展（`plan-kind: loop-stage0` 旁路）
 
-**Why**：§4 Stage 0 在 Claude Code planmode 中运行；ExitPlanMode 时 hook 默认走 `/auto` 的双 reviewer 门禁，会 `decision:'block'` 阻止退出。loop Stage 0 的 run-spec.md **不是**多任务 plan，不需要 `collie-harness:plan-doc-reviewer` + `collie-harness:review`；只需校验三条 metadata 齐全 + 用户明示 ExitPlanMode 即可。
+**Why**：§4 Stage 0 在 Claude Code planmode 中运行；ExitPlanMode 时 hook 默认走 `/auto` 的双 reviewer 门禁，会 `decision:'block'` 阻止退出。loop Stage 0 的 run-spec.md **不是**多任务 plan，不需要 `collie:plan-doc-reviewer` + `collie:review`；只需校验三条 metadata 齐全 + 用户明示 ExitPlanMode 即可。
 
 **豁免边界（与 §4 "为什么跳过 rubric 审查是安全的" 小节对齐）**：本旁路仅对 run-spec.md 这类 **enum-only + 可执行字段** 的 schema 生效；G5/G2/primary_goal 靠 §4.5 prepare 可执行性验证 + AskUserQuestion enum 约束前置消化。一旦 run-spec.md schema 未来扩展出自由文本字段，本旁路必须失效，改回双 reviewer 路径。T9 hook 实现须在 metadata 校验时记录 run-spec.md 的 schema version（或至少断言必填 enum 字段到位），为未来 schema 扩展留锚点。
 
@@ -700,14 +700,14 @@ uncertainty_tag: triage_unclear | none
 **ExitPlanMode bypass**：在 `post-writing-plans-reviewer.js` 的 ExitPlanMode 分支：
 - 读 `last-plan.json` 里记录的 plan file，解析前几行的 `plan-kind:` metadata
 - 若 `plan-kind == "loop-stage0"`：
-  - 校验三条 metadata 齐全（`plan-source`、`plan-kind`、`plan-executor: collie-harness:loop`）
+  - 校验三条 metadata 齐全（`plan-source`、`plan-kind`、`plan-executor: collie:loop`）
   - **断言关键 enum 字段齐全**（primary_goal / trigger.kind / success_criterion.type / iter_rollback_policy），作为豁免边界 sanity check；任一缺失 → block
   - 全部齐全 → 返回 approve，不触碰 auto 的 dual-reviewer state
   - 任一缺失 → 返回 `decision:'block'`，reason 指向缺失字段
 - 若 `plan-kind` 未设或为其他值 → **走既有 auto 路径**（零回归）
 - `plan-kind` 值域枚举：未设 / `loop-stage0`（未来扩展时在此加）
 
-**不动** `post-approved-exitplan-hint.js` 与 `post-exitplan-gated-hint.js`（loop Stage 0 的 `plan-executor: collie-harness:loop`，gated-hint 只认 `collie-harness:gated-workflow`，自然沉默；后续 Stage 5.1 内部的 fix-plan.md 才是 `plan-executor: collie-harness:gated-workflow`，届时走 gated-hint 常规路径）
+**不动** `post-approved-exitplan-hint.js` 与 `post-exitplan-gated-hint.js`（loop Stage 0 的 `plan-executor: collie:loop`，gated-hint 只认 `collie:gated-workflow`，自然沉默；后续 Stage 5.1 内部的 fix-plan.md 才是 `plan-executor: collie:gated-workflow`，届时走 gated-hint 常规路径）
 
 **Verify**：
 - T6 单测覆盖：
@@ -719,22 +719,22 @@ uncertainty_tag: triage_unclear | none
 ## Verification (end-to-end)
 
 实施完成后：
-1. `claude plugin validate ~/git/collie-harness` 期望 PASS
+1. `claude plugin validate ~/git/collie` 期望 PASS
 2. `node --test tests/*.test.js` 全绿（含 `tests/loop.test.js` 新增 case：5 组原计划 + hook `loop-stage0` 旁路 3 组 = 共 8+ case）
 3. `./tests/e2e/smoke.sh` 5 场景全绿（新增 `e2e-05-loop-shim`，含 loop-prepare SKILL 入口 + hook 语法检查）
-4. `grep -n '/collie-harness' README.md CLAUDE.md` 与 `ls commands/ skills/*/SKILL.md` 入口对应（入口对应表审计；loop + loop-prepare 都要覆盖，`CLAUDE.md` Release Checklist 硬性条目）
+4. `grep -n '/collie' README.md CLAUDE.md` 与 `ls commands/ skills/*/SKILL.md` 入口对应（入口对应表审计；loop + loop-prepare 都要覆盖，`CLAUDE.md` Release Checklist 硬性条目）
 5. **Stage 0 planmode 旁路验证**：手动构造 `plan-kind: loop-stage0` 的 run-spec.md，跑一次 ExitPlanMode，确认 hook 放行；再构造未设 `plan-kind` 的文件，确认走原双 reviewer 门禁（零回归）
-6. **人工 dogfood**：在一个小项目跑一次完整 `/collie-harness:loop`，覆盖：Stage 0 Discovery+AskUserQuestion → Stage 0.5 prepare 通过 → ExitPlanMode → worktree → 1 轮完整迭代（含 Triage confidence gate + Deep Verify fix_confidence gate 各至少命中一次）→ 停止条件触发 → `<promise>Collie: LOOP DONE</promise>` → worktree 保留；同时验证 `status.md` / `user-log.md` 可读，`COLLIE_LOOP_NOTIFY_CMD`（若配）触发。记录到 release notes
+6. **人工 dogfood**：在一个小项目跑一次完整 `/collie:loop`，覆盖：Stage 0 Discovery+AskUserQuestion → Stage 0.5 prepare 通过 → ExitPlanMode → worktree → 1 轮完整迭代（含 Triage confidence gate + Deep Verify fix_confidence gate 各至少命中一次）→ 停止条件触发 → `<promise>Collie: LOOP DONE</promise>` → worktree 保留；同时验证 `status.md` / `user-log.md` 可读，`COLLIE_LOOP_NOTIFY_CMD`（若配）触发。记录到 release notes
 
 ## Release & Rollout
 
 - 合并后 bump `0.2.3`（minor feature）
 - CHANGELOG 记录：
-  - 新增 `/collie-harness:loop` 命令与 skill（含独立 `loop-prepare` 前置体检 SKILL）
+  - 新增 `/collie:loop` 命令与 skill（含独立 `loop-prepare` 前置体检 SKILL）
   - queue task schema 扩展（含 `command` dispatch 分支，`allowlist.txt` 语义不变）
   - `post-writing-plans-reviewer.js` 新增 `plan-kind: loop-stage0` 旁路（auto 路径零回归）
   - ralph-loop 依赖复用（与 `/auto` 一致）
   - 新增 overfit guards **G1-G8**（G8 = Triage + Deep Verify 双层 confidence gate）
   - 新增可选环境变量 `COLLIE_LOOP_NOTIFY_CMD`（终态事件外部通知）
   - sentinel 语义说明：`LOOP DONE` = 迭代结束但 worktree 保留，与 `/auto` 的 `SHIP IT`（merge 完成）不同
-- 如有 regression（影响 `/auto` 或 `/queue`），rollback 本次 merge 即可，状态目录 `~/.collie-harness/loop/` 残留对老命令零影响
+- 如有 regression（影响 `/auto` 或 `/queue`），rollback 本次 merge 即可，状态目录 `~/.collie/loop/` 残留对老命令零影响

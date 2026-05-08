@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# E2E smoke test for collie-harness hook chain.
+# E2E smoke test for collie hook chain.
 # Invokes hooks directly with crafted payloads — no live Claude Code session needed.
 set -euo pipefail
 
@@ -34,7 +34,7 @@ trap cleanup EXIT
 scenario1() {
   "${PLUGIN_ROOT}/scripts/escalate.sh" TEST "smoke-test" '{"test":true}' >/dev/null 2>&1
 
-  local log_file="${TMPDIR_BASE}/.collie-harness/escalations.log"
+  local log_file="${TMPDIR_BASE}/.collie/escalations.log"
   if [[ -f "${log_file}" ]] && grep -q "smoke-test" "${log_file}"; then
     run_scenario "Escalation channel writes log entry" "pass"
   else
@@ -54,7 +54,7 @@ scenario2() {
     | HOME="${TMPDIR_BASE}" CLAUDE_PLUGIN_ROOT="${PLUGIN_ROOT}" \
       node "${PLUGIN_ROOT}/hooks/post-writing-plans-reviewer.js" >/dev/null 2>&1
 
-  local state_file="${TMPDIR_BASE}/.collie-harness/state/${session_id}/last-plan.json"
+  local state_file="${TMPDIR_BASE}/.collie/state/${session_id}/last-plan.json"
   if [[ -f "${state_file}" ]] && grep -q '"plan_doc_reviewer"' "${state_file}" && grep -q '"collie_reviewer"' "${state_file}"; then
     run_scenario "Plan reviewer hook creates last-plan.json with dual-reviewer schema" "pass"
   else
@@ -67,7 +67,7 @@ scenario2() {
 # ---------------------------------------------------------------------------
 scenario3() {
   local session_id="smoke-loop-session"
-  local state_dir="${TMPDIR_BASE}/.collie-harness/state/${session_id}"
+  local state_dir="${TMPDIR_BASE}/.collie/state/${session_id}"
   mkdir -p "${state_dir}"
 
   # Pre-seed counter with no_progress_steps=4; hook will increment to 5 → escalate
@@ -89,7 +89,7 @@ EOF
     | HOME="${TMPDIR_BASE}" CLAUDE_PLUGIN_ROOT="${PLUGIN_ROOT}" \
       node "${PLUGIN_ROOT}/hooks/stop-steps-counter.js" >/dev/null 2>&1
 
-  local log_file="${TMPDIR_BASE}/.collie-harness/escalations.log"
+  local log_file="${TMPDIR_BASE}/.collie/escalations.log"
   if [[ -f "${log_file}" ]] && grep -q "no_progress" "${log_file}"; then
     run_scenario "Loop trap detection escalates no_progress" "pass"
   else
@@ -141,7 +141,7 @@ scenario5() {
   local loopdir_output
   loopdir_output=$(node -e "
     const s = require('${PLUGIN_ROOT}/hooks/_state.js');
-    const pid = 'Users-kevin-git-collie-harness';
+    const pid = 'Users-kevin-git-collie';
     const result = s.loopDir(pid, 'smoke-test');
     if (!result.includes(pid)) process.exit(1);
     console.log('loopDir ok:', result);
@@ -156,7 +156,7 @@ scenario5() {
 # ---------------------------------------------------------------------------
 # Run all scenarios
 # ---------------------------------------------------------------------------
-echo "Running collie-harness E2E smoke tests..."
+echo "Running collie E2E smoke tests..."
 echo ""
 
 scenario1

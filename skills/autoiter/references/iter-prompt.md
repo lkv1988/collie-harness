@@ -3,7 +3,7 @@
 # Iteration Subagent Prompts — Stages 1–6
 
 > Prompt templates and instructions for all subagents invoked during loop
-> iterations. Referenced by `collie-harness:autoiter` SKILL.md.
+> iterations. Referenced by `collie:autoiter` SKILL.md.
 
 ---
 

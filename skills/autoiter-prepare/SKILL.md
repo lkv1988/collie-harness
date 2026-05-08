@@ -1,11 +1,11 @@
 ---
-name: collie-harness:autoiter-prepare
-description: "Pre-flight environment check SKILL for the collie-harness autoiter command. Called by the main autoiter SKILL (collie-harness:autoiter) in the §3.5 post-ExitPlanMode recovery path, after worktree creation, before Stage 1 iteration begins. Runs 5 checks: (1) trigger dry-run, (2) scalar extraction validation, (3) observability validation (Monitor/Read-tail + kill signal), (4) persistent directory writability. Outputs prepare-report.md with PASS/FAIL evidence. Returns failure signal to caller on any FAIL — does NOT fix issues. Supports skip_prepare bypass and is idempotent (skips all checks if prepare-report.md already exists). Do NOT invoke directly from user prompts; this is an internal skill invoked exclusively by collie-harness:autoiter."
+name: collie:autoiter-prepare
+description: "Pre-flight environment check SKILL for the collie autoiter command. Called by the main autoiter SKILL (collie:autoiter) in the §3.5 post-ExitPlanMode recovery path, after worktree creation, before Stage 1 iteration begins. Runs 5 checks: (1) trigger dry-run, (2) scalar extraction validation, (3) observability validation (Monitor/Read-tail + kill signal), (4) persistent directory writability. Outputs prepare-report.md with PASS/FAIL evidence. Returns failure signal to caller on any FAIL — does NOT fix issues. Supports skip_prepare bypass and is idempotent (skips all checks if prepare-report.md already exists). Do NOT invoke directly from user prompts; this is an internal skill invoked exclusively by collie:autoiter."
 ---
 
 # autoiter-prepare — Pre-flight Environment Check
 
-Called exclusively by `collie-harness:autoiter` at Stage 0.5. Never invoked directly by the user.
+Called exclusively by `collie:autoiter` at Stage 0.5. Never invoked directly by the user.
 
 **Hard scope limits** (do not exceed):
 - Does NOT fix trigger issues (those are user material problems)
@@ -17,8 +17,8 @@ Called exclusively by `collie-harness:autoiter` at Stage 0.5. Never invoked dire
 
 | Parameter | Description |
 |-----------|-------------|
-| `run_spec_path` | Absolute path to `~/.collie-harness/autoiter/{project-id}/{runId}/run-spec.md` |
-| `report_path` | Absolute path to `~/.collie-harness/autoiter/{project-id}/{runId}/prepare-report.md` (output) |
+| `run_spec_path` | Absolute path to `~/.collie/autoiter/{project-id}/{runId}/run-spec.md` |
+| `report_path` | Absolute path to `~/.collie/autoiter/{project-id}/{runId}/prepare-report.md` (output) |
 | `project_id` | From `_state.projectId()` |
 | `run_id` | Current runId |
 | `worktree_path` | Absolute path to the autoiter worktree (trigger dry-run executes here) |
@@ -73,7 +73,7 @@ PASS if extraction succeeds and returns expected type. FAIL with evidence showin
 
 Three sub-checks, all must pass:
 
-**3a. Monitor tool detection**: Run `ToolSearch select:Monitor`. If schema is returned → Monitor available. If not found → fallback mode; confirm Read-tail path is viable (the `raw.log` write path under `~/.collie-harness/autoiter/{project_id}/{run_id}/iter-0/` is reachable).
+**3a. Monitor tool detection**: Run `ToolSearch select:Monitor`. If schema is returned → Monitor available. If not found → fallback mode; confirm Read-tail path is viable (the `raw.log` write path under `~/.collie/autoiter/{project_id}/{run_id}/iter-0/` is reachable).
 
 **3b. Subprocess kill signal**: Start a background process (`Bash sleep 2 run_in_background=true`), capture its PID, then `kill <PID>` within 3 seconds. Confirm kill succeeds (exit 0 or process no longer exists).
 
@@ -84,8 +84,8 @@ PASS if all three sub-checks pass. FAIL with which sub-check failed + evidence.
 ### Check 4 — Persistent Directory Writable
 
 ```bash
-mkdir -p ~/.collie-harness/autoiter/{project_id}/{run_id}/iter-0/
-touch ~/.collie-harness/autoiter/{project_id}/{run_id}/iter-0/.probe && rm ~/.collie-harness/autoiter/{project_id}/{run_id}/iter-0/.probe
+mkdir -p ~/.collie/autoiter/{project_id}/{run_id}/iter-0/
+touch ~/.collie/autoiter/{project_id}/{run_id}/iter-0/.probe && rm ~/.collie/autoiter/{project_id}/{run_id}/iter-0/.probe
 ```
 
 PASS if both commands succeed. FAIL with error output.

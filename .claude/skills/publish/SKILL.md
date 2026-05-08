@@ -1,15 +1,15 @@
 ---
 name: publish
-description: Publish a new release of the collie-harness plugin. Runs the full release checklist (plugin validate, unit tests, internal reference scan, entry-point audit), then creates a git tag and pushes master + tag to origin. Use when the user says "publish", "release", or "打tag发布".
+description: Publish a new release of the collie plugin. Runs the full release checklist (plugin validate, unit tests, internal reference scan, entry-point audit), then creates a git tag and pushes master + tag to origin. Use when the user says "publish", "release", or "打tag发布".
 ---
 
-# Publish collie-harness
+# Publish collie
 
 ## Step 1 — Release checklist (run all in parallel)
 
 ```bash
 # 1. Plugin validation
-claude plugin validate ~/git/collie-harness
+claude plugin validate ~/git/collie
 
 # 2. Unit tests
 node --test tests/*.test.js
@@ -18,7 +18,7 @@ node --test tests/*.test.js
 grep -rn '<USER>\|"kevin"' .claude-plugin/ README.md LICENSE
 
 # 4. Entry-point audit
-grep -n '/collie-harness' README.md CLAUDE.md | head -50
+grep -n '/collie' README.md CLAUDE.md | head -50
 ls commands/ skills/*/SKILL.md agents/*.md
 ```
 

@@ -16,7 +16,7 @@
 
 set -euo pipefail
 
-SESSIONS_DIR="${HOME}/.memory-palace/sessions"
+SESSIONS_DIR="${HOME}/.collie/memory/sessions"
 
 # Find the most recent session log (newest .jsonl, excluding hidden files)
 SESSION_LOG=""
@@ -35,7 +35,7 @@ else
   LOG_LINE="Session log: not yet created for this session"
 fi
 
-INVOKE_PROMPT="MEMORY-PALACE PRE-COMPACT: Before the context window is compacted, invoke the memory-palace skill now. Read the session log at: ${SESSION_LOG:-~/.memory-palace/sessions/<current-session>.jsonl}. Run the decision tree on all messages. Write any memories that pass the filter. Do NOT delete the session log — the session will continue after compaction."
+INVOKE_PROMPT="MEMORY-PALACE PRE-COMPACT: Before the context window is compacted, invoke the memory-palace skill now. Read the session log at: ${SESSION_LOG:-~/.collie/memory/sessions/<current-session>.jsonl}. Run the decision tree on all messages. Write any memories that pass the filter. Do NOT delete the session log — the session will continue after compaction."
 
 # Escape for JSON embedding
 escape_for_json() {

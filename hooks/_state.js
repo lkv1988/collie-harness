@@ -4,8 +4,8 @@ const os = require('os');
 const path = require('path');
 const { execSync } = require('child_process');
 
-const STATE_HOME = process.env.COLLIE_HARNESS_HOME
-  || path.join(os.homedir(), '.collie-harness');
+const STATE_HOME = process.env.COLLIE_HOME
+  || path.join(os.homedir(), '.collie');
 
 function projectId(cwd) {
   const dir = cwd || process.cwd();

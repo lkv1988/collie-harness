@@ -42,9 +42,9 @@ When starting, inject this as the working prompt (substitute $ARGUMENTS with the
 
 > Your task: $ARGUMENTS
 >
-> Invoke Skill('collie-harness:autoiter') and pass all parsed arguments.
+> Invoke Skill('collie:autoiter') and pass all parsed arguments.
 > The SKILL's §3.5 state machine will automatically call _state.projectId() to determine the current
-> project ID, then check ~/.collie-harness/autoiter/{project-id}/current-run to decide between
+> project ID, then check ~/.collie/autoiter/{project-id}/current-run to decide between
 > fresh-start and resume. No additional logic is needed in this command file.
 >
 > When the skill returns a terminal status, output: `<promise>Collie: AUTOITER DONE</promise>`

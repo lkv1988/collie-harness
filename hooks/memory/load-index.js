@@ -18,7 +18,7 @@ import path from 'path';
 import { homedir } from 'node:os';
 import { resolveProject } from './resolve-project.js';
 
-const PALACE_ROOT = path.join(homedir(), '.memory-palace');
+const PALACE_ROOT = path.join(homedir(), '.collie/memory');
 const SHORT_TTL_DAYS = 7;
 const LONG_REVIEW_DAYS = 60;
 const LONG_DELETE_DAYS = 90;

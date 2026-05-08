@@ -5,7 +5,7 @@
 
 ## Context
 
-collie-harness 是一个 Claude Code 插件，驱动用户项目的完整开发工作流。当前工作流在测试方面存在三个缺陷：
+collie 是一个 Claude Code 插件，驱动用户项目的完整开发工作流。当前工作流在测试方面存在三个缺陷：
 
 1. **E2E 被默认跳过**：gated-workflow Step 5 明确写着"集成测试／E2E：除非用户明确要求，否则可跳过"，导致 agent 几乎从不主动做 e2e 测试
 2. **Plan-Todo 未对齐**：gated-workflow Step 1 建立 TodoList 时没有交叉核对机制，plan 中承诺的 task 可能在实施阶段被悄悄遗漏
@@ -116,10 +116,10 @@ E2E Assessment 中"不可行"的合理理由（非穷举）：
 **改动文件**：`skills/review/references/rubric-red-lines.md`
 
 现有 Q5：
-> Gate omissions — subagent / tdd / parallel / todolist / collie-harness:plan-doc-reviewer — any gate skipped?
+> Gate omissions — subagent / tdd / parallel / todolist / collie:plan-doc-reviewer — any gate skipped?
 
 扩展为：
-> Gate omissions — subagent / tdd / parallel / todolist / e2e (if plan confirmed feasible) / plan-todo alignment / collie-harness:plan-doc-reviewer — any gate skipped?
+> Gate omissions — subagent / tdd / parallel / todolist / e2e (if plan confirmed feasible) / plan-todo alignment / collie:plan-doc-reviewer — any gate skipped?
 
 Code mode 时 Q5 额外检查：
 1. **Plan-Todo 对齐**：plan 中的每个 task 是否在 TodoList 中有对应条目（或有记录在案的合理解释）
@@ -211,7 +211,7 @@ E2E 测试可以用 headless 浏览器跑（CI 环境常见），也可以用 he
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 让 e2e 测试成为 collie-harness 工作流的一等公民——在设计阶段评估可行性，在实施阶段执行，在审查阶段验证。同时修复 plan-todo 对齐缺失问题。
+**Goal:** 让 e2e 测试成为 collie 工作流的一等公民——在设计阶段评估可行性，在实施阶段执行，在审查阶段验证。同时修复 plan-todo 对齐缺失问题。
 
 **Architecture:** 扩展现有 4 个节点（auto.md、gated-workflow、review rubric、plan-doc-reviewer）的 markdown 指令文本，不新增 gate / red line / review question。
 
@@ -361,12 +361,12 @@ Refs: docs/plans/<实际 $ARCHIVE_PATH 文件名>"
 
 当前（line 41）：
 ```
-5. **Gate omissions** — subagent / tdd / parallel / todolist / collie-harness:plan-doc-reviewer — any gate skipped?
+5. **Gate omissions** — subagent / tdd / parallel / todolist / collie:plan-doc-reviewer — any gate skipped?
 ```
 
 改为：
 ```
-5. **Gate omissions** — subagent / tdd / parallel / todolist / e2e (if plan confirmed feasible) / plan-todo alignment / collie-harness:plan-doc-reviewer — any gate skipped? Code mode 额外检查：(a) plan 中每个 task 是否在 TodoList 中有对应条目（或有记录在案的合理解释）；(b) plan E2E Assessment 若结论为 `e2e_feasible: true`，最终是否有 `[e2e-verify]` 任务且执行通过。
+5. **Gate omissions** — subagent / tdd / parallel / todolist / e2e (if plan confirmed feasible) / plan-todo alignment / collie:plan-doc-reviewer — any gate skipped? Code mode 额外检查：(a) plan 中每个 task 是否在 TodoList 中有对应条目（或有记录在案的合理解释）；(b) plan E2E Assessment 若结论为 `e2e_feasible: true`，最终是否有 `[e2e-verify]` 任务且执行通过。
 ```
 
 - [ ] **Step 2: 验证格式**
@@ -438,7 +438,7 @@ Refs: docs/plans/<实际 $ARCHIVE_PATH 文件名>"
 在 `CLAUDE.md` 的 "Key Design Constraints" 段落中，在 `Doc maintenance enforcement` 行之后追加：
 
 ```markdown
-- **E2E enforcement**：brainstorming 阶段必须完成 E2E Assessment（探测基建 + 可行性结论）；gated-workflow TodoList 根据 Assessment 结论创建条件性 `[e2e-setup]` / `[e2e-verify]` 任务；Step 1 建 list 后 haiku subagent 交叉核对 plan-todo 对齐；`collie-harness:review` Q5 + `plan-doc-reviewer` E2E Assessment 行共同强制。
+- **E2E enforcement**：brainstorming 阶段必须完成 E2E Assessment（探测基建 + 可行性结论）；gated-workflow TodoList 根据 Assessment 结论创建条件性 `[e2e-setup]` / `[e2e-verify]` 任务；Step 1 建 list 后 haiku subagent 交叉核对 plan-todo 对齐；`collie:review` Q5 + `plan-doc-reviewer` E2E Assessment 行共同强制。
 ```
 
 - [ ] **Step 2: Commit**
@@ -463,7 +463,7 @@ Refs: docs/plans/<实际 $ARCHIVE_PATH 文件名>"
 
 ```markdown
 
-brainstorming 阶段强制完成 E2E Assessment：探测目标项目 e2e 基建，评估可行性，若无基建则推荐建设方案。gated-workflow 根据 Assessment 结论条件性创建 `[e2e-setup]` / `[e2e-verify]` 任务，并通过 haiku subagent 交叉核对 plan-todo 对齐。`collie-harness:review` Q5 在 code mode 时验证 e2e 承诺兑现。
+brainstorming 阶段强制完成 E2E Assessment：探测目标项目 e2e 基建，评估可行性，若无基建则推荐建设方案。gated-workflow 根据 Assessment 结论条件性创建 `[e2e-setup]` / `[e2e-verify]` 任务，并通过 haiku subagent 交叉核对 plan-todo 对齐。`collie:review` Q5 在 code mode 时验证 e2e 承诺兑现。
 ```
 
 - [ ] **Step 2: Commit**
@@ -486,7 +486,7 @@ Refs: docs/plans/<实际 $ARCHIVE_PATH 文件名>"
 node --test tests/*.test.js
 
 # 2. Plugin 结构验证
-claude plugin validate ~/git/collie-harness
+claude plugin validate ~/git/collie
 
 # 3. 文档一致性检查
 grep -n 'e2e' commands/auto.md skills/gated-workflow/SKILL.md skills/review/references/rubric-red-lines.md agents/plan-doc-reviewer.md CLAUDE.md README.md

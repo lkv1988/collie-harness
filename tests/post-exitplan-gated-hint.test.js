@@ -21,7 +21,7 @@ afterEach(() => {
 });
 
 function phaseFile() {
-  return path.join(tmpHome, '.collie-harness', 'state', SESSION_ID, 'phase.json');
+  return path.join(tmpHome, '.collie', 'state', SESSION_ID, 'phase.json');
 }
 
 function runHook(payload) {
@@ -38,7 +38,7 @@ function runHook(payload) {
 
 test('post-exitplan-gated-hint: both reviewers approved → stdout contains gated-workflow mention, phase.json written', () => {
   // Pre-create last-plan.json with both approved
-  const sessionStateDir = path.join(tmpHome, '.collie-harness', 'state', SESSION_ID);
+  const sessionStateDir = path.join(tmpHome, '.collie', 'state', SESSION_ID);
   fs.mkdirSync(sessionStateDir, { recursive: true });
   fs.writeFileSync(
     path.join(sessionStateDir, 'last-plan.json'),
@@ -93,7 +93,7 @@ test('post-exitplan-gated-hint: non-JSON stdin → exits 0 without crashing', ()
 });
 
 test('post-exitplan-gated-hint: only plan-doc-reviewer approved → stdout empty (silent)', () => {
-  const sessionStateDir = path.join(tmpHome, '.collie-harness', 'state', SESSION_ID);
+  const sessionStateDir = path.join(tmpHome, '.collie', 'state', SESSION_ID);
   fs.mkdirSync(sessionStateDir, { recursive: true });
   fs.writeFileSync(
     path.join(sessionStateDir, 'last-plan.json'),
@@ -107,7 +107,7 @@ test('post-exitplan-gated-hint: only plan-doc-reviewer approved → stdout empty
 
   const result = runHook({ tool_name: 'ExitPlanMode', session_id: SESSION_ID });
   assert.strictEqual(result.status, 0, `Hook failed: ${result.stderr}`);
-  assert.strictEqual(result.stdout.trim(), '', 'stdout must be empty when collie-harness:review not approved');
+  assert.strictEqual(result.stdout.trim(), '', 'stdout must be empty when collie:review not approved');
 });
 
 test('post-exitplan-gated-hint: last-plan.json missing → stdout empty (silent)', () => {

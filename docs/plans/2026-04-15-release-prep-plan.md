@@ -1,25 +1,25 @@
-# collie-harness 发布准备 - 实施计划 (v3，补内化外部依赖)
+# collie 发布准备 - 实施计划 (v3，补内化外部依赖)
 
 ## Context
 
-用户完成了 `collie-harness:xx` 命名重构和 37/37 单元测试通过，现在准备把这个 Claude Code plugin 发到 GitHub 作为 0.1.0 首发。
+用户完成了 `collie:xx` 命名重构和 37/37 单元测试通过，现在准备把这个 Claude Code plugin 发到 GitHub 作为 0.1.0 首发。
 
 **v1 被 Collie reviewer BLOCK**，真实发现：
-- **README:23 `/collie-harness:queue` 是 rename 重构漏同步**，不是 slash 语法笔误。根因：`skills/collie-queue/` 改名为 `skills/queue/` 后，user-facing 的 `/` 前缀命令在 `commands/` 目录下没有对应的 wrapper 文件（`commands/` 只有 `auto.md`）。v1 计划只改文案 = 过拟合。
+- **README:23 `/collie:queue` 是 rename 重构漏同步**，不是 slash 语法笔误。根因：`skills/collie-queue/` 改名为 `skills/queue/` 后，user-facing 的 `/` 前缀命令在 `commands/` 目录下没有对应的 wrapper 文件（`commands/` 只有 `auto.md`）。v1 计划只改文案 = 过拟合。
 - **验证标准把 skill / command / agent 混类**。这三类的激活机制不同，必须分开验证。
-- **v1 完全绕开 collie-harness 自己的 gated-workflow / dual reviewer / verification**。讽刺：发布一个强制 workflow 的 plugin 却不 dogfood 它。
+- **v1 完全绕开 collie 自己的 gated-workflow / dual reviewer / verification**。讽刺：发布一个强制 workflow 的 plugin 却不 dogfood 它。
 
 **v2 又被用户追问出一类新问题**：依赖外化审计。
-- `plan-doc-reviewer` agent 和 `gated-workflow` skill 实际上都住在 user 级 `~/.claude/`，**不是任何 plugin 的一部分**。全新环境安装 collie-harness 后会找不到这两个依赖，workflow 跑不起来。
+- `plan-doc-reviewer` agent 和 `gated-workflow` skill 实际上都住在 user 级 `~/.claude/`，**不是任何 plugin 的一部分**。全新环境安装 collie 后会找不到这两个依赖，workflow 跑不起来。
 - `ralph-loop` 在 `commands/auto.md:12` 被使用，但 README 安装章节没列为前置依赖。
 - `gated-workflow` 内部引用的 `simplify` skill 在任何地方都搜不到（`~/.claude/plugins/` 下无结果），是个悬空引用——内化时必须处理。
 
 用户决策：
-- `plan-doc-reviewer` agent + `gated-workflow` skill → **全部内化到 collie-harness**
+- `plan-doc-reviewer` agent + `gated-workflow` skill → **全部内化到 collie**
 - `ralph-loop` plugin → **README 补充安装说明**
 
 已实测事实（避免 v1 的无证据结论）：
-- `claude plugin validate ~/git/collie-harness` **存在且可用** — 本 session 早些时候试过，返回 `✔ Validation passed`
+- `claude plugin validate ~/git/collie` **存在且可用** — 本 session 早些时候试过，返回 `✔ Validation passed`
 - `marketplace.json` 当前的 `"source": { "source": "url", "url": "..." }` schema **合法** — 同一次 validate 通过
 - `~/.claude/agents/plan-doc-reviewer.md` 有效内容只在 1-74 行，75-208 行是 auto-generated memory scaffolding，内化必须删掉
 - frontmatter 含 `memory: user` 字段，内化时去掉
@@ -48,7 +48,7 @@
 
 1. 新建 `agents/plan-doc-reviewer.md`（已完成）
 2. 更新 `plugin.json` agents 数组加入 `./agents/plan-doc-reviewer.md`
-3. 全限定名替换：`plan-doc-reviewer` → `collie-harness:plan-doc-reviewer`
+3. 全限定名替换：`plan-doc-reviewer` → `collie:plan-doc-reviewer`
    - `hooks/post-approved-exitplan-hint.js`
    - `hooks/post-writing-plans-reviewer.js`
    - `commands/auto.md`
@@ -60,7 +60,7 @@
 **0.2 内化 gated-workflow skill**
 
 4. 新建 `skills/gated-workflow/SKILL.md`（删掉 Step 5 simplify 整段 + [simplify] 行）
-5. 全限定名替换：`gated-workflow` → `collie-harness:gated-workflow`
+5. 全限定名替换：`gated-workflow` → `collie:gated-workflow`
    - `hooks/post-exitplan-gated-hint.js`（同时去掉硬编码绝对路径）
    - `commands/auto.md`
    - `tests/post-exitplan-gated-hint.test.js`
@@ -108,7 +108,7 @@
 
 1. `git status --short` → clean
 2. `node --test tests/*.test.js` → all pass
-3. `claude plugin validate ~/git/collie-harness` → ✔
+3. `claude plugin validate ~/git/collie` → ✔
 4. `grep -rn '<USER>\|"kevin"' .claude-plugin/ README.md LICENSE CLAUDE.md` → 返空
 5. `git status --ignored | grep .claude/` → 命中
 6. 依赖内化校验全通

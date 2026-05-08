@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# collie-harness escalation dispatcher
+# collie escalation dispatcher
 # Supports user override via $COLLIE_ESCALATE_CMD environment variable.
 #
 # Usage: escalate.sh <LEVEL> <MESSAGE> [CONTEXT_JSON]
@@ -17,7 +17,7 @@ MSG="${2:-no-message}"
 CONTEXT="${3:-}"
 
 # Ensure log directory exists
-LOG_DIR="${COLLIE_HARNESS_HOME:-${HOME}/.collie-harness}"
+LOG_DIR="${COLLIE_HOME:-${HOME}/.collie}"
 mkdir -p "${LOG_DIR}"
 
 # Structured log entry

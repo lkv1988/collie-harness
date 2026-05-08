@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Purpose
 
-**collie-harness** is a Claude Code plugin that automates the full "Collie-style" feature development workflow: brainstorm → plan → plan review → gated implementation → rubric review. It enforces workflow integrity via hooks, quota safety, loop detection, and a rubric-based final review agent.
+**collie** is a Claude Code plugin that automates the full "Collie-style" feature development workflow: brainstorm → plan → plan review → gated implementation → rubric review. It enforces workflow integrity via hooks, quota safety, loop detection, and a rubric-based final review agent.
 
 ## Development Commands
 
@@ -19,7 +19,7 @@ node --test tests/stop-steps-counter.test.js
 ./tests/e2e/smoke.sh
 
 # Load as a development plugin (session-only)
-claude --plugin-dir ~/git/collie-harness
+claude --plugin-dir ~/git/collie
 
 # Verify plugin is loaded inside Claude Code
 /plugin list
@@ -32,29 +32,29 @@ No build step — pure Node.js, zero external dependencies.
 | Layer | What it does |
 |-------|-------------|
 | **0** | `acceptEdits` mode + escalation channel (`scripts/escalate.sh`) |
-| **1** | Chain-link hooks enforcing dual-reviewer handshake (collie-harness:plan-doc-reviewer + collie-harness:review) before ExitPlanMode |
-| **2** | `skills/review/` — single source of truth for Collie's 13 red-lines + 6 questions + Reflexion + ELEPHANT. Called directly at both plan stage (parallel with `plan-doc-reviewer`) and code stage (gated-workflow [collie-final-review] Step 5.7). |
+| **1** | Chain-link hooks enforcing dual-reviewer handshake (collie:plan-doc-reviewer + collie:review) before ExitPlanMode |
+| **2** | `skills/review/` — single source of truth for Collie's 13 red-lines + 6 questions + Reflexion + ELEPHANT. Called directly at both plan stage (parallel with `plan-doc-reviewer`) and code stage (flow [collie-final-review] Step 5.7). |
 | **3** | Self-driven harness (`commands/auto.md` + `skills/queue/`) with CronCreate task queue |
 
 ## Workflow Sequence (enforced by hooks)
 
 ```
-/collie-harness:auto "task"
+/collie:auto "task"
   → ⓪ Research & Reuse         ← internal specs first, then web search / registry / docs
   → superpowers:brainstorming
   → superpowers:writing-plans   ← post-writing-plans-reviewer.js marks plan pending (both reviewers)
   → PARALLEL:
-      collie-harness:plan-doc-reviewer (structural) ← post-approved-exitplan-hint.js marks plan_doc_reviewer.approved
-      collie-harness:review (Collie rubric) ← post-approved-exitplan-hint.js marks collie_reviewer.approved
+      collie:plan-doc-reviewer (structural) ← post-approved-exitplan-hint.js marks plan_doc_reviewer.approved
+      collie:review (Collie rubric) ← post-approved-exitplan-hint.js marks collie_reviewer.approved
   → (only when BOTH approved)
-  → ExitPlanMode                ← post-exitplan-gated-hint.js reminds gated-workflow
-  → collie-harness:gated-workflow skill（内含 [collie-final-review] pre-merge gate） → <promise>Collie: SHIP IT</promise>
+  → ExitPlanMode                ← post-exitplan-gated-hint.js reminds flow
+  → collie:flow skill（内含 [collie-final-review] pre-merge gate） → <promise>Collie: SHIP IT</promise>
 ```
 
-## Autoiter Workflow（`/collie-harness:autoiter`，与 Workflow Sequence 平行独立，不嵌套）
+## Autoiter Workflow（`/collie:autoiter`，与 Workflow Sequence 平行独立，不嵌套）
 
 ```
-/collie-harness:autoiter "task"
+/collie:autoiter "task"
   → Stage 0: Discovery + Lock（planmode；plan-kind: autoiter-stage0 旁路双 reviewer 门禁）
   → Stage 0.5: autoiter-prepare 体检（trigger dry-run / scalar extract / observability）
   → 迭代 1..N:
@@ -64,7 +64,7 @@ No build step — pure Node.js, zero external dependencies.
       Stage 4a: Triage（opus, reverse suspicion）
       Stage 4b: Deep Verify（opus, adversarial, per-issue）
       Stage 5.0: Consolidated fix plan → fix-plan.md
-      Stage 5.1: collie-harness:gated-workflow（完整 TDD→review→simplify→regression→[collie-final-review]）
+      Stage 5.1: collie:flow（完整 TDD→review→simplify→regression→[collie-final-review]）
       Stage 5.2: G6 diff audit（inline）
       Stage 5.3: Rerun + scalar
       Stage 6: Rollback + 停止判断
@@ -77,27 +77,27 @@ No build step — pure Node.js, zero external dependencies.
 |-----------|-------|---------|
 | `post-writing-plans-reviewer.js` | PostToolUse Write/Edit + ExitPlanMode | Creates dual-reviewer state; validates plan metadata (plan-source + plan-topic + plan-executor); **hard-blocks** (`decision:'block'`) ExitPlanMode if metadata missing or BOTH reviewers haven't approved |
 | `post-writing-plans-reviewer.js` | `plan-kind: autoiter-stage0` 旁路 | 跳过 auto 双 reviewer 门禁，只校验 3 条 metadata + 4 enum 字段；`plan-kind` 为其他值时走既有路径 |
-| `post-approved-exitplan-hint.js` | PostToolUse Agent + PostToolUse Skill | Detects collie-harness:plan-doc-reviewer Approved OR collie-harness:review PASS; updates per-reviewer state; hints next step |
-| `post-exitplan-gated-hint.js` | PostToolUse ExitPlanMode | Reminds to call `collie-harness:gated-workflow` skill — **only when both reviewers approved**; silent otherwise |
+| `post-approved-exitplan-hint.js` | PostToolUse Agent + PostToolUse Skill | Detects collie:plan-doc-reviewer Approved OR collie:review PASS; updates per-reviewer state; hints next step |
+| `post-exitplan-gated-hint.js` | PostToolUse ExitPlanMode | Reminds to call `collie:flow` skill — **only when both reviewers approved**; silent otherwise |
 | `stop-steps-counter.js` | Stop | Blocks on same error ×3 or 5+ steps without file changes; **resets counters after block** to prevent permanent lockout |
 | `memory/load-index.js` | SessionStart | Cleanup stale memories, sync INDEX, load user/project memory index into context |
-| `memory/capture-message.js` | UserPromptSubmit | Append message to session log + counter; at 20 → invoke memory-palace skill |
-| `memory/bump-access.js` | PostToolUse(Read) | Bump `last_accessed` + `access_count` on `~/.memory-palace/` files |
+| `memory/capture-message.js` | UserPromptSubmit | Append message to session log + counter; at 20 → invoke memory skill |
+| `memory/bump-access.js` | PostToolUse(Read) | Bump `last_accessed` + `access_count` on `~/.collie/memory/` files |
 | `memory/pre-compact.sh` | PreCompact | Prompt agent to run decision tree before context compaction |
 | `memory/session-stop.sh` | Stop | Prompt agent to run decision tree + consolidation; background consolidate.js as safety net |
 
 ## State Files (runtime, not committed)
 
-All runtime state lives under `~/.collie-harness/`:
+All runtime state lives under `~/.collie/`:
 
 ```
-~/.collie-harness/
+~/.collie/
   state/{sessionId}/
     last-plan.json             # Plan review status per session
     counter.json               # Step count + error hash tracking
-  state/scheduled_tasks.lock   # Concurrency lock for collie-harness:queue
+  state/scheduled_tasks.lock   # Concurrency lock for collie:queue
   escalations.log              # All escalation events
-  queue/*.md                   # Unattended tasks for collie-harness:queue skill
+  queue/*.md                   # Unattended tasks for collie:queue skill
   autoiter/{project-id}/current-run     # runId 指针（project-scoped，EnterPlanMode 前写入）
   autoiter/{project-id}/{runId}/
     run-spec.md / prepare-report.md / state.json
@@ -108,14 +108,14 @@ All runtime state lives under `~/.collie-harness/`:
 ## Key Design Constraints
 
 - **Rubric red-lines** (BLOCK): 13 hard violations in `skills/review/references/rubric-red-lines.md` (single source of truth). Any single red-line = automatic BLOCK.
-- **Dual reviewer at plan stage**: `collie-harness:plan-doc-reviewer` (structural) AND `collie-harness:review` (Collie rubric) must both approve before ExitPlanMode. Enforced by `post-writing-plans-reviewer.js` + `post-approved-exitplan-hint.js`.
+- **Dual reviewer at plan stage**: `collie:plan-doc-reviewer` (structural) AND `collie:review` (Collie rubric) must both approve before ExitPlanMode. Enforced by `post-writing-plans-reviewer.js` + `post-approved-exitplan-hint.js`.
 - **Loop trap**: 3 identical error hashes in a row → WARN escalation; 5 steps without file changes → WARN escalation.
-- **Task queue** (`collie-harness:queue`) runs at `concurrency=1` — never two collie sessions simultaneously.
+- **Task queue** (`collie:queue`) runs at `concurrency=1` — never two collie sessions simultaneously.
 - **ELEPHANT check** in rubric reviewer: 8-point sycophancy self-check; must answer all 8 before issuing PASS.
-- **Doc maintenance enforcement**：任何 plan 若改动用户可见行为 / 架构约束 / 已有文档内容，必须包含显式的文档更新任务（README / CLAUDE.md / docs/*-spec.md / `.claude/skills/*/SKILL.md`（若改动涉及项目级 SOP/操作清单））。由 `collie-harness:plan-doc-reviewer` 的 Doc Maintenance 检查 + `collie-harness:review` 的 Red line #12（文档同步检查）强制。`gated-workflow` Step 5.5 作为安全网。
-- **E2E enforcement**：brainstorming 阶段必须完成 E2E Assessment（探测基建 + 可行性结论）；gated-workflow TodoList 根据 Assessment 结论创建条件性 `[e2e-setup]` / `[e2e-verify]` 任务；Step 1 建 list 后 haiku subagent 交叉核对 plan-todo 对齐；`collie-harness:review` Q5 + `plan-doc-reviewer` E2E Assessment 行共同强制。
-- **Impact Assessment 强制**：所有 plan 必须包含 Impact Assessment 章节（Directly affected + Downstream consumers + Reverse impact）。由 `collie-harness:plan-doc-reviewer` 的 Impact Assessment 检查强制。豁免：单文件 < 20 行 trivial 改动。
-- **Pre-merge rubric gate**：`collie-harness:review` Mode=code 作为 `[collie-final-review]` 节点嵌入 `gated-workflow` TodoList 中 `[doc-refresh]` 之后、`[finish]` 之前（Step 5.7）。worktree 清理前必须通过 rubric gate，auto.md 无独立 Step ⑥。
+- **Doc maintenance enforcement**：任何 plan 若改动用户可见行为 / 架构约束 / 已有文档内容，必须包含显式的文档更新任务（README / CLAUDE.md / docs/*-spec.md / `.claude/skills/*/SKILL.md`（若改动涉及项目级 SOP/操作清单））。由 `collie:plan-doc-reviewer` 的 Doc Maintenance 检查 + `collie:review` 的 Red line #12（文档同步检查）强制。`flow` Step 5.5 作为安全网。
+- **E2E enforcement**：brainstorming 阶段必须完成 E2E Assessment（探测基建 + 可行性结论）；flow TodoList 根据 Assessment 结论创建条件性 `[e2e-setup]` / `[e2e-verify]` 任务；Step 1 建 list 后 haiku subagent 交叉核对 plan-todo 对齐；`collie:review` Q5 + `plan-doc-reviewer` E2E Assessment 行共同强制。
+- **Impact Assessment 强制**：所有 plan 必须包含 Impact Assessment 章节（Directly affected + Downstream consumers + Reverse impact）。由 `collie:plan-doc-reviewer` 的 Impact Assessment 检查强制。豁免：单文件 < 20 行 trivial 改动。
+- **Pre-merge rubric gate**：`collie:review` Mode=code 作为 `[collie-final-review]` 节点嵌入 `flow` TodoList 中 `[doc-refresh]` 之后、`[finish]` 之前（Step 5.7）。worktree 清理前必须通过 rubric gate，auto.md 无独立 Step ⑥。
 - **Surgical scope red line**：Red line #13（Speculative scope）吸收 Karpathy CLAUDE.md Principle 2/3。加任务未要求的 feature / flexibility / 抽象 / 顺手改无关代码 = BLOCK；每行 diff 必须可追溯到任务目标。
 - **Overfit Guards (G1-G8)**：硬性约束防过拟合；G8 = Triage（confidence≤2 → DEFERRED）+ Deep Verify（fix_confidence≤2 → DEFERRED）双层 confidence gate
 - **ralph-loop 复用**：`/autoiter` 使用 ralph-loop 作为外层循环驱动（与 `/auto` 一致），不新建 Stop hook
@@ -133,7 +133,7 @@ All runtime state lives under `~/.collie-harness/`:
 export COLLIE_ESCALATE_CMD="your-notification-command"
 
 # 2b. (Optional) Override state directory location
-export COLLIE_HARNESS_HOME="~/.my-harness"  # defaults to ~/.collie-harness
+export COLLIE_HOME="~/.my-harness"  # defaults to ~/.collie
 
 # 3. (Optional) Autoiter terminal-event notification
 export COLLIE_AUTOITER_NOTIFY_CMD="osascript -e 'display notification ...'"  # or Slack/email/etc.
@@ -148,7 +148,7 @@ export COLLIE_AUTOITER_NOTIFY_CMD="osascript -e 'display notification ...'"  # o
 
 每次 rename 重构后运行：
 ```bash
-grep -n '/collie-harness' README.md CLAUDE.md
+grep -n '/collie' README.md CLAUDE.md
 ls commands/ skills/*/SKILL.md agents/*.md
 ```
 `commands/` 每个 `.md` = 一个 slash 命令；`skills/` 每个 `SKILL.md` = 一个 Skill；`agents/` 每个 `.md` = 一个 Agent。任何 user-facing 名字与文件不对应 = 发布红线。
@@ -156,7 +156,7 @@ ls commands/ skills/*/SKILL.md agents/*.md
 ### 发布前必须通过
 
 ```bash
-claude plugin validate ~/git/collie-harness  # 期望 ✔ Validation passed
+claude plugin validate ~/git/collie  # 期望 ✔ Validation passed
 node --test tests/*.test.js                  # 期望 all pass
 grep -rn '<USER>\|"kevin"' .claude-plugin/ README.md LICENSE  # 期望返空
 git status --ignored | grep .claude/         # 期望命中
@@ -173,7 +173,7 @@ git status --ignored | grep .claude/         # 期望命中
 ### 依赖审计（每次新增 agent/skill 依赖时）
 
 每个在 `commands/`、`hooks/`、`agents/`、`skills/` 中引用的 agent/skill 名必须属于：
-- collie-harness 自身定义（在 `agents/` 或 `skills/` 下有对应文件）
+- collie 自身定义（在 `agents/` 或 `skills/` 下有对应文件）
 - README 前置依赖章节明确列出的外部 plugin（当前：superpowers + ralph-loop）
 
 任何 `~/.claude/agents/` 或 `~/.claude/skills/` 绝对路径 = 发布红线（别人没有这个 home 目录）。

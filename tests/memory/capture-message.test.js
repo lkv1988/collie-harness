@@ -12,7 +12,7 @@ const SCRIPT = new URL('../../hooks/memory/capture-message.js', import.meta.url)
  */
 function makeTempHome() {
   const home = mkdtempSync(join(tmpdir(), 'mp-test-'));
-  const sessionsDir = join(home, '.memory-palace', 'sessions');
+  const sessionsDir = join(home, '.collie/memory', 'sessions');
   mkdirSync(sessionsDir, { recursive: true });
   return { home, sessionsDir };
 }

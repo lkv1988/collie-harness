@@ -12,7 +12,7 @@ description: "Boids-inspired memory management for AI agents. Evaluates conversa
 ### Directory structure
 
 ```
-~/.memory-palace/                           ← agent-independent, all agents share
+~/.collie/memory/                           ← agent-independent, all agents share
 ├── user/                                   ← user-level (cross-project)
 │   ├── INDEX.md                            ← index of long/ only, ≤200 lines
 │   ├── short/
@@ -75,7 +75,7 @@ SessionStart         UserPromptSubmit      PostToolUse(Read)   PreCompact       
      │                    │                      │                   │                  │
      ▼                    ▼                      ▼                   ▼                  ▼
 cleanup stale        append message to     path in               systemMessage →    consolidate.js
-short/ + long/       session log +         ~/.memory-palace/?    read session log   promote short→long
+short/ + long/       session log +         ~/.collie/memory/?    read session log   promote short→long
 sync INDEX           count++               yes → bump            run decision tree  merge long dups
 read INDEX files          │                last_accessed +        write memories     (no agent prompt)
 inject into context  count ≥ 20?           access_count          (keep log)
@@ -95,7 +95,7 @@ Fires when the agent starts. The script (`load-index.js`) does:
 2. Scan `short/` (user + project): items untouched for 7 days → delete
 3. Scan `long/` (user + project): items untouched for 60 days → mark `[review]`; `[review]` items untouched 30 more days → delete
 4. Sync `INDEX.md` with `long/` directory (remove stale entries, add missing ones)
-5. Read `~/.memory-palace/user/INDEX.md` and `~/.memory-palace/projects/<project>/INDEX.md`
+5. Read `~/.collie/memory/user/INDEX.md` and `~/.collie/memory/projects/<project>/INDEX.md`
 6. Output both INDEX contents for injection into agent context
 
 Agent starts every session knowing who the user is, what this project needs, and with stale memories already pruned.
@@ -103,7 +103,7 @@ Agent starts every session knowing who the user is, what this project needs, and
 **2. UserPromptSubmit — capture (blocking, < 10ms)**
 
 Fires on every user message. The script (`capture-message.js`) does two things:
-- Append user message to `~/.memory-palace/sessions/<session-id>.jsonl`
+- Append user message to `~/.collie/memory/sessions/<session-id>.jsonl`
 - Increment a counter
 
 When counter reaches 20, output a one-line prompt that tells the agent to invoke the memory-palace skill and evaluate recent messages against the decision tree. Reset counter to 0.
@@ -113,7 +113,7 @@ No regex, no analysis, no LLM. Pure file append + counter check.
 **3. PostToolUse (Read) — access reinforcement**
 
 Fires after every `Read` tool call. The script (`bump-access.js`) does:
-1. Check if the file path is under `~/.memory-palace/`
+1. Check if the file path is under `~/.collie/memory/`
 2. Yes → update `last_accessed = today` and `access_count++` in the file's frontmatter
 3. No → no-op
 

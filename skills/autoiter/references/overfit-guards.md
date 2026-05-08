@@ -1,7 +1,7 @@
 # Overfit Guards (G1–G8)
 
-> Reference for `collie-harness:autoiter`. These 8 guards are enforced jointly by
-> `collie-harness:plan-doc-reviewer` (structural) and `collie-harness:review`
+> Reference for `collie:autoiter`. These 8 guards are enforced jointly by
+> `collie:plan-doc-reviewer` (structural) and `collie:review`
 > (Collie rubric) at every fix-plan review point, and by the autoiter SKILL's inline
 > diff-audit (G6) after `gated-workflow` returns.
 
@@ -70,7 +70,7 @@ rather than a rubber stamp.
 
 ## G4 — Full regression suite (no changed-files pruning)
 
-**Rule**: The `[regression]` step inside `collie-harness:gated-workflow` must
+**Rule**: The `[regression]` step inside `collie:gated-workflow` must
 run the **full** test suite. It may **not** use `--changed`, `--only-files`,
 `--affected`, or any other mechanism that limits coverage to files touched by
 this iteration's diff.
@@ -107,7 +107,7 @@ prepare FAIL → autoiter does not start.
 
 ## G6 — Per-iteration diff audit
 
-**Rule**: After `collie-harness:gated-workflow` returns (Stage 5.1), and
+**Rule**: After `collie:gated-workflow` returns (Stage 5.1), and
 before Stage 5.2 rerun, the autoiter SKILL performs an **inline diff audit**:
 
 For every line in `git diff HEAD~1..HEAD`, the SKILL verifies that the changed

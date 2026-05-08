@@ -14,7 +14,7 @@ import { join } from 'path';
 import { homedir } from 'os';
 import { resolveProject } from './resolve-project.js';
 
-const BASE = join(homedir(), '.memory-palace');
+const BASE = join(homedir(), '.collie/memory');
 
 /**
  * Parse CLI args into a plain object.

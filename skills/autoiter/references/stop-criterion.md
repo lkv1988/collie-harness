@@ -1,6 +1,6 @@
 # Stop Criterion & Rollback Decision Matrix
 
-> Reference for `collie-harness:autoiter` Stage 6. Defines when to stop iterating
+> Reference for `collie:autoiter` Stage 6. Defines when to stop iterating
 > and what to do with accumulated changes when scalar degrades.
 
 ---

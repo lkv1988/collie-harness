@@ -60,7 +60,7 @@ Scan the Target item by item. Each question answered `PASS` / `FAIL` with `file:
 2. **Generalize the fix** — Did this fix handle all occurrences? Similar bugs elsewhere?
 3. **Worktree isolation** — Changes inside the right worktree/branch? No accidental master edits? *(skip in plan mode)*
 4. **Real verification** — Verified for real, not via mocked critical paths? **包含判断：是否有任何 mocked path bypass 了 test 本应覆盖的真实行为？** *(skip in plan mode)*
-5. **Gate omissions** — subagent / tdd / parallel / todolist / e2e (if plan confirmed feasible) / plan-todo alignment / collie-harness:plan-doc-reviewer — any gate skipped? Code mode 额外检查：(a) plan 中每个 task 是否在 TodoList 中有对应条目（或有记录在案的合理解释）；(b) plan E2E Assessment 若结论为 `e2e_feasible: true`，最终是否有 `[e2e-verify]` 任务且执行通过。
+5. **Gate omissions** — subagent / tdd / parallel / todolist / e2e (if plan confirmed feasible) / plan-todo alignment / collie:plan-doc-reviewer — any gate skipped? Code mode 额外检查：(a) plan 中每个 task 是否在 TodoList 中有对应条目（或有记录在案的合理解释）；(b) plan E2E Assessment 若结论为 `e2e_feasible: true`，最终是否有 `[e2e-verify]` 任务且执行通过。
 6. **Subagent model selection** — opus for research? haiku for bulk? Did main session do subagent work?
 
 ## Reflexion Grounding Rules (mandatory)

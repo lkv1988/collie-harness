@@ -54,7 +54,7 @@ function validate(args) {
 // ---------- Target directory resolution ----------
 
 function targetDir(scope, cwd) {
-  const base = join(homedir(), '.memory-palace');
+  const base = join(homedir(), '.collie/memory');
   if (scope === 'user') {
     return join(base, 'user', 'short');
   }

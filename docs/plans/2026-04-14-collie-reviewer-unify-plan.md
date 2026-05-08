@@ -4,13 +4,13 @@
 
 ### 为什么要做
 
-当前 collie-harness 的 review 体系有**三个重叠的入口**，分工模糊并且存在 DRY 违反：
+当前 collie 的 review 体系有**三个重叠的入口**，分工模糊并且存在 DRY 违反：
 
 | 组件 | 类型 | 触发点 | 职责 | 问题 |
 |------|------|--------|------|------|
 | `plan-doc-reviewer`（superpowers 自带 agent） | Agent | planmode 内 ExitPlanMode 前 | 结构化/宽松的计划完整性校验（是否有步骤、文件路径、依赖分析等） | 单项职责干净，继续保留 |
 | `collie-rubric-reviewer` | Agent | gated-workflow 末尾 | Collie 风格代码审（12 红线 + 10 问题 + ELEPHANT） | **Collie 风格 rubric 的 single source of truth**，但只在代码阶段跑 |
-| `kevin-reviewer`（user skill，历史遗留） | Skill | 任意临时调用 | 早期 kevin 风格通用 review（待删） | **和 `collie-rubric-reviewer` 内容 70% 重叠，DRY 违反**；不在 plugin 内，无法通过 collie-harness 分发，Wave 4 删除 |
+| `kevin-reviewer`（user skill，历史遗留） | Skill | 任意临时调用 | 早期 kevin 风格通用 review（待删） | **和 `collie-rubric-reviewer` 内容 70% 重叠，DRY 违反**；不在 plugin 内，无法通过 collie 分发，Wave 4 删除 |
 
 **最核心的盲区**：Collie 风格 rubric **只在代码完成后跑**。如果 plan 阶段就方向错了（根因判断错、subagent 模型选错、重复造轮子、未沉淀到 spec），要等几小时代码写完才被 `collie-rubric-reviewer` 拦下，而 superpowers 自带的 `plan-doc-reviewer` 风格太宽松，不会在此阶段挑战这些问题。
 

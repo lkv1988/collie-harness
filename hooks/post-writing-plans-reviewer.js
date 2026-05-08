@@ -12,7 +12,7 @@ try {
   const raw = fs.readFileSync(0, 'utf8');
   payload = JSON.parse(raw);
 } catch (e) {
-  process.stderr.write('[collie-harness/post-writing-plans-reviewer] Failed to parse stdin: ' + e.message + '\n');
+  process.stderr.write('[collie/post-writing-plans-reviewer] Failed to parse stdin: ' + e.message + '\n');
   process.exit(0);
 }
 
@@ -23,7 +23,7 @@ const sessionId = payload.session_id || 'unknown';
 // --- Helpers ---
 const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT;
 if (!pluginRoot) {
-  process.stderr.write('[collie-harness/post-writing-plans-reviewer] WARN: CLAUDE_PLUGIN_ROOT not set, skipping\n');
+  process.stderr.write('[collie/post-writing-plans-reviewer] WARN: CLAUDE_PLUGIN_ROOT not set, skipping\n');
   process.exit(0);
 }
 const escalateScript = path.join(pluginRoot, 'scripts', 'escalate.sh');
@@ -77,7 +77,7 @@ if (toolName === 'Write' || toolName === 'Edit' || toolName === 'MultiEdit') {
     }
     // If no match, exit silently
   } catch (e) {
-    process.stderr.write('[collie-harness/post-writing-plans-reviewer] Error in Write/Edit handler: ' + e.message + '\n');
+    process.stderr.write('[collie/post-writing-plans-reviewer] Error in Write/Edit handler: ' + e.message + '\n');
   }
   process.exit(0);
 }
@@ -106,11 +106,11 @@ if (toolName === 'ExitPlanMode') {
           // Validate 3 required metadata lines
           const hasPlanSource   = first5Lines.some(l => /<!--\s*plan-source:/.test(l));
           const hasPlanKind     = first5Lines.some(l => /<!--\s*plan-kind:\s*autoiter-stage0\s*-->/.test(l));
-          const hasPlanExecutor = first5Lines.some(l => /<!--\s*plan-executor:\s*collie-harness:autoiter\s*-->/.test(l));
+          const hasPlanExecutor = first5Lines.some(l => /<!--\s*plan-executor:\s*collie:autoiter\s*-->/.test(l));
           const metaMissing = [
             !hasPlanSource   && 'plan-source',
             !hasPlanKind     && 'plan-kind',
-            !hasPlanExecutor && 'plan-executor: collie-harness:autoiter',
+            !hasPlanExecutor && 'plan-executor: collie:autoiter',
           ].filter(Boolean);
 
           if (metaMissing.length > 0) {
@@ -169,19 +169,19 @@ if (toolName === 'ExitPlanMode') {
           missing.push('plan file unreadable: ' + e.message);
         }
       } else {
-        if (!planDocOk) missing.push('collie-harness:plan-doc-reviewer');
-        if (!collieOk)  missing.push('collie-harness:review');
+        if (!planDocOk) missing.push('collie:plan-doc-reviewer');
+        if (!collieOk)  missing.push('collie:review');
       }
     } catch (e) {
       if (e.code !== 'ENOENT') {
-        process.stderr.write('[collie-harness/post-writing-plans-reviewer] Could not parse last-plan.json: ' + e.message + '\n');
+        process.stderr.write('[collie/post-writing-plans-reviewer] Could not parse last-plan.json: ' + e.message + '\n');
       }
-      missing = ['collie-harness:plan-doc-reviewer', 'collie-harness:review'];
+      missing = ['collie:plan-doc-reviewer', 'collie:review'];
     }
 
     if (needsWarn) {
       const missingList = missing.join(' + ');
-      process.stderr.write(`[collie-harness] BLOCK: plan file not approved by ${missingList} before ExitPlanMode\n`);
+      process.stderr.write(`[collie] BLOCK: plan file not approved by ${missingList} before ExitPlanMode\n`);
 
       try {
         execFileSync(escalateScript, [
@@ -190,18 +190,18 @@ if (toolName === 'ExitPlanMode') {
           JSON.stringify({ session_id: sessionId, missing }),
         ], { stdio: ['ignore', 'ignore', 'inherit'] });
       } catch (e) {
-        process.stderr.write('[collie-harness/post-writing-plans-reviewer] escalate.sh failed: ' + e.message + '\n');
+        process.stderr.write('[collie/post-writing-plans-reviewer] escalate.sh failed: ' + e.message + '\n');
       }
 
       const output = {
         decision: 'block',
-        reason: `⚠️ [collie-harness] ExitPlanMode 被拦截：plan 尚未被 ${missingList} 批准。必须先并行调用 Agent(subagent_type='collie-harness:plan-doc-reviewer', model='opus') 和 Skill('collie-harness:review', Mode=plan)，双方都返回批准后才能 ExitPlanMode。`,
+        reason: `⚠️ [collie] ExitPlanMode 被拦截：plan 尚未被 ${missingList} 批准。必须先并行调用 Agent(subagent_type='collie:plan-doc-reviewer', model='opus') 和 Skill('collie:review', Mode=plan)，双方都返回批准后才能 ExitPlanMode。`,
       };
       process.stdout.write(JSON.stringify(output) + '\n');
       process.exit(0);
     }
   } catch (e) {
-    process.stderr.write('[collie-harness/post-writing-plans-reviewer] Error in ExitPlanMode handler: ' + e.message + '\n');
+    process.stderr.write('[collie/post-writing-plans-reviewer] Error in ExitPlanMode handler: ' + e.message + '\n');
   }
   process.exit(0);
 }

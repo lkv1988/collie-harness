@@ -1,14 +1,14 @@
 <!-- plan-source: /Users/kevin/.claude/plans/harness-plugin-spec-cover-skill-vibecod-eventual-engelbart.md -->
 <!-- plan-topic: spec-and-skill-symmetric-discipline -->
-<!-- plan-executor: collie-harness:gated-workflow -->
+<!-- plan-executor: collie:gated-workflow -->
 
 # Spec + 项目级 Skill 同等纪律 — Implementation Plan
 
-> **For agentic workers:** MUST invoke Skill('collie-harness:gated-workflow') to implement this plan.
+> **For agentic workers:** MUST invoke Skill('collie:gated-workflow') to implement this plan.
 
 ## Context
 
-collie-harness 已对 **spec** 建立了"参考 + 提炼 + 更新"的完整纪律：
+collie 已对 **spec** 建立了"参考 + 提炼 + 更新"的完整纪律：
 - **参考**：`commands/auto.md` R&R 的 R0 扫 `docs/*-spec.md`
 - **提炼**：`skills/review/references/rubric-red-lines.md:20` Red line #12 拦截未沉淀的新认知
 - **更新**：`skills/gated-workflow/SKILL.md` Step 5.5 `[doc-refresh]` 审视 spec 文档
@@ -100,7 +100,7 @@ meta-skill 位于 `~/.claude/skills/skill-creator/`（通过 `Skill('skill-creat
 
 ### Assessment 输出
 - **现有基建**：有（smoke.sh），本次无需扩展
-- **本次需求 e2e 策略**：手动 dogfood 一次 `/collie-harness:auto "trivial task"`，观察 transcript 中 R&R 扫描记录与 [doc-refresh] 审视行为
+- **本次需求 e2e 策略**：手动 dogfood 一次 `/collie:auto "trivial task"`，观察 transcript 中 R&R 扫描记录与 [doc-refresh] 审视行为
 - **e2e_feasible: true**（手动 dogfood 即可；无需自动化，因为纯 prose 改动）
 
 ---
@@ -191,7 +191,7 @@ meta-skill 位于 `~/.claude/skills/skill-creator/`（通过 `Skill('skill-creat
 **分两步。第一步是本 plan 独有的 dogfood 验证，第二步直接调 publish skill——避免重造已有 release 流程（Red line #9）。**
 
 **5a. Dogfood 验证**（本 plan 独有，publish 不覆盖）：
-手动跑一次 `/collie-harness:auto "trivial task"`（例如"在 README 末尾加一行 footer"），观察：
+手动跑一次 `/collie:auto "trivial task"`（例如"在 README 末尾加一行 footer"），观察：
 1. R&R transcript 体现 `.claude/skills/*/SKILL.md` 扫描（task-1 扩写生效证据）
 2. [doc-refresh] Step 审视 skill 目录，哪怕无候选也要体现（task-3 扩写生效证据）
 3. plan-doc-reviewer 运行时对 skill 候选有判断动作（task-4 扩写生效证据）
@@ -228,7 +228,7 @@ Refs: `~/.claude/plans/harness-plugin-spec-cover-skill-vibecod-eventual-engelbar
 ```bash
 node --test tests/*.test.js              # 期望 all pass（无 test 改动）
 ./tests/e2e/smoke.sh                     # 期望 4/4 pass
-claude plugin validate ~/git/collie-harness   # 期望 ✔
+claude plugin validate ~/git/collie   # 期望 ✔
 
 # 扩写锚点全命中
 grep -n '.claude/skills' commands/auto.md
@@ -242,7 +242,7 @@ ls commands/ skills/*/SKILL.md agents/*.md   # 无新增 = 预期
 
 ### 手动 dogfood（task-5）
 
-- 跑 `/collie-harness:auto "在 README 末尾加一行 footer"` 完整走通
+- 跑 `/collie:auto "在 README 末尾加一行 footer"` 完整走通
 - 观察 R&R transcript 是否扫了 `.claude/skills/`
 - 观察 Step 5.5 [doc-refresh] 是否提及对 skill 的审视
 - 观察无 `.claude/skills/` 目录时是否报错（预期：不报错，grep/glob 返空）

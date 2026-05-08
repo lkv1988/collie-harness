@@ -1,17 +1,17 @@
 <!-- plan-source: /Users/kevin/.claude/plans/floofy-dazzling-stallman.md -->
 <!-- plan-topic: less-is-more-harness-distillation -->
-<!-- plan-executor: collie-harness:gated-workflow -->
+<!-- plan-executor: collie:gated-workflow -->
 
 # Less Is More — Harness Distillation Implementation Plan
 
-> **For agentic workers:** MUST invoke Skill('collie-harness:gated-workflow') to implement this plan.
+> **For agentic workers:** MUST invoke Skill('collie:gated-workflow') to implement this plan.
 
 ## Context
 
-User 提出探索"少即是多"哲学对 collie-harness 的启发。本节以 **end-user 视角** 立论——插件迭代的最终落点是服务用户，不是维护者的美学偏好。
+User 提出探索"少即是多"哲学对 collie 的启发。本节以 **end-user 视角** 立论——插件迭代的最终落点是服务用户，不是维护者的美学偏好。
 
 **End-user 当前实际体验**（runtime-observable facts）：
-- 每次 `/collie-harness:auto` 调用会触发 `collie-harness:review` 两次（plan 阶段 + code 阶段），每次 review 都产出 **13 red-lines + 11 questions + 8 ELEPHANT = 32 项** PASS/FAIL 的文本 wall。无论有没有问题都全部输出，用户扫读成本高。
+- 每次 `/collie:auto` 调用会触发 `collie:review` 两次（plan 阶段 + code 阶段），每次 review 都产出 **13 red-lines + 11 questions + 8 ELEPHANT = 32 项** PASS/FAIL 的文本 wall。无论有没有问题都全部输出，用户扫读成本高。
 - Reviewer LLM 面对 32 项逐条评审时，落在认知心理学的"略读阈值"（> 7 项后遵守率断崖下降）。**这不是给 reviewer 看的学术问题——它直接意味着用户拿到的 review 质量在下降**：相同的 token 预算被摊薄到 32 项上，每项的证据深度、推理链都被迫缩水。
 - rubric 中存在五处 runtime 可观察的冗余，用户每次 review 都付一次代价：
   - Q4（`skills/review/references/rubric-red-lines.md:49` "Real verification"）+ Q7（`:52` "Mock vs real call"）检查同一属性（mocked critical paths），可合并。
@@ -44,7 +44,7 @@ User 提出探索"少即是多"哲学对 collie-harness 的启发。本节以 **
 
 **Internal spec scan（R0 evidence 补充，满足 Red-line #9 plan-mode 要求）**：
 本 plan 动笔前已扫描如下内部 spec / 约束文档，结论："减法哲学 / Addition Policy" 不存在既有 spec 覆盖，本次新增 `docs/less-is-more-principles.md` 是新主题，非 reinvent：
-- `docs/` 目录：当前无 `*-spec.md` 文件（`ls /Users/kevin/git/collie-harness/docs/` 只含 `plans/` 子目录）——harness 本身无 spec 文件，只有 CLAUDE.md 作为 contributor-facing 约束
+- `docs/` 目录：当前无 `*-spec.md` 文件（`ls /Users/kevin/git/collie/docs/` 只含 `plans/` 子目录）——harness 本身无 spec 文件，只有 CLAUDE.md 作为 contributor-facing 约束
 - `docs/superpowers/specs/`：**不存在**（grep 未命中）——本仓库不维护 superpowers spec
 - `CLAUDE.md`：通读，无"减法原则 / Addition Policy / Subtraction Tracker / Checklist ceiling"相关条款
 - `skills/review/references/rubric-red-lines.md`：通读（live 版本 2026-04-20），Red-line #13 含 Karpathy surgical-scope，但只约束**单次改动**的 scope，不约束**harness 自身的单调加法**倾向——本 plan 针对的是后者，属新议题
@@ -137,7 +137,7 @@ None
 
 修改 `commands/auto.md:150` 一处文案。Before：
 
-> **Skip brainstorming human approval gates**: brainstorming's Step 5 ("User approves design?") and Step 8 ("User reviews written spec?") are skipped in collie-harness auto mode. Proceed directly: design → spec self-review → writing-plans. The collie dual-review in Step ③ is the approval gate.
+> **Skip brainstorming human approval gates**: brainstorming's Step 5 ("User approves design?") and Step 8 ("User reviews written spec?") are skipped in collie auto mode. Proceed directly: design → spec self-review → writing-plans. The collie dual-review in Step ③ is the approval gate.
 
 After（强调 approval 交接 ≠ 压制讨论）：
 
@@ -177,7 +177,7 @@ After（强调 approval 交接 ≠ 压制讨论）：
 - `docs/less-is-more-principles.md` — 新建
 
 ### Downstream consumers
-- **collie-harness:review runtime**：runtime 读取 `rubric-red-lines.md` + `SKILL.md` System Prompt，直接读到 6 个问题 + 新输出格式，无需 code 变更。
+- **collie:review runtime**：runtime 读取 `rubric-red-lines.md` + `SKILL.md` System Prompt，直接读到 6 个问题 + 新输出格式，无需 code 变更。
 - **正在运行的旧 session**：0.1.9 已加载 session 使用其 context 内的 rubric 文本（11 问 + 旧格式），不受影响；worktree 级会话退出后自然刷新到新版。
 - **已产出的 review 报告**：可能引用 "Q7"/"Q8"/"Q10"/"Q11"。历史产物冻结不动；新产物使用新编号 Q1-Q6 + 新格式。
 - **hook 链路**：
@@ -209,7 +209,7 @@ After（强调 approval 交接 ≠ 压制讨论）：
 ### 项目类型 → e2e 策略映射
 Claude Code plugin 的 e2e 策略：
 1. 单元测试：`node --test tests/*.test.js` 必须全绿
-2. Plugin 验证：`claude plugin validate ~/git/collie-harness` 必须 `✔ Validation passed`
+2. Plugin 验证：`claude plugin validate ~/git/collie` 必须 `✔ Validation passed`
 3. 集成 smoke：`tests/e2e/smoke.sh` 的 4 个场景必须全通
 4. **Hook regex 契约验证**：手工构造包含新 review 输出格式的样例，验证 `/##\s*Collie Reviewer[\s\S]*?\*\*Status:\*\*\s*PASS\b/` regex 在新格式下仍匹配 PASS 场景
 5. 文档结构手动核对：README ↔ CLAUDE.md ↔ rubric-red-lines.md ↔ SKILL.md 的计数一致
@@ -242,7 +242,7 @@ Claude Code plugin 的 e2e 策略：
 | [changelog] Add 0.2.0 entry | 3 | [bump-version] | `CHANGELOG.md` |
 | [doc-refresh] Final doc consistency sweep | 4 | [changelog] | (all docs) |
 | [e2e-verify] Run unit tests + plugin validate + smoke | 4 | [doc-refresh] | (verification) |
-| [collie-final-review] Skill(collie-harness:review Mode=code) | 5 | [e2e-verify] | — |
+| [collie-final-review] Skill(collie:review Mode=code) | 5 | [e2e-verify] | — |
 | [finish] Commit atomic + push + worktree cleanup | 6 | [collie-final-review] | — |
 
 **并行批次说明**：
@@ -264,13 +264,13 @@ Read this plan fully. Note $PLAN_PATH, $PLAN_TOPIC = `less-is-more-harness-disti
 **Content outline**（**严格控制在 ≤ 100 行**，markdown；以下模板本身已在 ≈ 95 行预算内）：
 
 ```markdown
-# Less Is More — Design Principles for collie-harness
+# Less Is More — Design Principles for collie
 
 **Distilled 2026-04-20** from internal R&R + external research (Anthropic, Karpathy, Dieter Rams, Unix philosophy, Maeda, Gall's Law, Microsoft Research, Cognition AI).
 
 ## Why this document exists
 
-collie-harness 自身正在违反它 enforce 的 Red-line #13（Speculative scope）——rubric 里有证据充分的重复项而无 fire-rate 证据支撑其独立存在。本文档是"减法原则"的 single source of truth，防止未来继续单调加法。
+collie 自身正在违反它 enforce 的 Red-line #13（Speculative scope）——rubric 里有证据充分的重复项而无 fire-rate 证据支撑其独立存在。本文档是"减法原则"的 single source of truth，防止未来继续单调加法。
 
 ## 7 Principles
 
@@ -284,7 +284,7 @@ collie-harness 自身正在违反它 enforce 的 Red-line #13（Speculative scop
 rubric 的详细条目应在 `references/` 下懒加载（Anthropic Agent Skills best practice）。SKILL.md 主体只保留入口，不内联完整 checklist。Review 输出同理：PASS 项折叠为 summary，只展开 FAIL。
 
 ### 4. Shared state > parallel agents
-collie dual-reviewer 共读同一 plan 文件是正确姿势（Cognition: "Don't Build Multi-Agents" 的反例之一）。未来新增 reviewer 必须加入 `~/.collie-harness/state/` 共享状态，而非独立 fanout。
+collie dual-reviewer 共读同一 plan 文件是正确姿势（Cognition: "Don't Build Multi-Agents" 的反例之一）。未来新增 reviewer 必须加入 `~/.collie/state/` 共享状态，而非独立 fanout。
 
 ### 5. Addition bar: recorded failure or don't add
 新增 hook / skill / red-line 需提供：(a) 真实 failure 链接或 spec 引用；(b) 现有规则为何不覆盖的说明；(c) 与现有 items 非 80% 重叠的证明。任一缺失 = 拒绝。
@@ -421,7 +421,7 @@ PR 新增以下任一项时，PR description 必须显式回答 3 问：
 
 Before:
 ```
->     - **Skip brainstorming human approval gates**: brainstorming's Step 5 ("User approves design?") and Step 8 ("User reviews written spec?") are skipped in collie-harness auto mode. Proceed directly: design → spec self-review → writing-plans. The collie dual-review in Step ③ is the approval gate.
+>     - **Skip brainstorming human approval gates**: brainstorming's Step 5 ("User approves design?") and Step 8 ("User reviews written spec?") are skipped in collie auto mode. Proceed directly: design → spec self-review → writing-plans. The collie dual-review in Step ③ is the approval gate.
 ```
 
 After:
@@ -461,14 +461,14 @@ grep -rnE '\b11\s*question\b|11\s*问题|\bQ7\b|\bQ8\b|\bQ9\b|\bQ10\b|\bQ11\b' \
   --include='*.md' --include='*.js' --include='*.json' \
   --exclude-dir='docs/plans' \
   --exclude-dir='node_modules' \
-  /Users/kevin/git/collie-harness
+  /Users/kevin/git/collie
 ```
 
 **期望返回**：仅 `docs/less-is-more-principles.md` 的 Subtraction Tracker 行（正常历史引用）。其他命中均需修复。`\b` 单词边界避免匹配 Q70/Q110 等假阳性。
 
 ### [test-check] Check tests for hardcoded counts
 ```bash
-grep -rnE '\b11\b|\bQ7\b|\bQ8\b|\bQ9\b|\bQ10\b|\bQ11\b' /Users/kevin/git/collie-harness/tests/
+grep -rnE '\b11\b|\bQ7\b|\bQ8\b|\bQ9\b|\bQ10\b|\bQ11\b' /Users/kevin/git/collie/tests/
 ```
 若命中，评估是否需同步。
 
@@ -523,16 +523,16 @@ Haiku subagent（或主 agent inline 若量小）通读 README.md / CLAUDE.md / 
 
 ### [e2e-verify] Run e2e gates
 ```bash
-cd /Users/kevin/git/collie-harness
+cd /Users/kevin/git/collie
 node --test tests/*.test.js                    # 必须全绿
-claude plugin validate ~/git/collie-harness    # 必须 ✔ Validation passed
+claude plugin validate ~/git/collie    # 必须 ✔ Validation passed
 ./tests/e2e/smoke.sh                           # 4 场景全通
 ```
 
 并复核 [regex-smoke] 产物。
 
-### [collie-final-review] Skill(collie-harness:review Mode=code)
-调用 `Skill('collie-harness:review')` with `Mode=code`, `Target=<current worktree diff>`, `Context="Plan: $ARCHIVE_PATH (from [task0])"`。
+### [collie-final-review] Skill(collie:review Mode=code)
+调用 `Skill('collie:review')` with `Mode=code`, `Target=<current worktree diff>`, `Context="Plan: $ARCHIVE_PATH (from [task0])"`。
 必须返回 `**Status:** PASS` 方可进入 [finish]。WARN/BLOCK → 回到具体失败任务修复。
 
 **注意**：此次 final-review 将使用 Phase A+B 修改后的 rubric 与输出格式——它自身即是新格式的第一次实战验证。

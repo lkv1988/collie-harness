@@ -34,14 +34,14 @@ try {
   bothApproved = planDocOk && collieOk;
 } catch (e) {
   if (e.code !== 'ENOENT') {
-    process.stderr.write('[collie-harness/post-exitplan-gated-hint] Could not parse last-plan.json: ' + e.message + '\n');
+    process.stderr.write('[collie/post-exitplan-gated-hint] Could not parse last-plan.json: ' + e.message + '\n');
   }
   // last-plan.json missing or unreadable → treat as not approved, stay silent
 }
 
 if (bothApproved) {
   process.stdout.write(JSON.stringify({
-    additionalContext: '✅ [collie-harness] ExitPlanMode done — before calling gated-workflow: use TaskUpdate to mark all planning tasks ([research], [plan-review], [collie-review], [exit]) as completed (brainstorming 的 9 条子任务由 brainstorming skill 自身负责标记完成，无需管理), then call Skill(\'collie-harness:gated-workflow\'). Skipping either = red-line violation.',
+    additionalContext: '✅ [collie] ExitPlanMode done — before calling gated-workflow: use TaskUpdate to mark all planning tasks ([research], [plan-review], [collie-review], [exit]) as completed (brainstorming 的 9 条子任务由 brainstorming skill 自身负责标记完成，无需管理), then call Skill(\'collie:gated-workflow\'). Skipping either = red-line violation.',
   }));
 }
 

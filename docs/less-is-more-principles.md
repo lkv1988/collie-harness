@@ -1,10 +1,10 @@
-# Less Is More — Design Principles for collie-harness
+# Less Is More — Design Principles for collie
 
 **Distilled 2026-04-20** from internal R&R + external research (Anthropic, Karpathy, Dieter Rams, Unix philosophy, Maeda, Gall's Law, Microsoft Research, Cognition AI).
 
 ## Why this document exists
 
-collie-harness 自身正在违反它 enforce 的 Red-line #13（Speculative scope）——rubric 里有证据充分的重复项而无 fire-rate 证据支撑其独立存在。本文档是"减法原则"的 single source of truth，防止未来继续单调加法。
+collie 自身正在违反它 enforce 的 Red-line #13（Speculative scope）——rubric 里有证据充分的重复项而无 fire-rate 证据支撑其独立存在。本文档是"减法原则"的 single source of truth，防止未来继续单调加法。
 
 ## 7 Principles
 
@@ -18,7 +18,7 @@ collie-harness 自身正在违反它 enforce 的 Red-line #13（Speculative scop
 rubric 的详细条目应在 `references/` 下懒加载（Anthropic Agent Skills best practice）。SKILL.md 主体只保留入口，不内联完整 checklist。Review 输出同理：PASS 项折叠为 summary，只展开 FAIL。
 
 ### 4. Shared state > parallel agents
-collie dual-reviewer 共读同一 plan 文件是正确姿势（Cognition: "Don't Build Multi-Agents" 的反例之一）。未来新增 reviewer 必须加入 `~/.collie-harness/state/` 共享状态，而非独立 fanout。
+collie dual-reviewer 共读同一 plan 文件是正确姿势（Cognition: "Don't Build Multi-Agents" 的反例之一）。未来新增 reviewer 必须加入 `~/.collie/state/` 共享状态，而非独立 fanout。
 
 ### 5. Addition bar: recorded failure or don't add
 新增 hook / skill / red-line 需提供：(a) 真实 failure 链接或 spec 引用；(b) 现有规则为何不覆盖的说明；(c) 与现有 items 非 80% 重叠的证明。任一缺失 = 拒绝。

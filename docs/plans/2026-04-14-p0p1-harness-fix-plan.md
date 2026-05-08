@@ -1,10 +1,10 @@
-# collie-harness P0/P1 Harness Fix — 实施计划
+# collie P0/P1 Harness Fix — 实施计划
 
 ## Context
 
 ### 为什么要做
 
-对 collie-harness 用 agent-harness-construction skill（opus subagent）做了 4 维度 review，发现 3 个 P0 和 1 个 P1 问题直接影响 harness 的核心承诺：
+对 collie 用 agent-harness-construction skill（opus subagent）做了 4 维度 review，发现 3 个 P0 和 1 个 P1 问题直接影响 harness 的核心承诺：
 
 | 问题 | 位置 | 影响维度 | 后果 |
 |------|------|---------|------|
@@ -49,7 +49,7 @@
 ```javascript
 if (needsWarn) {
   const missingList = missing.join(' + ');
-  process.stderr.write(`[collie-harness] BLOCK: plan file not approved by ${missingList} before ExitPlanMode\n`);
+  process.stderr.write(`[collie] BLOCK: plan file not approved by ${missingList} before ExitPlanMode\n`);
 
   try {
     execFileSync(escalateScript, [
@@ -58,12 +58,12 @@ if (needsWarn) {
       JSON.stringify({ session_id: sessionId, missing }),
     ], { stdio: ['ignore', 'ignore', 'inherit'] });
   } catch (e) {
-    process.stderr.write('[collie-harness/post-writing-plans-reviewer] escalate.sh failed: ' + e.message + '\n');
+    process.stderr.write('[collie/post-writing-plans-reviewer] escalate.sh failed: ' + e.message + '\n');
   }
 
   const output = {
     decision: 'block',
-    reason: `⚠️ [collie-harness] ExitPlanMode 被拦截：plan 尚未被 ${missingList} 批准。必须先并行调用 Agent(subagent_type='plan-doc-reviewer', model='opus') 和 Skill('collie-reviewer', Mode=plan)，双方都返回批准后才能 ExitPlanMode。`,
+    reason: `⚠️ [collie] ExitPlanMode 被拦截：plan 尚未被 ${missingList} 批准。必须先并行调用 Agent(subagent_type='plan-doc-reviewer', model='opus') 和 Skill('collie-reviewer', Mode=plan)，双方都返回批准后才能 ExitPlanMode。`,
   };
   process.stdout.write(JSON.stringify(output) + '\n');
   process.exit(0);

@@ -4,7 +4,7 @@
  * Simulates the complete memory-palace session lifecycle end-to-end:
  * SessionStart → capture messages → write memory → bump access → search → consolidate
  *
- * Uses a temp directory as HOME to isolate from real ~/.memory-palace/
+ * Uses a temp directory as HOME to isolate from real ~/.collie/memory/
  */
 
 import { test } from 'node:test';
@@ -63,10 +63,10 @@ function run(scriptName, args = [], { fakeHome, stdinData = null } = {}) {
 
 test('complete session lifecycle', () => {
   // -------------------------------------------------------------------------
-  // Step 1: Setup — temp HOME with empty ~/.memory-palace/ structure
+  // Step 1: Setup — temp HOME with empty ~/.collie/memory/ structure
   // -------------------------------------------------------------------------
   const fakeHome = mkdtempSync(path.join(tmpdir(), 'mp-integration-'));
-  const palaceRoot = path.join(fakeHome, '.memory-palace');
+  const palaceRoot = path.join(fakeHome, '.collie/memory');
   const TEST_PROJECT = 'test-project';
 
   // Create the directory structure

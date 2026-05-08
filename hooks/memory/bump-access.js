@@ -11,7 +11,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { homedir } from 'node:os';
 
-const MEMORY_ROOT = `${homedir()}/.memory-palace/`;
+const MEMORY_ROOT = `${homedir()}/.collie/memory/`;
 
 function today() {
   return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
@@ -78,7 +78,7 @@ function run() {
     : filePath;
   expanded = path.resolve(expanded);
 
-  // Only process files under ~/.memory-palace/
+  // Only process files under ~/.collie/memory/
   if (!expanded.startsWith(MEMORY_ROOT)) return;
 
   // Read the file
