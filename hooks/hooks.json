@@ -1,6 +1,22 @@
 {
-  "description": "Collie-harness hook chain: dual-reviewer plan gate, gated-workflow reminder, loop detection, and escalation routing.",
+  "description": "Collie-harness hook chain: dual-reviewer plan gate, gated-workflow reminder, loop detection, escalation routing, and memory-palace lifecycle.",
   "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/memory/load-index.js\"" }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "*",
+        "hooks": [
+          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/memory/capture-message.js\"" }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Write|Edit|MultiEdit",
@@ -20,13 +36,28 @@
           { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/post-writing-plans-reviewer.js\"" },
           { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/post-exitplan-gated-hint.js\"" }
         ]
+      },
+      {
+        "matcher": "Read",
+        "hooks": [
+          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/memory/bump-access.js\"" }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "*",
+        "hooks": [
+          { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/memory/pre-compact.sh\"" }
+        ]
       }
     ],
     "Stop": [
       {
         "matcher": "*",
         "hooks": [
-          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/stop-steps-counter.js\"" }
+          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/stop-steps-counter.js\"" },
+          { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/memory/session-stop.sh\"" }
         ]
       }
     ]

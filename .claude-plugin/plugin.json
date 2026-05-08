@@ -1,7 +1,7 @@
 {
   "name": "collie-harness",
-  "version": "0.3.0",
-  "description": "Collie-style autonomous development agent harness: rubric review + budget guardrails + loop detection",
+  "version": "0.4.0",
+  "description": "Collie-style autonomous development agent harness: rubric review + budget guardrails + loop detection + memory-palace",
   "homepage": "https://github.com/lkv1988/collie-harness",
   "repository": "https://github.com/lkv1988/collie-harness",
   "author": {
@@ -13,7 +13,8 @@
     "agent",
     "collie",
     "autonomous",
-    "gated-workflow"
+    "gated-workflow",
+    "memory-palace"
   ],
   "license": "MIT",
   "agents": [
