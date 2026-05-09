@@ -4,6 +4,13 @@ All notable changes to collie are documented here.
 
 ---
 
+## 0.4.6 — 2026-05-08
+
+### Added
+- **SessionStart 补偿消费**：`load-index.js` 检测 `sessions/` 下未消费的旧 session log，在新 session 启动时提示 agent 跑 decision tree，短 session 不再漏消费
+
+---
+
 ## 0.4.5 — 2026-05-08
 
 ### Changed

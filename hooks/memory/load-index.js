@@ -351,10 +351,34 @@ function main() {
     parts.push(`## Project Memory Index (${project})\n\n${projectIndex}`);
   }
 
+  // Phase 3: Check for unconsumed session logs from previous sessions
+  const sessionsDir = path.join(PALACE_ROOT, 'sessions');
+  try {
+    const logFiles = fs.readdirSync(sessionsDir).filter(f => f.endsWith('.jsonl'));
+    if (logFiles.length > 0) {
+      const logPaths = logFiles.map(f => path.join(sessionsDir, f));
+      const totalLines = logPaths.reduce((sum, p) => {
+        try {
+          const content = fs.readFileSync(p, 'utf8');
+          return sum + content.split('\n').filter(l => l.length > 0).length;
+        } catch { return sum; }
+      }, 0);
+
+      if (totalLines > 0) {
+        parts.push(
+          `[memory] ${logFiles.length} unconsumed session log(s) found (${totalLines} messages total). ` +
+          `Invoke the memory skill now to evaluate them against the decision tree. ` +
+          `Session logs: ${logPaths.join(', ')}`
+        );
+      }
+    }
+  } catch {
+    // sessions dir may not exist yet
+  }
+
   if (parts.length > 0) {
     console.log(parts.join('\n\n---\n\n'));
   }
-  // If both are empty/missing, output nothing — no-op for agent context injection
 }
 
 main();
