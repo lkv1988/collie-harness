@@ -4,6 +4,13 @@ All notable changes to collie are documented here.
 
 ---
 
+## 0.4.5 — 2026-05-08
+
+### Changed
+- **capture-message.js**：删除独立 `.counter` 文件，改用 session log 行数取模 20 驱动触发。单一事实源，无 desync 风险，净减 ~40 行代码
+
+---
+
 ## 0.4.4 — 2026-05-08
 
 ### Fixed
