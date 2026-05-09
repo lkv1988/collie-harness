@@ -81,7 +81,7 @@ No build step — pure Node.js, zero external dependencies.
 | `post-exitplan-gated-hint.js` | PostToolUse ExitPlanMode | Reminds to call `collie:flow` skill — **only when both reviewers approved**; silent otherwise |
 | `stop-steps-counter.js` | Stop | Blocks on same error ×3 or 5+ steps without file changes; **resets counters after block** to prevent permanent lockout |
 | `memory/load-index.js` | SessionStart | Cleanup stale memories, sync INDEX, load user/project memory index into context |
-| `memory/capture-message.js` | UserPromptSubmit | Append message to session log + counter; at 20 → invoke memory skill |
+| `memory/capture-message.js` | UserPromptSubmit | Append message to session log; every 20 lines → invoke memory skill |
 | `memory/bump-access.js` | PostToolUse(Read) | Bump `last_accessed` + `access_count` on `~/.collie/memory/` files |
 | `memory/pre-compact.sh` | PreCompact | Prompt agent to run decision tree before context compaction |
 | `memory/session-stop.sh` | Stop | Prompt agent to run decision tree + consolidation; background consolidate.js as safety net |

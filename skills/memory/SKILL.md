@@ -75,15 +75,12 @@ SessionStart         UserPromptSubmit      PostToolUse(Read)   PreCompact       
      │                    │                      │                   │                  │
      ▼                    ▼                      ▼                   ▼                  ▼
 cleanup stale        append message to     path in               systemMessage →    consolidate.js
-short/ + long/       session log +         ~/.collie/memory/?    read session log   promote short→long
-sync INDEX           count++               yes → bump            run decision tree  merge long dups
-read INDEX files          │                last_accessed +        write memories     (no agent prompt)
-inject into context  count ≥ 20?           access_count          (keep log)
-                     ├─ no → done          no → skip
-                     └─ yes → inject
-                              "evaluate
+short/ + long/       session log           ~/.collie/memory/?    read session log   promote short→long
+sync INDEX           lines % 20 == 0?      yes → bump            run decision tree  merge long dups
+read INDEX files     ├─ no → done          last_accessed +        write memories     (no agent prompt)
+inject into context  └─ yes → inject       access_count          (keep log)
+                              "evaluate    no → skip
                                recent msgs"
-                              reset counter
 ```
 
 ### Hook details
@@ -102,13 +99,13 @@ Agent starts every session knowing who the user is, what this project needs, and
 
 **2. UserPromptSubmit — capture (blocking, < 10ms)**
 
-Fires on every user message. The script (`capture-message.js`) does two things:
+Fires on every user message. The script (`capture-message.js`) does:
 - Append user message to `~/.collie/memory/sessions/<session-id>.jsonl`
-- Increment a counter
+- Count lines in the session log
 
-When counter reaches 20, output a one-line prompt that tells the agent to invoke the memory skill and evaluate recent messages against the decision tree. Reset counter to 0.
+When line count is a multiple of 20, output a prompt telling the agent to invoke the memory skill and evaluate recent messages against the decision tree.
 
-No regex, no analysis, no LLM. Pure file append + counter check.
+No separate counter file. The session log is the single source of truth. No regex, no analysis, no LLM. Pure file append + line count check.
 
 **3. PostToolUse (Read) — access reinforcement**
 
@@ -228,7 +225,7 @@ This skill is agent-agnostic. The decision tree and lifecycle rules apply to any
 | Script | Purpose |
 |--------|---------|
 | `hooks/memory/resolve-project.js` | cwd → project directory name |
-| `hooks/memory/capture-message.js` | Append to session log + counter (UserPromptSubmit) |
+| `hooks/memory/capture-message.js` | Append to session log; trigger memory skill every 20 lines (UserPromptSubmit) |
 | `hooks/memory/load-index.js` | Cleanup stale memories + read INDEX files + output for injection (SessionStart) |
 | `hooks/memory/bump-access.js` | Update `last_accessed` + `access_count` on Read tool use (PostToolUse) |
 | `hooks/memory/write-memory.js` | Create memory file with frontmatter in correct scope |

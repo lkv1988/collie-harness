@@ -135,11 +135,9 @@ test('complete session lifecycle', () => {
     assert.ok(typeof entry.ts === 'string', 'each log entry should have a timestamp');
   }
 
-  // Verify counter file shows 3
+  // Verify no separate counter file (log is the single source of truth)
   const counterFile = path.join(sessionsDir, '.counter');
-  assert.ok(existsSync(counterFile), '.counter file created');
-  const counterValue = parseInt(readFileSync(counterFile, 'utf8').trim(), 10);
-  assert.equal(counterValue, 3, 'counter should show 3 after 3 messages');
+  assert.ok(!existsSync(counterFile), '.counter file should not exist');
 
   // -------------------------------------------------------------------------
   // Step 4: Write a memory — run write-memory.js
