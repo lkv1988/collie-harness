@@ -249,6 +249,7 @@ subagent 调用 `superpowers:requesting-code-review`。
 3. **docs/\*-spec.md** — 如果实现过程中发现的新认知与 spec 有偏差，或学到了新 pitfall，必须回写到对应 spec
 4. **docs/plans/** — 本次计划文档已在 Step 2 归档，无需重复
 5. **`.claude/skills/*/SKILL.md`** — 如果本次改动新增或更新了项目级 skill，必须同步更新对应 SKILL.md
+6. **Deferred cleanup** — 检查 plan 文件（`$ARCHIVE_PATH`）中是否包含 `<!-- consumed-deferred: ... -->` metadata。若有，删除对应的 deferred 文件（`rm docs/plans/<topic>-deferred.md`）。这些 scope 已在本次 plan 中交付，deferred 文件完成使命。
 
 **新增或更新项目级 skill 时的硬约束**：必须调用 `Skill('skill-creator')`（由 superpowers plugin 提供）生成或更新 `.claude/skills/<slug>/SKILL.md`。**禁止 free-form prose 写入**——这保证产出的 skill 遵守 frontmatter / Concise is Key / references 规范，能被其他 Claude session 正确发现和加载。
 
