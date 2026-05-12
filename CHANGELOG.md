@@ -4,6 +4,20 @@ All notable changes to collie are documented here.
 
 ---
 
+## 0.4.7 — 2026-05-12
+
+### Added
+- **Plan size gate**：`agents/plan-doc-reviewer.md` 新增 Plan Size 检查行（>500 行 plan 发 WARN，非 BLOCK），新增 Warn-worthy issues 中间级别 + 对应 Warnings 输出槽
+- **Deferred scope lifecycle**：四阶段闭环管理被 defer 的 plan scope
+  - **Create**：`commands/auto.md` brainstorming 约束新增 deferred 文件创建/消费 metadata 规则
+  - **Discover**：`commands/auto.md` R0 新增 `docs/plans/*-deferred.md` 扫描，呈现给用户决定是否纳入
+  - **Follow-up**：plan metadata `<!-- consumed-deferred: ... -->` 标记已纳入的 deferred scope
+  - **Close**：`skills/flow/SKILL.md` Step 5.5 新增 Deferred cleanup，删除已消费的 deferred 文件
+- **CLAUDE.md**：Key Design Constraints 新增 Plan size advisory + Deferred scope lifecycle 两条；新增 Deferred File Convention 子章节（文件格式规约）；Workflow Sequence 补 deferred scan
+- **README.md**：工作流流程图补 deferred scope scan
+
+---
+
 ## 0.4.6 — 2026-05-08
 
 ### Added
