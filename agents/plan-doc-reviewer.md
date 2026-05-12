@@ -29,6 +29,7 @@ You will be given a plan file path and optionally a spec file path. Read both do
 | Spec Consultation | 动笔该 plan 前是否先扫描了 `docs/*-spec.md` 和 `docs/superpowers/specs/`；若存在相关 spec，plan 的 Context 或 References 章节是否明确引用 |
 | E2E Assessment | 若本次需求涉及用户可见功能或 API 变更，plan 是否包含 E2E Assessment 章节？若评估结论为"可行"，是否有对应的 e2e 测试任务？若结论为"不可行"，理由是否充分？ |
 | Impact Assessment | 若改动跨 2+ 模块 / 修改已有 public API / 删除或重命名公开接口 / 修改共享 utilities，plan 是否包含 "Impact Assessment" 章节，列出 (a) Directly affected（直接修改的 module/file/API/CLI/hook/skill/agent）(b) Downstream consumers（调用方/依赖/单元测试/E2E/文档引用）(c) Reverse impact（非直接但受影响的点） |
+| Plan Size | plan 正文是否超过 500 行？超过则 WARN 建议拆分（非 BLOCK）。计算时排除 metadata comments（`<!-- ... -->`）和空行 |
 
 ## Calibration — What Counts as a Real Issue
 
@@ -48,6 +49,9 @@ You will be given a plan file path and optionally a spec file path. Read both do
 - E2E Assessment 结论为"可行"但计划中没有对应的 e2e 测试任务
 - 涉及跨模块改动 / public API 变更 / 共享 utilities 修改但完全没有 Impact Assessment 章节
 - Impact Assessment 的 Downstream consumers 列表显而易见遗漏了已知调用方（例如改动某 hook 但未列出引用它的 skill / command）
+
+**Warn-worthy issues (flag but do not block — advisory):**
+- Plan 正文超过 500 行。建议按价值和依赖关系拆分为 ≤500 行的 Phase 1 + deferred 文件（`docs/plans/<topic>-deferred.md`）。用户坚持保留完整 plan 时可继续。
 
 **Do NOT flag these (advisory only):**
 - Minor wording improvements or stylistic preferences
