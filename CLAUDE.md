@@ -33,7 +33,7 @@ No build step — pure Node.js, zero external dependencies.
 |-------|-------------|
 | **0** | `acceptEdits` mode + escalation channel (`scripts/escalate.sh`) |
 | **1** | Chain-link hooks enforcing dual-reviewer handshake (collie:plan-doc-reviewer + collie:review) before ExitPlanMode |
-| **2** | `skills/review/` — single source of truth for Collie's 13 red-lines + 6 questions + Reflexion + ELEPHANT. Called directly at both plan stage (parallel with `plan-doc-reviewer`) and code stage (flow [collie-final-review] Step 5.7). |
+| **2** | `skills/review/` — single source of truth for Collie's 15 red-lines + 6 questions + Reflexion + ELEPHANT. Called directly at both plan stage (parallel with `plan-doc-reviewer`) and code stage (flow [collie-final-review] Step 5.7). |
 | **3** | Self-driven harness (`commands/auto.md` + `commands/autoiter.md`) |
 
 ## Workflow Sequence (enforced by hooks)
@@ -105,7 +105,7 @@ All runtime state lives under `~/.collie/`:
 
 ## Key Design Constraints
 
-- **Rubric red-lines** (BLOCK): 13 hard violations in `skills/review/references/rubric-red-lines.md` (single source of truth). Any single red-line = automatic BLOCK.
+- **Rubric red-lines** (BLOCK): 15 hard violations in `skills/review/references/rubric-red-lines.md` (single source of truth). Any single red-line = automatic BLOCK.
 - **Dual reviewer at plan stage**: `collie:plan-doc-reviewer` (structural) AND `collie:review` (Collie rubric) must both approve before ExitPlanMode. Enforced by `post-writing-plans-reviewer.js` + `post-approved-exitplan-hint.js`.
 - **Loop trap**: 3 identical error hashes in a row → WARN escalation; 5 steps without file changes → WARN escalation.
 - **ELEPHANT check** in rubric reviewer: 8-point sycophancy self-check; must answer all 8 before issuing PASS.
@@ -119,6 +119,29 @@ All runtime state lives under `~/.collie/`:
 - **Autoiter vs. /auto sentinel 语义**：`Collie: AUTOITER DONE` = 迭代结束 + worktree 保留（不自动 merge）；`Collie: SHIP IT` = merge 完成
 - **嵌套禁止**：`/autoiter` 与 `/auto` 不得互相嵌套调用（COLLIE_AUTOITER_ACTIVE 环境变量防守）
 - **Stage 3 auto-recovery 硬原则**：blocker 处理不等用户介入；能自愈则自愈（haiku→sonnet→opus 阶梯），不能则体面退场 + escalate
+
+### Deferred File Convention
+
+**文件位置**：`docs/plans/<topic>-deferred.md`（与 plan 同目录，git tracked）
+
+**格式**：
+```markdown
+<!-- deferred-from: docs/plans/YYYY-MM-DD-xxx-plan.md -->
+<!-- deferred-topic: xxx -->
+<!-- deferred-date: YYYY-MM-DD -->
+
+# <Topic> — Deferred Scope
+
+## Origin
+为什么被 defer（plan 超 500 行，按价值拆分）。
+
+## Items
+- Item 1: 做什么 + 为什么重要
+- Item 2: ...
+
+## Dependencies
+Phase 1 的哪些交付是前置条件。
+```
 
 ## Required First-Time Setup
 
