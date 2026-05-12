@@ -68,7 +68,7 @@ Completion signal: `<promise>Collie: AUTOITER DONE</promise>` — worktree prese
 
 ```
 /collie:auto "task"
-  -> Research & Reuse              <- internal specs first, then web / registry / docs
+  -> Research & Reuse              <- internal specs first, then web / registry / docs + deferred scope scan
   -> superpowers:brainstorming
   -> superpowers:writing-plans     <- hook marks plan pending for dual review
   -> PARALLEL:
