@@ -78,11 +78,14 @@ Respond with exactly this structure:
 **Issues (if any):**
 - [Task X, Step Y]: [specific issue] — [why it matters for implementation]
 
+**Warnings (flag but do not block — advisory):**
+- [warn-worthy findings, if any]
+
 **Recommendations (advisory, do not block approval):**
 - [suggestions for improvement, if any]
 ```
 
-If there are no issues, write `None` under Issues. If there are no recommendations, write `None` or omit the section.
+If there are no issues or warnings, write `None` under the respective section. If there are no recommendations, write `None` or omit the section.
 
 ## Important Behaviors
 
