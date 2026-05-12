@@ -113,6 +113,7 @@ When starting, inject this as the working prompt (substitute $ARGUMENTS with the
 >   - R1 仍使用**同一个** Explore agent 完成 specs + skills 扫描，无需为 skills 拆单独 agent（grep/glob 成本不变）
 >   - **External queries**: distinct web / GitHub search queries, each covering a different angle (patterns vs libraries vs prior art).
 >   - **Libraries**: specific package names or frameworks worth checking against registries (npm / PyPI / crates.io) + Context7.
+>   - **Deferred scope scan**：`ls docs/plans/*-deferred.md 2>/dev/null`。若存在 deferred 文件，在 R1 Explore agent 中一并读取；R2 Synthesis 中呈现给用户："发现以下 deferred scope，是否纳入本次任务？" 用户决定是否纳入。
 >
 >   Then **classify complexity** — this drives dispatch in R1:
 >   - **Simple** (well-known domain, small localized change, obvious solution) → 1× Explore `haiku` for internal scan + 1× web search is sufficient.
@@ -175,6 +176,8 @@ When starting, inject this as the working prompt (substitute $ARGUMENTS with the
 >       2. **项目类型 → e2e 策略映射**：Web app → 浏览器 e2e（Playwright）；API → HTTP 级 e2e；CLI → 命令执行级 e2e；Library → 集成调用级 e2e；纯算法 → 通常不需要 e2e
 >       3. **Assessment 输出**：(a) 现有基建有/无及具体内容 (b) 若无 → 推荐建设方案，须问用户确认 (c) 本次需求的 e2e 策略：哪些 critical path 需覆盖 (d) 结论 `e2e_feasible: true/false`，false 须给出理由
 >       4. **E2E ≠ 浏览器测试**：e2e 是测试范围（完整用户路径），headless 是浏览器运行模式，两者不冲突。不是所有 e2e 都需要浏览器。
+>     - **Deferred scope 创建**：若 plan-doc-reviewer 对 plan size 发出 WARN 且 agent 决定拆分，将被 defer 的 scope 写入 `docs/plans/<topic>-deferred.md`，格式见 CLAUDE.md "Deferred File Convention"。
+>     - **Deferred scope 消费**：若本次 brainstorming 纳入了已有 deferred 文件的 scope，在 plan metadata 中追加 `<!-- consumed-deferred: docs/plans/xxx-deferred.md -->`（可多条）。
 >
 > <HARD-GATE>
 > Do NOT dispatch reviewers until brainstorming is fully complete and $PLAN_PATH is recorded.
