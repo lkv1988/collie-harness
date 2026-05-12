@@ -40,7 +40,7 @@ No build step — pure Node.js, zero external dependencies.
 
 ```
 /collie:auto "task"
-  → ⓪ Research & Reuse         ← internal specs first, then web search / registry / docs
+  → ⓪ Research & Reuse         ← internal specs first, then web search / registry / docs + deferred scan
   → superpowers:brainstorming
   → superpowers:writing-plans   ← post-writing-plans-reviewer.js marks plan pending (both reviewers)
   → PARALLEL:
@@ -119,6 +119,31 @@ All runtime state lives under `~/.collie/`:
 - **Autoiter vs. /auto sentinel 语义**：`Collie: AUTOITER DONE` = 迭代结束 + worktree 保留（不自动 merge）；`Collie: SHIP IT` = merge 完成
 - **嵌套禁止**：`/autoiter` 与 `/auto` 不得互相嵌套调用（COLLIE_AUTOITER_ACTIVE 环境变量防守）
 - **Stage 3 auto-recovery 硬原则**：blocker 处理不等用户介入；能自愈则自愈（haiku→sonnet→opus 阶梯），不能则体面退场 + escalate
+- **Plan size advisory**：plan-doc-reviewer 对超过 500 行的 plan 发 WARN（非 BLOCK）。建议拆分为 Phase 1 + deferred 文件。用户坚持时可继续。
+- **Deferred scope lifecycle**：`docs/plans/<topic>-deferred.md` 存放被 defer 的 scope。格式：`<!-- deferred-from/topic/date -->` metadata + Origin / Items / Dependencies 三段。四阶段闭环：Create（brainstorming 拆分时写入）→ Discover（auto R0 扫描呈现）→ Follow-up（brainstorming 纳入 + plan metadata `consumed-deferred`）→ Close（flow Step 5.5 删除已消费的 deferred 文件）。
+
+### Deferred File Convention
+
+**文件位置**：`docs/plans/<topic>-deferred.md`（与 plan 同目录，git tracked）
+
+**格式**：
+```markdown
+<!-- deferred-from: docs/plans/YYYY-MM-DD-xxx-plan.md -->
+<!-- deferred-topic: xxx -->
+<!-- deferred-date: YYYY-MM-DD -->
+
+# <Topic> — Deferred Scope
+
+## Origin
+为什么被 defer（plan 超 500 行，按价值拆分）。
+
+## Items
+- Item 1: 做什么 + 为什么重要
+- Item 2: ...
+
+## Dependencies
+Phase 1 的哪些交付是前置条件。
+```
 
 ### Deferred File Convention
 
